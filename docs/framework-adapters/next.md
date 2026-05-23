@@ -1,5 +1,54 @@
 # Next.js Adapter
 
+## Reading the locale in Server Components
+
+`getLocale` reads the active locale directly from the `locale` cookie set by `useLocale` / `setLocale`. Use it in any Server Component, Server Action, or Route Handler — no middleware required.
+
+```ts
+import { getLocale } from "better-cms/next";
+
+// app/layout.tsx
+export default async function RootLayout({ children }) {
+  const locale = await getLocale(); // reads "locale" cookie, falls back to "en"
+  return <Providers locale={locale}>{children}</Providers>;
+}
+
+// app/page.tsx
+export default async function Page() {
+  const locale = await getLocale();
+  const data = await loadTranslations("common", locale);
+  const t = createTranslator(commonNamespace, data, locale);
+  return <h1>{t("greeting", { name: "Guest" })}</h1>;
+}
+```
+
+Options:
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `cookieName` | `"locale"` | Cookie name written by `setLocale` |
+| `defaultLocale` | `"en"` | Fallback when cookie is absent |
+
+The `setLocale` function from `useLocale()` writes a `locale` cookie with `max-age=31536000` and `SameSite=Lax`. `getLocale` reads that same cookie server-side. Call `router.refresh()` after `setLocale` to re-run RSCs with the new locale.
+
+```tsx
+"use client";
+import { useLocale } from "better-cms/react";
+import { useRouter } from "next/navigation";
+
+export function LocaleSwitcher() {
+  const { locale, setLocale } = useLocale();
+  const router = useRouter();
+
+  const switchTo = (next: string) => {
+    setLocale(next);
+    router.refresh();
+  };
+
+  return <button onClick={() => switchTo(locale === "en" ? "de" : "en")}>Switch</button>;
+}
+```
+
 ## Route handler
 
 Mount the CMS inside Next.js App Router as a catch-all API route:
