@@ -49,6 +49,7 @@ export default defineConfig([
 			"storage/r2/index": "src/storage/r2/index.ts",
 			"storage/local/index": "src/storage/local/index.ts",
 			"plugins/fallback/index": "src/plugins/fallback/index.ts",
+			"plugins/fallback-sync/index": "src/plugins/fallback-sync/index.ts",
 			"plugins/pages/index": "src/plugins/pages/index.ts",
 			"plugins/media/index": "src/plugins/media/index.ts",
 		},

@@ -34,6 +34,7 @@ Framework-agnostic type-safe, self-hosted full-stack TypeScript CMS for translat
   - [Pages Plugin](#pages-plugin)
   - [Media Plugin](#media-plugin)
   - [Fallback Plugin](#fallback-plugin)
+  - [Fallback Sync Plugin](#fallback-sync-plugin)
 
 ## Installation
 
@@ -89,19 +90,24 @@ Performance is a first-class issue in `@modlog/better-cms`. It uses an **eventua
 To keep your codebase clean and scalable as it grows, we suggest following these design opinions:
 
 ### 1. Route-Based Namespace Naming
+
 Name your translation namespaces after your frontend URL structure. This makes it instantly obvious where a specific text is used.
-*   `common` — Global elements (buttons, nav, footer)
-*   `dashboard` — Home dashboard
-*   `dashboard.profile` — Profile settings
-*   `dashboard.profile.[id].settings` — Individual user settings
+
+- `common` — Global elements (buttons, nav, footer)
+- `dashboard` — Home dashboard
+- `dashboard.profile` — Profile settings
+- `dashboard.profile.[id].settings` — Individual user settings
 
 ### 2. Component-Driven Block Definitions
+
 Treat page blocks as "data-only components." Keep block schemas granular and map them 1:1 to your React components. Instead of a massive `Content` block with 20 optional fields, create `Hero`, `FeatureGrid`, and `PricingTable` blocks.
 
 ### 3. Shared Definition Package (`@repo/cms-config`)
+
 In a monorepo, **never** define your namespaces or blocks directly in the API or Web app. Always use a central package like `@repo/cms-config`. This is the only way to ensure that a change to a block schema or translation marker is immediately caught by the TypeScript compiler in every application.
 
 ### 4. Production Safety via Fallback Plugin
+
 In production, your CMS API should not be a "hard dependency." Always enable the `Fallback Plugin` to sync your database values to local JSON files. By importing these files in your frontend's `configureCMSClient`, your site will remain functional even during database maintenance or API downtime.
 
 ## Quick Start (Elysia, Prisma, React, Next.js)
@@ -291,6 +297,7 @@ export default function RootLayout({ children }) {
 ### Translations
 
 #### Client Components
+
 Use the `useTranslations` hook with your shared namespace definition.
 
 **`apps/web/src/components/Greeting.tsx`**
@@ -317,6 +324,7 @@ export function Greeting() {
 ```
 
 #### Server Components
+
 For Server Components (RSC), fetch the translations manually and create a translator.
 
 **`apps/web/src/app/page.tsx`**
@@ -481,7 +489,66 @@ import { join } from "node:path";
 plugins: [
   fallbackPlugin({
     // Point this to a folder your frontend app can import from
+    // Make sure the api can reach this folder (otherwise, read "Fallback Sync Plugin")
     outputDir: join(__dirname, "../../../apps/web/locales")
   })
 ]
 ```
+
+### Fallback Sync Plugin
+
+For deployments where the API and frontend run in **separate containers or processes** (i.e. separate disk volumes), the `fallbackPlugin` above cannot write files that the frontend will ever read. Use `startFallbackSync` instead — it runs inside the Next.js process, fetches all translations from the CMS API on startup, writes them to local disk, and then polls on an interval.
+
+**Step 1 — Enable Next.js instrumentation** (only needed for Next.js < 15)
+
+```ts
+// next.config.ts
+export default {
+  experimental: {
+    instrumentationHook: true,
+  },
+};
+```
+
+**Step 2 — Create `instrumentation.ts`** at the root of your Next.js app
+
+```ts
+// apps/web/instrumentation.ts
+export async function register() {
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    const { startFallbackSync } = await import("@modlog/better-cms/plugins/fallback-sync");
+    await startFallbackSync({
+      cmsUrl: process.env.CMS_URL!,
+      readToken: process.env.CMS_READ_TOKEN!,
+      outputDir: "./locales",   // must match the import path in your fallback loader below
+      interval: 60 * 60 * 1000, // optional — defaults to 1h, set 0 to disable polling
+    });
+  }
+}
+```
+
+The initial sync is **awaited** before Next.js serves any requests, so fallback files are guaranteed to exist on cold starts and container restarts.
+
+**Step 3 — Wire the fallback loader in `configureCMSClient`**
+
+Point the `fallback` option to the same `outputDir` you configured above:
+
+```ts
+// apps/web/src/cms-client.ts
+import { configureCMSClient } from "@modlog/better-cms/client";
+
+configureCMSClient({
+  cmsUrl: process.env.NEXT_PUBLIC_SITE_URL!,
+  readToken: process.env.NEXT_PUBLIC_CMS_READ_TOKEN!,
+  fallback: async (ns, locale) => {
+    try {
+      return (await import(`../locales/${locale}/${ns}.json`)).default;
+    } catch {
+      return null;
+    }
+  },
+});
+```
+
+> [!NOTE]
+> `startFallbackSync` uses `readToken` (the same `x-internal-token` used by the read API). You do **not** need the full write token.

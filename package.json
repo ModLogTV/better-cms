@@ -195,6 +195,16 @@
 				"default": "./dist/plugins/fallback/index.js"
 			}
 		},
+		"./plugins/fallback-sync": {
+			"import": {
+				"types": "./dist/plugins/fallback-sync/index.d.mts",
+				"default": "./dist/plugins/fallback-sync/index.mjs"
+			},
+			"require": {
+				"types": "./dist/plugins/fallback-sync/index.d.ts",
+				"default": "./dist/plugins/fallback-sync/index.js"
+			}
+		},
 		"./plugins/pages": {
 			"import": {
 				"types": "./dist/plugins/pages/index.d.mts",
@@ -265,6 +275,9 @@
 			],
 			"plugins/fallback": [
 				"./dist/plugins/fallback/index.d.ts"
+			],
+			"plugins/fallback-sync": [
+				"./dist/plugins/fallback-sync/index.d.ts"
 			],
 			"plugins/pages": [
 				"./dist/plugins/pages/index.d.ts"
