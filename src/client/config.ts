@@ -1,3 +1,5 @@
+import { setCacheEnabled } from "./cache";
+
 export type FallbackLoader = (
 	namespace: string,
 	locale: string,
@@ -8,6 +10,8 @@ interface CMSClientConfig {
 	readToken: string;
 	/** Optional fallback loader invoked when the CMS API is unreachable. */
 	fallback?: FallbackLoader;
+	/** Set to false to disable in-memory translation cache. Defaults to true. */
+	cache?: boolean;
 }
 
 let _config: CMSClientConfig | null = null;
@@ -28,6 +32,9 @@ let _config: CMSClientConfig | null = null;
  */
 export function configureCMSClient(config: CMSClientConfig): void {
 	_config = config;
+	if (config.cache === false) {
+		setCacheEnabled(false);
+	}
 }
 
 export function getClientConfig(): CMSClientConfig {

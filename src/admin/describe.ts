@@ -27,9 +27,10 @@ function walk(
 				case "vars":
 					type = "vars";
 					inputHint = "text+vars";
-					vars = marker._vars
-						? Object.keys(marker._vars as Record<string, unknown>)
-						: [];
+					// _vars is string[] at runtime (var names passed to vars())
+					vars = Array.isArray(marker._vars)
+						? (marker._vars as string[])
+						: Object.keys(marker._vars as Record<string, unknown>);
 					break;
 				case "plural":
 					type = "plural";
@@ -39,8 +40,10 @@ function walk(
 				case "rich":
 					type = "rich";
 					inputHint = "rich-text";
-					tags =
-						typeof marker._tags === "string"
+					// _tags is Tags[] at runtime (tag names passed to rich())
+					tags = Array.isArray(marker._tags)
+						? (marker._tags as string[])
+						: typeof marker._tags === "string"
 							? [marker._tags]
 							: Object.keys((marker._tags ?? {}) as Record<string, unknown>);
 					break;

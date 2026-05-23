@@ -1,6 +1,13 @@
 const cache = new Map<string, { value: unknown; expiresAt: number }>();
 
+let _enabled = true;
+
+export function setCacheEnabled(enabled: boolean): void {
+	_enabled = enabled;
+}
+
 export function getCached<T>(key: string): T | undefined {
+	if (!_enabled) return undefined;
 	const entry = cache.get(key);
 	if (!entry) return undefined;
 	if (Date.now() > entry.expiresAt) {
@@ -11,6 +18,7 @@ export function getCached<T>(key: string): T | undefined {
 }
 
 export function setCached<T>(key: string, value: T, ttlMs: number): void {
+	if (!_enabled) return;
 	cache.set(key, { value, expiresAt: Date.now() + ttlMs });
 }
 
