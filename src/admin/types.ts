@@ -1,0 +1,79 @@
+import type { Page, PageSummary, RawBlock } from "../core/adapter";
+
+export interface NamespaceSummary {
+	name: string;
+}
+
+export type KeyType = "key" | "vars" | "plural" | "rich";
+export type InputHint = "text" | "text+vars" | "text+count" | "rich-text";
+
+export interface KeyMetadata {
+	/** Flat dot-key e.g. "topNav.aboutUs" */
+	key: string;
+	type: KeyType;
+	/** Variable names extracted from VarsMarker/PluralMarker */
+	vars?: string[];
+	/** Tag names extracted from RichMarker */
+	tags?: string[];
+	/** Hint for admin UI input widget */
+	inputHint: InputHint;
+}
+
+export interface AdminClient {
+	namespaces: {
+		/** Lists all registered namespaces in the CMS. */
+		list(): Promise<NamespaceSummary[]>;
+		/**
+		 * Returns metadata for all keys in a namespace, including their types (rich, vars, etc.)
+		 * and suggested UI input hints.
+		 */
+		describe(namespace: string): Promise<KeyMetadata[]>;
+		/** Fetches all raw translation key-value pairs for a specific namespace and locale. */
+		getTranslations(
+			namespace: string,
+			locale: string,
+		): Promise<Record<string, string>>;
+		/**
+		 * Updates a single translation key. Fetches the current state, merges the change,
+		 * and persists it back to the adapter.
+		 */
+		updateTranslation(
+			namespace: string,
+			locale: string,
+			key: string,
+			value: string,
+		): Promise<void>;
+	};
+	pages: {
+		/** Lists all pages available in the CMS with their basic status and metadata. */
+		list(): Promise<PageSummary[]>;
+		/**
+		 * Fetches a single page by its slug.
+		 * @param draft If true, fetches the latest saved draft instead of the published version.
+		 */
+		get(slug: string, locale: string, draft?: boolean): Promise<Page>;
+		/** Updates the blocks of a page. Validates blocks against the registered schema. */
+		update(id: string, blocks: RawBlock[]): Promise<void>;
+		/** Promotes the current draft of a page to the published status. */
+		publish(id: string): Promise<void>;
+	};
+	media: {
+		/**
+		 * Generates a presigned S3 upload URL for a file.
+		 * Use this to allow the browser to upload directly to storage.
+		 */
+		presign(opts: {
+			filename: string;
+			mimeType: string;
+			size: number;
+		}): Promise<{ uploadUrl: string; publicUrl: string }>;
+	};
+	locales: {
+		/** Lists all active locales in the CMS. */
+		list(): Promise<import("../core/adapter").Locale[]>;
+		/** Adds or updates a locale definition. */
+		upsert(code: string, name: string, isDefault?: boolean): Promise<void>;
+		/** Permanently removes a locale. */
+		delete(code: string): Promise<void>;
+	};
+}

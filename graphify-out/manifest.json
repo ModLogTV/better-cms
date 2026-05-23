@@ -1,0 +1,322 @@
+{
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/package.json": {
+		"mtime": 1779558220.0355804,
+		"ast_hash": "92d5857cdc4e9f520cee7a49e8c840e4",
+		"semantic_hash": "92d5857cdc4e9f520cee7a49e8c840e4"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/tsup.config.ts": {
+		"mtime": 1779554504.0501456,
+		"ast_hash": "71983ea3444ba3771d1a58c06e386556",
+		"semantic_hash": "71983ea3444ba3771d1a58c06e386556"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/tsconfig.json": {
+		"mtime": 1779554281.7376838,
+		"ast_hash": "0ed443c3c54287977e7f600431caef17",
+		"semantic_hash": "0ed443c3c54287977e7f600431caef17"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/biome.json": {
+		"mtime": 1779551162.0636246,
+		"ast_hash": "f766db67e08aed27f1225af9c2a448ef",
+		"semantic_hash": "f766db67e08aed27f1225af9c2a448ef"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/.vscode/settings.json": {
+		"mtime": 1779557491.8457496,
+		"ast_hash": "4b9c6053fae204481eda2954603391a8",
+		"semantic_hash": "4b9c6053fae204481eda2954603391a8"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/next/middleware.ts": {
+		"mtime": 1779557304.762152,
+		"ast_hash": "d90a37506bd6005a59f1bf02b6e9864a",
+		"semantic_hash": "d90a37506bd6005a59f1bf02b6e9864a"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/next/index.ts": {
+		"mtime": 1779558103.7845082,
+		"ast_hash": "def7ff5676c76adc242621086b9c67b3",
+		"semantic_hash": "def7ff5676c76adc242621086b9c67b3"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/next/test/middleware.test.ts": {
+		"mtime": 1779557319.8094707,
+		"ast_hash": "2f1b4b994a6962b5e86e200d45ee5b0e",
+		"semantic_hash": "2f1b4b994a6962b5e86e200d45ee5b0e"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/core/plugin.ts": {
+		"mtime": 1779562869.7382243,
+		"ast_hash": "7b8946c830e44cbb364664d443a220be",
+		"semantic_hash": "7b8946c830e44cbb364664d443a220be"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/core/storage.ts": {
+		"mtime": 1779557251.166217,
+		"ast_hash": "a4b5c61e4c9b1641388346850f819fb5",
+		"semantic_hash": "a4b5c61e4c9b1641388346850f819fb5"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/core/events.ts": {
+		"mtime": 1779557332.2138572,
+		"ast_hash": "d915374dd5b7bb94af1f031cd97bc047",
+		"semantic_hash": "d915374dd5b7bb94af1f031cd97bc047"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/core/adapter.ts": {
+		"mtime": 1779557221.433285,
+		"ast_hash": "32459dd8362bd0e67da2443e9b4baeaf",
+		"semantic_hash": "32459dd8362bd0e67da2443e9b4baeaf"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/core/index.ts": {
+		"mtime": 1779562961.247159,
+		"ast_hash": "612af2c0ff1536d56538df4b2a307319",
+		"semantic_hash": "612af2c0ff1536d56538df4b2a307319"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/core/config.ts": {
+		"mtime": 1779553562.3231473,
+		"ast_hash": "d8d4699614ee68931576f07b406e9c1a",
+		"semantic_hash": "d8d4699614ee68931576f07b406e9c1a"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/core/test/createCMS.test.ts": {
+		"mtime": 1779557223.4064898,
+		"ast_hash": "84256ebe6e8027ffa97a9f4cdaf4593e",
+		"semantic_hash": "84256ebe6e8027ffa97a9f4cdaf4593e"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/tanstack/index.ts": {
+		"mtime": 1779562448.6202407,
+		"ast_hash": "242e8d0ef4f1975eaabcb895586a37c1",
+		"semantic_hash": "242e8d0ef4f1975eaabcb895586a37c1"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/plugins/fallback/index.ts": {
+		"mtime": 1779557319.8096473,
+		"ast_hash": "d6e39ef1c2166a596f4289b2f5ac92e1",
+		"semantic_hash": "d6e39ef1c2166a596f4289b2f5ac92e1"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/plugins/fallback/test/fallback.test.ts": {
+		"mtime": 1779553821.452783,
+		"ast_hash": "1b631073d2e1971d5d80cf626294ef8e",
+		"semantic_hash": "1b631073d2e1971d5d80cf626294ef8e"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/plugins/pages/routes.ts": {
+		"mtime": 1779564524.1718283,
+		"ast_hash": "2b87a56e988764f0e2f3bb9fad07f1b8",
+		"semantic_hash": "2b87a56e988764f0e2f3bb9fad07f1b8"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/plugins/pages/types.ts": {
+		"mtime": 1779557319.8057506,
+		"ast_hash": "c3951148d6710e6d5c3c86f586de3483",
+		"semantic_hash": "c3951148d6710e6d5c3c86f586de3483"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/plugins/pages/index.ts": {
+		"mtime": 1779553660.333129,
+		"ast_hash": "b1402a8a180fca263fcea08be0aa851d",
+		"semantic_hash": "b1402a8a180fca263fcea08be0aa851d"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/plugins/media/routes.ts": {
+		"mtime": 1779557319.8088336,
+		"ast_hash": "b640427bc6b0431f5011e432a5d518b3",
+		"semantic_hash": "b640427bc6b0431f5011e432a5d518b3"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/plugins/media/index.ts": {
+		"mtime": 1779557319.8094559,
+		"ast_hash": "b7391b3d04a9b3ace0c4acf975fc3c35",
+		"semantic_hash": "b7391b3d04a9b3ace0c4acf975fc3c35"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/prisma/index.ts": {
+		"mtime": 1779558103.7840903,
+		"ast_hash": "90d44e066115879b5b02de958f13c91b",
+		"semantic_hash": "90d44e066115879b5b02de958f13c91b"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/admin/types.ts": {
+		"mtime": 1779557319.8069074,
+		"ast_hash": "01085fb4fbce853584cadc40e7124a00",
+		"semantic_hash": "01085fb4fbce853584cadc40e7124a00"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/admin/index.ts": {
+		"mtime": 1779562451.2136075,
+		"ast_hash": "7e7b2a491a27c244b5445f7c670aec69",
+		"semantic_hash": "7e7b2a491a27c244b5445f7c670aec69"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/admin/describe.ts": {
+		"mtime": 1779561897.4395187,
+		"ast_hash": "714f0f10c006902d582eed28cd7ed6aa",
+		"semantic_hash": "714f0f10c006902d582eed28cd7ed6aa"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/admin/test/describe.test.ts": {
+		"mtime": 1779562925.21999,
+		"ast_hash": "58044e76fd9caf4141749bae6f7bec63",
+		"semantic_hash": "58044e76fd9caf4141749bae6f7bec63"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/elysia/index.ts": {
+		"mtime": 1779564514.6145885,
+		"ast_hash": "0cb164b05a11616ebc3ada8a466aade6",
+		"semantic_hash": "0cb164b05a11616ebc3ada8a466aade6"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/elysia/auth.ts": {
+		"mtime": 1779557319.8083422,
+		"ast_hash": "9f9be94c5f31038e68826099d20a469e",
+		"semantic_hash": "9f9be94c5f31038e68826099d20a469e"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/elysia/test/helpers.ts": {
+		"mtime": 1779557319.8088014,
+		"ast_hash": "1bab3631f82da080423e2849e37a8e08",
+		"semantic_hash": "1bab3631f82da080423e2849e37a8e08"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/elysia/test/pages.test.ts": {
+		"mtime": 1779564531.4680371,
+		"ast_hash": "a41adc44a01a94d56f253cd3c0b5794a",
+		"semantic_hash": "a41adc44a01a94d56f253cd3c0b5794a"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/elysia/test/translations.test.ts": {
+		"mtime": 1779557319.809263,
+		"ast_hash": "02367f16d873b66f461f7b88b1d8dc1a",
+		"semantic_hash": "02367f16d873b66f461f7b88b1d8dc1a"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/elysia/test/media.test.ts": {
+		"mtime": 1779557319.8090315,
+		"ast_hash": "ebf2dd48e0a8ea56cc6002aba7f446ec",
+		"semantic_hash": "ebf2dd48e0a8ea56cc6002aba7f446ec"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/elysia/routes/translations.ts": {
+		"mtime": 1779557291.6890054,
+		"ast_hash": "4c113baf9be895563846e00a1ca7acc4",
+		"semantic_hash": "4c113baf9be895563846e00a1ca7acc4"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/storage/hetzner/index.ts": {
+		"mtime": 1779553674.523522,
+		"ast_hash": "6569ebce539a41fd1f66340d981db9db",
+		"semantic_hash": "6569ebce539a41fd1f66340d981db9db"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/storage/local/index.ts": {
+		"mtime": 1779553686.499164,
+		"ast_hash": "2da368cbe4e6df57b86919b6616f6034",
+		"semantic_hash": "2da368cbe4e6df57b86919b6616f6034"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/storage/aws/index.ts": {
+		"mtime": 1779553677.9928753,
+		"ast_hash": "457cd8ea8ed3211bb43cf5dffa7382c7",
+		"semantic_hash": "457cd8ea8ed3211bb43cf5dffa7382c7"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/storage/r2/index.ts": {
+		"mtime": 1779553682.0860689,
+		"ast_hash": "1d4c1579c86c83f5017a595bc933287f",
+		"semantic_hash": "1d4c1579c86c83f5017a595bc933287f"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/admin-react/index.ts": {
+		"mtime": 1779557319.8079329,
+		"ast_hash": "0afdc753cff9a71e3fd2f77354d755aa",
+		"semantic_hash": "0afdc753cff9a71e3fd2f77354d755aa"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/i18n/translator.ts": {
+		"mtime": 1779552298.6466455,
+		"ast_hash": "8d7ea5efb85a8e50c8be7d2b1f0f660e",
+		"semantic_hash": "8d7ea5efb85a8e50c8be7d2b1f0f660e"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/i18n/namespace.ts": {
+		"mtime": 1779552302.1819396,
+		"ast_hash": "7412eb86fb70fa6299a9d9e49f0ccd1a",
+		"semantic_hash": "7412eb86fb70fa6299a9d9e49f0ccd1a"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/i18n/markers.ts": {
+		"mtime": 1779552302.9727402,
+		"ast_hash": "1257e468e8145292e1004977df36005e",
+		"semantic_hash": "1257e468e8145292e1004977df36005e"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/i18n/types.ts": {
+		"mtime": 1779552301.1350737,
+		"ast_hash": "3b13ec306779db5a725a26f08e8c800f",
+		"semantic_hash": "3b13ec306779db5a725a26f08e8c800f"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/i18n/index.ts": {
+		"mtime": 1779552349.2722175,
+		"ast_hash": "c1d46d6d63e0bf86cca05bfb0eb617e4",
+		"semantic_hash": "c1d46d6d63e0bf86cca05bfb0eb617e4"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/i18n/test/translator.test.ts": {
+		"mtime": 1779557300.0242107,
+		"ast_hash": "5137b7600f8c57142be008a1dccd3e95",
+		"semantic_hash": "5137b7600f8c57142be008a1dccd3e95"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/client/pages.ts": {
+		"mtime": 1779557216.179477,
+		"ast_hash": "f374ab62517f2e0763b3a2ef038a41f0",
+		"semantic_hash": "f374ab62517f2e0763b3a2ef038a41f0"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/client/cache.ts": {
+		"mtime": 1779557209.8842397,
+		"ast_hash": "76ec9e758cfd68e03912df9c9574db18",
+		"semantic_hash": "76ec9e758cfd68e03912df9c9574db18"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/client/translations.ts": {
+		"mtime": 1779557218.7221835,
+		"ast_hash": "8a2fa17cf50555e0c016b5f1e1c4ae36",
+		"semantic_hash": "8a2fa17cf50555e0c016b5f1e1c4ae36"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/client/index.ts": {
+		"mtime": 1779557214.4176679,
+		"ast_hash": "4492c76556bb6996d30b51b2b471f212",
+		"semantic_hash": "4492c76556bb6996d30b51b2b471f212"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/client/config.ts": {
+		"mtime": 1779558103.7747905,
+		"ast_hash": "7d39b9f97c7b79319b4a871278af826d",
+		"semantic_hash": "7d39b9f97c7b79319b4a871278af826d"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/client/test/cache.test.ts": {
+		"mtime": 1779557227.2238579,
+		"ast_hash": "267f4ca38381690c86d0ccbb8d5dbc21",
+		"semantic_hash": "267f4ca38381690c86d0ccbb8d5dbc21"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/client/test/translations.test.ts": {
+		"mtime": 1779557238.1560044,
+		"ast_hash": "8a4f83174e7daa35bf862d90d47f3590",
+		"semantic_hash": "8a4f83174e7daa35bf862d90d47f3590"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/react/context.ts": {
+		"mtime": 1779553696.5241072,
+		"ast_hash": "3184f918b8371dbec2b8d80fb69fc9bf",
+		"semantic_hash": "3184f918b8371dbec2b8d80fb69fc9bf"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/react/index.ts": {
+		"mtime": 1779553718.4400456,
+		"ast_hash": "27faef6e18e0225f469aa1f8f308dda5",
+		"semantic_hash": "27faef6e18e0225f469aa1f8f308dda5"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/react/hooks.ts": {
+		"mtime": 1779557081.257961,
+		"ast_hash": "1d2a4f0221833b75287c2efee0d28dad",
+		"semantic_hash": "1d2a4f0221833b75287c2efee0d28dad"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/react/provider.tsx": {
+		"mtime": 1779557319.7982206,
+		"ast_hash": "4edd30b407e5ecb8fe03d2ce259c5ad8",
+		"semantic_hash": "4edd30b407e5ecb8fe03d2ce259c5ad8"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/next-client/index.ts": {
+		"mtime": 1779557308.3701208,
+		"ast_hash": "b1ca09101cdc4431f0cdf270979b0223",
+		"semantic_hash": "b1ca09101cdc4431f0cdf270979b0223"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/drizzle/index.ts": {
+		"mtime": 1779558103.784309,
+		"ast_hash": "fb0debefd1016cafdd88b406261979cb",
+		"semantic_hash": "fb0debefd1016cafdd88b406261979cb"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/README.md": {
+		"mtime": 1779562479.5650473,
+		"ast_hash": "f9054ccb7211c9c1162be6a67d345b5a",
+		"semantic_hash": "f9054ccb7211c9c1162be6a67d345b5a"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/AGENTS.md": {
+		"mtime": 1779552724.7187653,
+		"ast_hash": "e8caaa21dc2da5c95ae03ee905346620",
+		"semantic_hash": "e8caaa21dc2da5c95ae03ee905346620"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/CLAUDE.md": {
+		"mtime": 1779558089.8387196,
+		"ast_hash": "1835cc6fa2d65447410aa9037a1ed595",
+		"semantic_hash": "1835cc6fa2d65447410aa9037a1ed595"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/elysia/test/admin.test.ts": {
+		"mtime": 1779564543.1699078,
+		"ast_hash": "0dc6e96bbebdb93dec9ae2e20305a2e7",
+		"semantic_hash": "0dc6e96bbebdb93dec9ae2e20305a2e7"
+	},
+	"/Users/daniel/Programmieren/Work/Freelance/ModLog/better-cms/src/elysia/routes/admin.ts": {
+		"mtime": 1779564510.8635657,
+		"ast_hash": "d790bf178cf851ccf941aff651c2c168",
+		"semantic_hash": "d790bf178cf851ccf941aff651c2c168"
+	}
+}

@@ -1,0 +1,14 @@
+{
+	"compilerOptions": {
+		"target": "ES2020",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"skipLibCheck": true,
+		"strict": true,
+		"declaration": true,
+		"declarationMap": true,
+		"types": ["bun-types"],
+		"jsx": "react-jsx",
+		"lib": ["ES2020", "DOM"]
+	}
+}
