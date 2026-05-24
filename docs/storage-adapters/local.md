@@ -1,6 +1,7 @@
 # Local Storage Adapter (Dev Only)
 
 Stores files on the local filesystem and serves them via a static file URL. **Do not use in production.**
+> If you want to use a self-hosted object storage system like MinIO for production, use [AWS S3 Documentation](./aws-s3.md)
 
 ## Usage
 
