@@ -58,8 +58,8 @@ It is **not** a hosted service, not a WordPress alternative, and not a drop-in U
   - [Overview](./storage-adapters/overview.md)
   - [AWS S3](./storage-adapters/aws-s3.md)
   - [Cloudflare R2](./storage-adapters/cloudflare-r2.md)
-  - [Hetzner](./storage-adapters/hetzner.md)
-  - [Local (Dev)](./storage-adapters/local.md)
+  - [Hetzner Object Storage](./storage-adapters/hetzner.md)
+  - [Local Filesystem (Dev)](./storage-adapters/local.md)
 - **Plugins**
   - [Pages Plugin](./plugins/pages-plugin.md)
   - [Media Plugin](./plugins/media-plugin.md)
