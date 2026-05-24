@@ -1,6 +1,5 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import type { CMSStorageAdapter } from "../../core/storage";
+import { S3Client } from "@aws-sdk/client-s3";
+import { createS3Presigner } from "../s3-presign";
 
 interface AWSS3Options {
 	bucket: string;
@@ -14,22 +13,10 @@ interface AWSS3Options {
 }
 
 /** AWS S3 storage adapter. */
-export function awsS3Adapter(opts: AWSS3Options): CMSStorageAdapter {
+export function awsS3Adapter(opts: AWSS3Options) {
 	const client = new S3Client({
 		region: opts.region,
 		credentials: opts.credentials,
 	});
-
-	return {
-		async presign(key, { mimeType, ttl = 300 }) {
-			const command = new PutObjectCommand({
-				Bucket: opts.bucket,
-				Key: key,
-				ContentType: mimeType,
-			});
-			const uploadUrl = await getSignedUrl(client, command, { expiresIn: ttl });
-			const publicUrl = `${opts.cdnUrl.replace(/\/$/, "")}/${key}`;
-			return { uploadUrl, publicUrl };
-		},
-	};
+	return createS3Presigner(client, opts.bucket, opts.cdnUrl);
 }

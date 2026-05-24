@@ -1,6 +1,5 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import type { CMSStorageAdapter } from "../../core/storage";
+import { S3Client } from "@aws-sdk/client-s3";
+import { createS3Presigner } from "../s3-presign";
 
 interface HetznerS3Options {
 	bucket: string;
@@ -11,32 +10,17 @@ interface HetznerS3Options {
 		accessKeyId: string;
 		secretAccessKey: string;
 	};
-	/** Base URL for public file access (your CDN or direct bucket URL) */
+	/** Base URL for public file access (CDN or direct bucket URL) */
 	cdnUrl: string;
 }
 
-/**
- * Hetzner Object Storage adapter (S3-compatible).
- * Uses presigned PUT URLs — browser uploads direct, never proxied.
- */
-export function hetznerS3Adapter(opts: HetznerS3Options): CMSStorageAdapter {
+/** Hetzner Object Storage adapter (S3-compatible). */
+export function hetznerS3Adapter(opts: HetznerS3Options) {
 	const client = new S3Client({
 		endpoint: opts.endpoint,
 		region: opts.region,
 		credentials: opts.credentials,
 		forcePathStyle: true,
 	});
-
-	return {
-		async presign(key, { mimeType, ttl = 300 }) {
-			const command = new PutObjectCommand({
-				Bucket: opts.bucket,
-				Key: key,
-				ContentType: mimeType,
-			});
-			const uploadUrl = await getSignedUrl(client, command, { expiresIn: ttl });
-			const publicUrl = `${opts.cdnUrl.replace(/\/$/, "")}/${key}`;
-			return { uploadUrl, publicUrl };
-		},
-	};
+	return createS3Presigner(client, opts.bucket, opts.cdnUrl);
 }

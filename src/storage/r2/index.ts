@@ -1,6 +1,5 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import type { CMSStorageAdapter } from "../../core/storage";
+import { S3Client } from "@aws-sdk/client-s3";
+import { createS3Presigner } from "../s3-presign";
 
 interface R2Options {
 	bucket: string;
@@ -12,30 +11,17 @@ interface R2Options {
 	};
 	/**
 	 * Base URL for public file access.
-	 * This is used to construct the final `publicUrl` returned after upload.
-	 * Usually points to your Cloudflare custom domain or the R2 public bucket URL.
+	 * Usually your Cloudflare custom domain or R2 public bucket URL.
 	 */
 	cdnUrl: string;
 }
 
 /** Cloudflare R2 storage adapter. */
-export function cloudflareR2Adapter(opts: R2Options): CMSStorageAdapter {
+export function cloudflareR2Adapter(opts: R2Options) {
 	const client = new S3Client({
 		endpoint: opts.endpoint,
 		region: "auto",
 		credentials: opts.credentials,
 	});
-
-	return {
-		async presign(key, { mimeType, ttl = 300 }) {
-			const command = new PutObjectCommand({
-				Bucket: opts.bucket,
-				Key: key,
-				ContentType: mimeType,
-			});
-			const uploadUrl = await getSignedUrl(client, command, { expiresIn: ttl });
-			const publicUrl = `${opts.cdnUrl.replace(/\/$/, "")}/${key}`;
-			return { uploadUrl, publicUrl };
-		},
-	};
+	return createS3Presigner(client, opts.bucket, opts.cdnUrl);
 }
