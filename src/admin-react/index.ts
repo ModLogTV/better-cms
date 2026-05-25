@@ -143,13 +143,7 @@ export function createAdminHooks(admin: AdminClient) {
 				{ file: File }
 			>({
 				mutationFn: async ({ file }: { file: File }) => {
-					const { uploadUrl, publicUrl } = await admin.media.presign({
-						filename: file.name,
-						mimeType: file.type,
-						size: file.size,
-					});
-					await fetch(uploadUrl, { method: "PUT", body: file });
-					return { publicUrl };
+					return admin.media.upload({ file, body: file });
 				},
 			});
 
@@ -157,6 +151,12 @@ export function createAdminHooks(admin: AdminClient) {
 				upload: (opts: { file: File }) => mutation.mutateAsync(opts),
 				isPending: mutation.isPending,
 			};
+		},
+
+		useMediaDelete() {
+			return useMutation<void, Error, { key: string }>({
+				mutationFn: (opts: { key: string }) => admin.media.delete(opts),
+			});
 		},
 
 		useLocales() {

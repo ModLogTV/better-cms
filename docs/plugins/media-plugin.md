@@ -1,6 +1,6 @@
 # Media Plugin
 
-Adds a presigned upload URL endpoint to the CMS. Enables direct browser-to-storage uploads without routing binary data through the CMS API.
+Adds media management routes to the CMS. Enables direct browser-to-storage uploads and file deletion.
 
 ## Registration
 
@@ -22,15 +22,16 @@ const cms = createCMS({
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `storage` | `CMSStorageAdapter` | Storage adapter to generate presigned URLs |
+| `storage` | `CMSStorageAdapter` | Storage adapter for file operations |
 
-## Route added
+## Routes added
 
 | Method | Path | Description |
 |--------|------|-------------|
 | `POST` | `/cms/media/presign` | Generate a presigned upload URL |
+| `DELETE` | `/cms/media/:key` | Delete a file from storage |
 
-### Request body
+### Presign Request body
 
 ```json
 {
@@ -40,7 +41,7 @@ const cms = createCMS({
 }
 ```
 
-### Response
+### Presign Response
 
 ```json
 {
@@ -60,32 +61,33 @@ const cms = createCMS({
 
 ## Using from the admin client
 
+### `admin.media.upload({ file, body })`
+
+The recommended way to upload. Handles the full flow automatically.
+
 ```ts
-const { uploadUrl, publicUrl } = await admin.media.presign({
-  filename: "hero-image.png",
-  mimeType: "image/png",
-  size: file.size,
-});
-
-// Upload directly from the browser
-await fetch(uploadUrl, { method: "PUT", body: file });
-
-// Use publicUrl in your block data
-await admin.pages.update({
-  id: pageId,
-  blocks: [{ type: "hero", data: { imageUrl: publicUrl } }],
+const { publicUrl } = await admin.media.upload({
+  file: { name: "hero.png", type: "image/png", size: file.size },
+  body: file,
 });
 ```
 
-## Using the React hook
+### `admin.media.delete({ key })`
+
+```ts
+await admin.media.delete({ key: "123-hero.png" });
+```
+
+## Using the React hooks
 
 ```tsx
 import { createAdminHooks } from "@modlog/better-cms/admin/react";
 
-const { useMediaUpload } = createAdminHooks(admin);
+const { useMediaUpload, useMediaDelete } = createAdminHooks(admin);
 
-function ImageUploader() {
+function ImageManager() {
   const { upload, isPending } = useMediaUpload();
+  const { mutate: remove } = useMediaDelete();
 
   const handleFile = async (file: File) => {
     const { publicUrl } = await upload({ file });
@@ -93,11 +95,14 @@ function ImageUploader() {
   };
 
   return (
-    <input
-      type="file"
-      disabled={isPending}
-      onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-    />
+    <div>
+      <input
+        type="file"
+        disabled={isPending}
+        onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+      />
+      <button onClick={() => remove({ key: "..." })}>Delete</button>
+    </div>
   );
 }
 ```

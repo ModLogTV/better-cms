@@ -10,4 +10,7 @@ export interface CMSStorageAdapter {
 		/** {cdnUrl}/{key} — persisted in DB, used in block data */
 		publicUrl: string;
 	}>;
+
+	/** Permanently removes a file from storage. */
+	delete(opts: { key: string }): Promise<void>;
 }

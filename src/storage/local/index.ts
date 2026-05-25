@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { CMSStorageAdapter } from "../../core/storage";
 
@@ -27,6 +27,11 @@ export function localStorageAdapter(
 			const uploadUrl = `${opts.baseUrl}/upload?key=${encodeURIComponent(key)}`;
 			const publicUrl = `${opts.baseUrl}/${key}`;
 			return { uploadUrl, publicUrl };
+		},
+
+		async delete({ key }) {
+			const filePath = join(opts.dir, key);
+			await unlink(filePath).catch(() => {}); // Ignore if file doesn't exist
 		},
 	};
 }

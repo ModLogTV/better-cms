@@ -20,7 +20,7 @@ import { createAdminHooks, AdminQueryProvider } from "@modlog/better-cms/admin/r
 
 const admin = createAdminClient({
   cmsUrl: process.env.NEXT_PUBLIC_CMS_URL!,
-  token: process.env.CMS_INTERNAL_TOKEN!,
+  token: process.env.CMS_ADMIN_TOKEN!,
 });
 
 export const {
@@ -185,13 +185,13 @@ function LocaleManager() {
 
 ## Security considerations
 
-The admin token (`CMS_INTERNAL_TOKEN`) must never reach the browser. Options:
+The admin token (`CMS_ADMIN_TOKEN`) must never reach the browser. Options:
 
 1. **Separate admin app** on a private network — server-side only, token never exposed
 2. **Next.js API route proxy** — frontend calls `/api/cms/*`, route handler adds the token server-side
 3. **TanStack Start server functions** — token stays on the server
 
-Avoid: embedding `CMS_INTERNAL_TOKEN` in `NEXT_PUBLIC_*` env vars or client bundles.
+Avoid: embedding `CMS_ADMIN_TOKEN` in `NEXT_PUBLIC_*` env vars or client bundles.
 
 ## Recommended stack
 

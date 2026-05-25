@@ -72,6 +72,15 @@ export function createAdminClient(opts: AdminClientOptions): AdminClient {
 				body: body != null ? JSON.stringify(body) : undefined,
 			},
 		});
+	const del = <T>(path: string) =>
+		apiFetch<T>({
+			cmsUrl,
+			token,
+			path,
+			init: {
+				method: "DELETE",
+			},
+		});
 
 	return {
 		namespaces: {
@@ -89,7 +98,7 @@ export function createAdminClient(opts: AdminClientOptions): AdminClient {
 			/**
 			 * Updates a single translation key. Fetches the current state, merges the change,
 			 * and persists it back to the adapter.
-			 */
+		 */
 			updateTranslation: async (opts) => {
 				const { namespace, locale, key, value } = opts;
 				const current = await get<Record<string, string>>(
@@ -125,6 +134,33 @@ export function createAdminClient(opts: AdminClientOptions): AdminClient {
 			 * Use this to allow the browser to upload directly to storage.
 			 */
 			presign: (body) => post("/cms/media/presign", body),
+			/**
+			 * High-level helper that presigns AND uploads a file in one go.
+			 * Uses the global `fetch` API.
+			 */
+			upload: async ({ file, body }) => {
+				const { uploadUrl, publicUrl } = await post<{
+					uploadUrl: string;
+					publicUrl: string;
+				}>("/cms/media/presign", {
+					filename: file.name,
+					mimeType: file.type,
+					size: file.size,
+				});
+				const res = await fetch(uploadUrl, {
+					method: "PUT",
+					body,
+					headers: { "Content-Type": file.type },
+				});
+				if (!res.ok) {
+					throw new CMSError(res.status, `Upload failed: ${res.statusText}`);
+				}
+				return { publicUrl };
+			},
+			/**
+			 * Permanently removes a file from storage by its key.
+			 */
+			delete: ({ key }) => del(`/cms/media/${key}`),
 		},
 		locales: {
 			/** Lists all active locales in the CMS. */
@@ -132,15 +168,7 @@ export function createAdminClient(opts: AdminClientOptions): AdminClient {
 			/** Adds or updates a locale definition. */
 			upsert: (opts) => put("/cms/admin/locales", opts),
 			/** Permanently removes a locale. */
-			delete: (opts) =>
-				apiFetch({
-					cmsUrl,
-					token,
-					path: `/cms/admin/locales/${opts.code}`,
-					init: {
-						method: "DELETE",
-					},
-				}),
+			delete: (opts) => del(`/cms/admin/locales/${opts.code}`),
 		},
 	};
 }

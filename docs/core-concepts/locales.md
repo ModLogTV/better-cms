@@ -40,7 +40,7 @@ import { createAdminClient } from "@modlog/better-cms/admin";
 
 const admin = createAdminClient({
   cmsUrl: process.env.CMS_URL!,
-  token: process.env.CMS_INTERNAL_TOKEN!,
+  token: process.env.CMS_ADMIN_TOKEN!,
 });
 
 // List all active locales

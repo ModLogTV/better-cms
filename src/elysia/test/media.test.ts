@@ -11,6 +11,7 @@ function makeStorage(
 			uploadUrl: `https://s3.example.com/${key}?sig=abc`,
 			publicUrl: `https://cdn.example.com/${key}`,
 		}),
+		delete: async () => {},
 		...overrides,
 	};
 }
@@ -85,5 +86,23 @@ describe("media routes", () => {
 			}),
 		);
 		expect(res.status).toBe(401);
+	});
+
+	test("DELETE /cms/media/:key calls storage.delete", async () => {
+		let deletedKey = "";
+		const storage = makeStorage({
+			delete: async ({ key }) => {
+				deletedKey = key;
+			},
+		});
+		const app = makeApp(makeAdapter(), [mediaPlugin({ storage })]);
+		const res = await app.handle(
+			req("/cms/media/my-file.png", {
+				method: "DELETE",
+				token: "test-token",
+			}),
+		);
+		expect(res.status).toBe(200);
+		expect(deletedKey).toBe("my-file.png");
 	});
 });

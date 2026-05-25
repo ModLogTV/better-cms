@@ -10,7 +10,7 @@ import { createAdminHooks, AdminQueryProvider } from "@modlog/better-cms/admin/r
 
 const admin = createAdminClient({
   cmsUrl: "/api", // proxied through your Next.js API routes
-  token: process.env.CMS_INTERNAL_TOKEN!,
+  token: process.env.CMS_ADMIN_TOKEN!,
 });
 
 export const {

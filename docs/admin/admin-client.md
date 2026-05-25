@@ -1,6 +1,6 @@
 # Admin Client
 
-`createAdminClient` returns a typed HTTP client for all CMS write operations. Use it on the server (SSR loaders, server functions, API routes) — never expose the internal token to the browser.
+`createAdminClient` returns a typed HTTP client for all CMS write operations. Use it on the server (SSR loaders, server functions, API routes) — never expose the admin token to the browser.
 
 ## Setup
 
@@ -9,7 +9,7 @@ import { createAdminClient } from "@modlog/better-cms/admin";
 
 const admin = createAdminClient({
   cmsUrl: process.env.CMS_URL!,      // e.g. "http://localhost:3001"
-  token: process.env.CMS_INTERNAL_TOKEN!,
+  token: process.env.CMS_ADMIN_TOKEN!,
 });
 ```
 
@@ -115,9 +115,34 @@ await admin.pages.publish({ id: pageId });
 
 ## Media
 
+### `admin.media.upload({ file, body })`
+
+The easiest way to upload files. Handles presigning and the actual upload in one call.
+
+```ts
+const { publicUrl } = await admin.media.upload({
+  file: { name: "hero.png", type: "image/png", size: file.size },
+  body: file, // the actual binary data
+});
+
+// Use publicUrl in your page blocks
+await admin.pages.update({
+  id: pageId,
+  blocks: [{ type: "hero", data: { imageUrl: publicUrl } }],
+});
+```
+
+### `admin.media.delete({ key })`
+
+Permanently removes a file from storage.
+
+```ts
+await admin.media.delete({ key: "1234567-hero.png" });
+```
+
 ### `admin.media.presign({ filename, mimeType, size })`
 
-Generates a presigned upload URL. The browser uses this to PUT the file directly to storage.
+Low-level method to only generate a presigned upload URL.
 
 ```ts
 const { uploadUrl, publicUrl } = await admin.media.presign({
@@ -125,9 +150,6 @@ const { uploadUrl, publicUrl } = await admin.media.presign({
   mimeType: "image/png",
   size: file.size,
 });
-
-await fetch(uploadUrl, { method: "PUT", body: file });
-// publicUrl is now usable in block data
 ```
 
 ## Locales

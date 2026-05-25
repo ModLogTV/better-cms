@@ -13,7 +13,7 @@ import { createServerFns } from "@modlog/better-cms/tanstack-start";
 
 const admin = createAdminClient({
   cmsUrl: process.env.CMS_URL!,
-  token: process.env.CMS_INTERNAL_TOKEN!,
+  token: process.env.CMS_ADMIN_TOKEN!,
 });
 
 const fns = createServerFns(admin);
@@ -80,7 +80,7 @@ export default function TranslationsPage() {
 
 ## Notes
 
-- Server functions run on the server — the `CMS_INTERNAL_TOKEN` is never exposed to the browser
+- Server functions run on the server — the `CMS_ADMIN_TOKEN` is never exposed to the browser
 - `createServerFns` is a thin wrapper — it does not add caching or error handling beyond what `AdminClient` provides
 - For React hooks in TanStack Start apps, you can still use `createAdminHooks` from `@modlog/better-cms/admin/react` — it works in any React environment with TanStack Query
 

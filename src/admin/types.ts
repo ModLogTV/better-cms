@@ -71,6 +71,18 @@ export interface AdminClient {
 			mimeType: string;
 			size: number;
 		}): Promise<{ uploadUrl: string; publicUrl: string }>;
+		/**
+		 * High-level helper that presigns AND uploads a file in one go.
+		 * Uses the global `fetch` API.
+		 */
+		upload(opts: {
+			file: { name: string; type: string; size: number } | File;
+			body: BodyInit;
+		}): Promise<{ publicUrl: string }>;
+		/**
+		 * Permanently removes a file from storage by its key.
+		 */
+		delete(opts: { key: string }): Promise<void>;
 	};
 	locales: {
 		/** Lists all active locales in the CMS. */

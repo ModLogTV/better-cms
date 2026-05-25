@@ -1,6 +1,6 @@
 # Storage Adapters
 
-Storage adapters handle media file uploads. They are used exclusively by `mediaPlugin`.
+Storage adapters handle media operations like uploads and deletions. They are used by `mediaPlugin`.
 
 ## How it works
 
@@ -15,11 +15,16 @@ This pattern keeps the CMS API small and avoids memory pressure from streaming l
 
 ```ts
 interface CMSStorageAdapter {
+  /** Generates a presigned URL for uploading a file. */
   presign(opts: {
     key: string;
     mimeType: string;
+    size: number;
     ttl?: number;
   }): Promise<{ uploadUrl: string; publicUrl: string }>;
+
+  /** Permanently removes a file from storage. */
+  delete(opts: { key: string }): Promise<void>;
 }
 ```
 
@@ -42,19 +47,22 @@ Pass the adapter to `mediaPlugin`:
 import { mediaPlugin } from "@modlog/better-cms/plugins/media";
 import { awsS3Adapter } from "@modlog/better-cms/storage/aws";
 
-plugins: [
-  mediaPlugin({
-    storage: awsS3Adapter({
-      bucket: process.env.S3_BUCKET!,
-      region: process.env.S3_REGION!,
-      credentials: {
-        accessKeyId: process.env.S3_ACCESS_KEY!,
-        secretAccessKey: process.env.S3_SECRET_KEY!,
-      },
-      cdnUrl: process.env.CDN_URL!,
+const cms = createCMS({
+  // ...
+  plugins: [
+    mediaPlugin({
+      storage: awsS3Adapter({
+        bucket: process.env.S3_BUCKET!,
+        region: process.env.S3_REGION!,
+        credentials: {
+          accessKeyId: process.env.S3_ACCESS_KEY!,
+          secretAccessKey: process.env.S3_SECRET_KEY!,
+        },
+        cdnUrl: process.env.CDN_URL!,
+      }),
     }),
-  }),
-]
+  ],
+});
 ```
 
 ## Custom adapter
@@ -65,10 +73,14 @@ Implement `CMSStorageAdapter` from `@modlog/better-cms`:
 import type { CMSStorageAdapter } from "@modlog/better-cms";
 
 export const myAdapter: CMSStorageAdapter = {
-  async presign({ key, mimeType, ttl = 300 }) {
+  async presign({ key, mimeType, size, ttl = 300 }) {
     const uploadUrl = await generatePresignedUrl(key, mimeType, ttl);
     const publicUrl = `https://cdn.example.com/${key}`;
     return { uploadUrl, publicUrl };
+  },
+
+  async delete({ key }) {
+    await removeFromMyBucket(key);
   },
 };
 ```

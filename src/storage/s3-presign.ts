@@ -1,4 +1,8 @@
-import { PutObjectCommand, type S3Client } from "@aws-sdk/client-s3";
+import {
+	DeleteObjectCommand,
+	PutObjectCommand,
+	type S3Client,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { CMSStorageAdapter } from "../core/storage";
 
@@ -20,6 +24,14 @@ export function createS3Presigner(opts: {
 			});
 			const uploadUrl = await getSignedUrl(client, command, { expiresIn: ttl });
 			return { uploadUrl, publicUrl: `${base}/${key}` };
+		},
+
+		async delete({ key }) {
+			const command = new DeleteObjectCommand({
+				Bucket: bucket,
+				Key: key,
+			});
+			await client.send(command);
 		},
 	};
 }
