@@ -1,12 +1,13 @@
 # @modlog/better-cms <!-- omit in toc -->
 
-Framework-agnostic type-safe, self-hosted full-stack TypeScript CMS for translations and page content. Compatible with Elysia, Prisma/Drizzle, and React.
+Framework-agnostic type-safe, self-hosted full-stack TypeScript CMS for translations, asset management and page content.
 
 `@modlog/better-cms` is designed for **monorepos**. It provides a headless backend infrastructure and typed React hooks to build your own admin UI and consume translations/page blocks in your frontend.
 
 ## Table of Contents <!-- omit in toc -->
 
 - [Installation](#installation)
+- [Out-of-the-box Framework Compatibility](#out-of-the-box-framework-compatibility)
 - [Roadmap](#roadmap)
 - [Architecture \& Core Concepts](#architecture--core-concepts)
   - [Fallback Strategy](#fallback-strategy)
@@ -41,7 +42,19 @@ bun add @modlog/better-cms
 **Optional/Stack-Specific Peer Dependencies:**
 
 - `elysia`, `next`, `@tanstack/start`, `@prisma/client`
-  
+
+## Framework Compatibility
+
+### Frontend & Fullstack
+- **React** `Frontend` — Hooks and Context for client-side translation and page rendering.
+- **Next.js** `Fullstack` — Optimized handlers for RSC, App Router, and edge-ready API proxies.
+- **TanStack Start** `Fullstack` — Typed server function wrappers for modern React fullstack apps.
+
+### Backend & Database
+- **Elysia** `Backend` — High-performance API routes and middleware for Bun environments.
+- **Prisma** `ORM` — Robust database adapter for type-safe content persistence.
+- **Drizzle** `ORM` — Lightweight database adapter (initial implementation in roadmap).
+
 ## Roadmap
 
 The following features are prioritized by architectural dependency and implementation order.
@@ -68,9 +81,7 @@ The following features are prioritized by architectural dependency and implement
 
 > 🔘 Todo &nbsp;&nbsp; 🏗️ In Progress &nbsp;&nbsp; ✅ Done
 
-
 ## Architecture & Core Concepts
-
 
 - **Shared Types:** All definitions are shared via a package (e.g., `@repo/cms-config`) for end-to-end type safety.
 - **Dual-Token Auth:** Split access into `readToken` (frontend) and `adminToken` (administrative writes).
@@ -79,6 +90,7 @@ The following features are prioritized by architectural dependency and implement
 ### Fallback Strategy
 
 Translations resolve through a multi-tier chain:
+
 1. **In-memory Cache:** Fast lookups (60s TTL).
 2. **CMS API:** Live values from the database.
 3. **Local JSON Files:** Static snapshot via `fallback` loader (offline-safe).
