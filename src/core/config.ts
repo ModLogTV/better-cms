@@ -6,6 +6,8 @@ import type { CMSPlugin } from "./plugin";
 export interface CMSConfig {
 	database: CMSAdapter;
 	namespaces: NamespaceDef<NamespaceDefinition>[];
+	/** Optional: Locales to automatically upsert on startup. */
+	initialLocales?: { code: string; name: string; isDefault?: boolean }[];
 	plugins?: CMSPlugin[];
 	auth: {
 		/** Token for read-only access (translations, public pages) */

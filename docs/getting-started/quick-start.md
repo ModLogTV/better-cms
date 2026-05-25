@@ -119,6 +119,10 @@ const prisma = new PrismaClient();
 export const cms = createCMS({
   database: prismaAdapter(prisma),
   namespaces: ALL_NAMESPACES,
+  initialLocales: [
+    { code: "en", name: "English", isDefault: true },
+    { code: "de", name: "German" },
+  ],
   auth: {
     readToken: process.env.CMS_READ_TOKEN!,
     adminToken: process.env.CMS_ADMIN_TOKEN!,

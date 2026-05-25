@@ -23,6 +23,24 @@ export function createCMS(config: CMSConfig): CMSInstance {
 		throw new Error("createCMS: auth.adminToken must not be empty");
 	}
 
+	if (config.initialLocales) {
+		const defaults = config.initialLocales.filter((l) => l.isDefault);
+		if (defaults.length > 1) {
+			throw new Error("createCMS: only one locale can be set as default");
+		}
+
+		for (const locale of config.initialLocales) {
+			void config.database
+				.upsertLocale(locale.code, locale.name, locale.isDefault)
+				.catch((err) => {
+					console.error(
+						`[cms] Failed to upsert initial locale ${locale.code}:`,
+						err,
+					);
+				});
+		}
+	}
+
 	const events = new CMSEventEmitter();
 	const elysiaApp = new Elysia();
 

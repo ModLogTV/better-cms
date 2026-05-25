@@ -85,4 +85,53 @@ describe("createCMS", () => {
 		expect(plugin.init).toHaveBeenCalledTimes(1);
 		expect((cms.$Infer as unknown as { custom: boolean }).custom).toBe(true);
 	});
+
+	test("upserts initialLocales on startup", async () => {
+		const upserted: any[] = [];
+		const adapter = {
+			...mockAdapter,
+			upsertLocale: async (code: any, name: any, isDefault: any) => {
+				upserted.push({ code, name, isDefault });
+			},
+		} as any;
+
+		createCMS({
+			database: adapter,
+			namespaces: [ns],
+			auth: { readToken: "r", adminToken: "a" },
+			initialLocales: [
+				{ code: "en", name: "English", isDefault: true },
+				{ code: "de", name: "German" },
+			],
+		});
+
+		// wait for fire-and-forget promises
+		await new Promise((resolve) => setTimeout(resolve, 10));
+
+		expect(upserted).toHaveLength(2);
+		expect(upserted).toContainEqual({
+			code: "en",
+			name: "English",
+			isDefault: true,
+		});
+		expect(upserted).toContainEqual({
+			code: "de",
+			name: "German",
+			isDefault: undefined,
+		});
+	});
+
+	test("throws if more than one initialLocale is set as default", () => {
+		expect(() =>
+			createCMS({
+				database: mockAdapter,
+				namespaces: [ns],
+				auth: { readToken: "r", adminToken: "a" },
+				initialLocales: [
+					{ code: "en", name: "English", isDefault: true },
+					{ code: "de", name: "German", isDefault: true },
+				],
+			}),
+		).toThrow("createCMS: only one locale can be set as default");
+	});
 });

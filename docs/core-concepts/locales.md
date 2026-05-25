@@ -15,6 +15,24 @@ model Locale {
 }
 ```
 
+## Automatic seeding
+
+You can define a set of locales to be automatically created (upserted) in the database when the CMS starts up. This is useful for ensuring your development and production environments have the correct locales without manual intervention.
+
+```ts
+const cms = createCMS({
+  // ...
+  initialLocales: [
+    // codes must be unique
+    { code: "en", name: "English", isDefault: true },
+    { code: "de", name: "German" },
+    { code: "fr", name: "French" },
+  ],
+});
+```
+
+`createCMS` validates that at most one locale is marked as `isDefault: true`.
+
 ## Managing locales via the admin client
 
 ```ts
