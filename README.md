@@ -8,11 +8,6 @@ Framework-agnostic type-safe, self-hosted full-stack TypeScript CMS for translat
 
 - [Installation](#installation)
 - [Roadmap](#roadmap)
-  - [Content Orchestration Primitives](#content-orchestration-primitives)
-  - [Framework \& DX](#framework--dx)
-  - [Media \& Assets](#media--assets)
-  - [Enterprise Primitives (Self-Hosted)](#enterprise-primitives-self-hosted)
-  - [Reliability \& Performance](#reliability--performance)
 - [Architecture \& Core Concepts](#architecture--core-concepts)
   - [Fallback Strategy](#fallback-strategy)
 - [Quick Start (Elysia, Prisma, React, Next.js)](#quick-start-elysia-prisma-react-nextjs)
@@ -49,35 +44,28 @@ bun add @modlog/better-cms
   
 ## Roadmap
 
-### Content Orchestration Primitives
+The following features are prioritized by architectural dependency and implementation order.
 
-- [ ] **Versioning Engine:** Core logic for tracking historical states of translations and page blocks.
-- [ ] **Custom Content Statuses:** Support for user-defined content states (e.g. "Review Required", "Archived") with built-in filtering logic in the data fetchers.
-- [ ] **Temporal Publishing:** Primitive fields and API logic for `validFrom` / `validUntil` content resolution.
-- [ ] **Audit Event Stream:** Global lifecycle hooks to pipe CMS actions to user-defined logging/audit tables.
+|      | Feature                    | Category    | Description                                                                     |
+| :--- | :------------------------- | :---------- | :------------------------------------------------------------------------------ |
+| 🔘    | **Client Lifecycle**       | Framework   | Integrated hooks for custom error handling, loading states, and client events.  |
+| 🔘    | **Core Media System**      | Media       | Fundamental system for images/media in content pages and file distribution.     |
+| 🔘    | **Drizzle Adapter**        | Framework   | Official database adapter for Drizzle ORM to expand database support.           |
+| 🔘    | **Data Interceptors**      | Framework   | Middleware to programmatically validate or transform content before saving.     |
+| 🔘    | **Distributed Fallback**   | Reliability | Prioritize local JSON files if API latency exceeds a specific threshold.        |
+| 🔘    | **Smart Preview Logic**    | DX          | Standardized context to toggle between "Published" and "Latest Draft" in hooks. |
+| 🔘    | **Custom Statuses**        | Primitives  | User-defined states (e.g. "Archived") with built-in data fetcher filtering.     |
+| 🔘    | **Multi-Instance Support** | Enterprise  | Native pattern for isolating data by `siteId` or `tenantId` in shared tables.   |
+| 🔘    | **Audit Event Stream**     | Primitives  | Global lifecycle hooks to pipe CMS actions to user-defined audit tables.        |
+| 🔘    | **Versioning Engine**      | Primitives  | Core logic for tracking and restoring historical states of content.             |
+| 🔘    | **Event Webhooks**         | Framework   | Outbound HTTP triggers for core CMS events (save, delete, publish).             |
+| 🔘    | **Media Hooks**            | Media       | Interface for connecting image processing libraries (e.g., Sharp).              |
+| 🔘    | **Metadata Extraction**    | Media       | Extensible logic for extracting EXIF/IPTC data during upload.                   |
+| 🔘    | **Temporal Publishing**    | Primitives  | API logic for `validFrom` / `validUntil` time-based content resolution.         |
+| 🔘    | **SEO Schema Primitives**  | Framework   | Typed Zod-based block primitives for standard metadata.                         |
+| 🔘    | **Granular Auth**          | Enterprise  | Support for custom permission logic beyond the dual-token system.               |
+| 🔘    | **Search Sync Adapters**   | Enterprise  | Background sync logic for external indexes (Algolia, Meilisearch).              |
 
-### Framework & DX
-
-- [ ] **Drizzle Adapter:** Official database adapter for Drizzle ORM.
-- [ ] **Smart Preview Logic:** Standardized context to toggle between "Published" and "Latest Draft" data within `useTranslations` and `usePageContent`.
-- [ ] **Event Webhooks:** Outbound HTTP trigger support for core CMS events (save, delete, publish).
-- [ ] **Data Interceptors:** Middleware to programmatically validate, clean, or transform content before it is saved to the database.
-- [ ] **SEO Schema Definitions:** Typed Zod-based block primitives for standard metadata.
-
-### Media & Assets
-
-- [ ] **Media Transformation Hooks:** Interface for connecting image processing libraries (e.g., Sharp) to the media plugin.
-- [ ] **Metadata Extraction:** Extensible logic for extracting EXIF/IPTC data during upload.
-
-### Enterprise Primitives (Self-Hosted)
-
-- [ ] **Granular Auth Middleware:** Support for custom permission logic beyond the dual-token system.
-- [ ] **Multi-Instance Support:** Built-in pattern for isolating data by `siteId` or `tenantId` within a single database table.
-- [ ] **Search Sync Adapters:** Background sync logic for external indexes (Algolia, Meilisearch).
-
-### Reliability & Performance
-
-- [ ] **Distributed Fallback Logic:** Improved multi-tier resolution that can prioritize local JSON files if the API latency exceeds a threshold, not just when it's offline.
 
 ## Architecture & Core Concepts
 
