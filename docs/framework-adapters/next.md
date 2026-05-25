@@ -6,8 +6,8 @@ better-cms provides two strategies for handling locales in Next.js. Choose the o
 
 | Strategy | Best For | URL Pattern | Implementation |
 |----------|----------|-------------|----------------|
-| **Cookie-based** | Dashboards, Apps behind auth, Clean URLs | `example.com/about` | **Proxy-free**. Uses cookies and browser headers. |
-| **URL-based** | Marketing sites, Blogs, SEO-heavy sites | `example.com/en/about` | **Proxy-based**. Uses `proxy.ts` for redirects. |
+| [**Cookie-based**](#strategy-a-cookie-based-proxy-free) | Dashboards, Apps behind auth, Clean URLs | `example.com/about` | **Proxy-free**. Uses cookies and browser headers. |
+| [**URL-based**](#strategy-b-url-based-proxy-based) | Marketing sites, Blogs, SEO-heavy sites | `example.com/en/about` | **Proxy-based**. Uses `proxy.ts` for redirects. |
 
 ---
 
