@@ -33,12 +33,29 @@ export async function getLocale(opts?: {
 	// Dynamic import keeps "next/headers" out of non-Next.js bundles.
 	// Cast to avoid requiring @types/next in this package.
 	type CookieStore = { get(name: string): { value: string } | undefined };
-	type NextHeaders = { cookies(): Promise<CookieStore> };
-	const { cookies } = (await import(
+	type NextHeaders = {
+		cookies(): Promise<CookieStore>;
+		headers(): Promise<{ get(name: string): string | null }>;
+	};
+	const { cookies, headers } = (await import(
 		"next/headers" as string
 	)) as unknown as NextHeaders;
+
+	// 1. Check Cookie
 	const jar = await cookies();
-	return jar.get(cookieName)?.value ?? defaultLocale;
+	const cookieValue = jar.get(cookieName)?.value;
+	if (cookieValue) return cookieValue;
+
+	// 2. Check Accept-Language header
+	const head = await headers();
+	const accept = head.get("accept-language");
+	if (accept) {
+		const preferred = accept.split(",")[0].split("-")[0];
+		if (preferred) return preferred;
+	}
+
+	// 3. Fallback
+	return defaultLocale;
 }
 
 /**

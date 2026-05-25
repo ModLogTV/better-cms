@@ -12,7 +12,7 @@ let inflight: Promise<Locale[]> | null = null;
  * Uses a 5-minute in-memory cache and deduplicates concurrent requests.
  */
 export async function loadLocales(): Promise<Locale[]> {
-	const cached = getCached<Locale[]>(cacheKey);
+	const cached = getCached<Locale[]>({ key: cacheKey });
 	if (cached) return cached;
 
 	if (inflight) return inflight;
@@ -25,7 +25,7 @@ export async function loadLocales(): Promise<Locale[]> {
 			});
 			if (!res.ok) throw new Error(res.statusText);
 			const data = (await res.json()) as Locale[];
-			setCached(cacheKey, data, TTL_MS);
+			setCached({ key: cacheKey, value: data, ttlMs: TTL_MS });
 			return data;
 		} catch (err) {
 			console.error("[cms] Failed to load locales:", err);

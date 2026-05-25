@@ -62,11 +62,16 @@ The default locale is used by `createNextProxy` when no preference is detected f
 
 ## Locale detection in Next.js
 
-`createNextProxy` reads the locale from (in order of priority):
+There are two ways to handle locale detection:
 
-1. The locale cookie (default name: `"locale"`)
-2. The `Accept-Language` request header
-3. The configured `defaultLocale`
+### 1. Proxy-free (Cookie based)
+Best for authenticated apps or when you don't want locale-prefixed URLs. `getLocale()` will automatically check:
+1. The locale cookie (highest priority)
+2. The `Accept-Language` browser header
+3. Your configured default
+
+### 2. URL-based (Proxy)
+Best for public websites and SEO. `createNextProxy` redirects `/about` → `/en/about` and ensures search engines can find all versions of your site.
 
 ```ts
 // proxy.ts
@@ -84,7 +89,7 @@ export default createNextProxy({
 });
 ```
 
-The proxy redirects `/about` → `/en/about` if no locale prefix is present, and sets the `x-locale` response header for reading in RSCs.
+The proxy redirects `/about` → `/en/about` if no locale prefix is present, and sets the `x-locale` response header. Use `getLocale()` in your Server Components to read the detected locale.
 
 ## Locale switching in React
 
