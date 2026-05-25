@@ -48,7 +48,7 @@ The following features are prioritized by architectural dependency and implement
 
 |      | Feature                    | Category    | Description                                                                     |
 | :--- | :------------------------- | :---------- | :------------------------------------------------------------------------------ |
-| 🔘    | **Client Lifecycle**       | Framework   | Integrated hooks for custom error handling, loading states, and client events.  |
+| 🏗️    | **Client Lifecycle**       | Framework   | Integrated hooks for custom error handling, loading states, and client events.  |
 | 🔘    | **Core Media System**      | Media       | Fundamental system for images/media in content pages and file distribution.     |
 | 🔘    | **Drizzle Adapter**        | Framework   | Official database adapter for Drizzle ORM to expand database support.           |
 | 🔘    | **Data Interceptors**      | Framework   | Middleware to programmatically validate or transform content before saving.     |
@@ -66,8 +66,11 @@ The following features are prioritized by architectural dependency and implement
 | 🔘    | **Granular Auth**          | Enterprise  | Support for custom permission logic beyond the dual-token system.               |
 | 🔘    | **Search Sync Adapters**   | Enterprise  | Background sync logic for external indexes (Algolia, Meilisearch).              |
 
+> 🔘 Todo &nbsp;&nbsp; 🏗️ In Progress &nbsp;&nbsp; ✅ Done
+
 
 ## Architecture & Core Concepts
+
 
 - **Shared Types:** All definitions are shared via a package (e.g., `@repo/cms-config`) for end-to-end type safety.
 - **Dual-Token Auth:** Split access into `readToken` (frontend) and `adminToken` (administrative writes).
