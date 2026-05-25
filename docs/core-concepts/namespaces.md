@@ -141,3 +141,8 @@ const cms = createCMS({
 ```
 
 `createCMS` will throw if `namespaces` is empty.
+
+
+---
+
+[← Architecture](architecture.md) | [Locales →](locales.md)

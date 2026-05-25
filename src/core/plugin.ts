@@ -21,7 +21,10 @@ export interface CMSContext {
 	namespaces: NamespaceDef<NamespaceDefinition>[];
 	adapter: CMSAdapter;
 	storage?: CMSStorageAdapter;
-	auth: { internalToken: string };
+	auth: {
+		readToken: string;
+		adminToken: string;
+	};
 	events: CMSEventEmitter;
 	/** The Elysia app instance — plugins mount routes here via init() */
 	elysiaApp: ElysiaLike;

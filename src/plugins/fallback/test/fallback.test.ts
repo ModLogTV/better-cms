@@ -17,7 +17,7 @@ describe("fallbackPlugin", () => {
 		plugin.init({
 			namespaces: [],
 			adapter: {} as never,
-			auth: { internalToken: "x" },
+			auth: { readToken: "x", adminToken: "x" },
 			events,
 			elysiaApp: {} as never,
 		});

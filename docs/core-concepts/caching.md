@@ -55,7 +55,7 @@ export default async function Layout({ children }) {
 
   return (
     <CMSProvider
-      locale="en"
+      initialLocale="en"
       initialTranslations={{ common }}
     >
       {children}
@@ -71,7 +71,7 @@ export default async function Layout({ children }) {
 `CMSProvider` supports a `refetchInterval` (in seconds) to keep translations fresh without a page reload:
 
 ```tsx
-<CMSProvider locale="en" refetchInterval={300}>
+<CMSProvider initialLocale="en" refetchInterval={300}>
   {children}
 </CMSProvider>
 ```
@@ -105,3 +105,8 @@ In-memory miss       → HTTP fetch
 ```
 
 Fallback results are intentionally not cached in memory. If the API recovers, the next call (after TTL expiry or manual invalidation) will fetch fresh data.
+
+
+---
+
+[← Fallback Strategy](fallback-strategy.md) | [Plugin System →](plugins.md)

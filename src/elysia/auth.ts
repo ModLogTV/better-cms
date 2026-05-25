@@ -1,7 +1,10 @@
 import { Elysia } from "elysia";
 
 interface WithAuth {
-	auth: { internalToken: string };
+	auth: {
+		readToken: string;
+		adminToken: string;
+	};
 }
 
 export const requireReadToken = (cms: WithAuth) =>
@@ -9,7 +12,10 @@ export const requireReadToken = (cms: WithAuth) =>
 		{ as: "scoped" },
 		({ headers, set }) => {
 			const token = headers["x-internal-token"];
-			if (!token || token !== cms.auth.internalToken) {
+			if (
+				!token ||
+				(token !== cms.auth.readToken && token !== cms.auth.adminToken)
+			) {
 				set.status = 401;
 				return { error: "Unauthorized" };
 			}
@@ -21,7 +27,7 @@ export const requireFullToken = (cms: WithAuth) =>
 		{ as: "scoped" },
 		({ headers, set }) => {
 			const token = headers["x-internal-token"];
-			if (!token || token !== cms.auth.internalToken) {
+			if (!token || token !== cms.auth.adminToken) {
 				set.status = 401;
 				return { error: "Unauthorized" };
 			}

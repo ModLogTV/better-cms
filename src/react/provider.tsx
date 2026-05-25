@@ -11,7 +11,7 @@ import type { RawBlock } from "../core/adapter";
 import { CMSContext, type CMSContextValue } from "./context";
 
 interface CMSProviderProps {
-	locale: string;
+	initialLocale: string;
 	/** Pre-fetched translations keyed by namespace — avoids client fetch on first render */
 	initialTranslations?: Record<string, Record<string, string>>;
 	/** Pre-fetched page content keyed by slug — avoids client fetch on first render */
@@ -27,7 +27,7 @@ interface CMSProviderProps {
  * Pass `refetchInterval` to enable background polling.
  */
 export function CMSProvider({
-	locale,
+	initialLocale,
 	initialTranslations = {},
 	initialContent = {},
 	refetchInterval,
@@ -37,8 +37,13 @@ export function CMSProvider({
 		useState<Record<string, Record<string, string>>>(initialTranslations);
 	const [content, setAllContent] =
 		useState<Record<string, RawBlock[]>>(initialContent);
-	const [currentLocale, setCurrentLocale] = useState(locale);
+	const [currentLocale, setCurrentLocale] = useState(initialLocale);
 	const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+	// Sync state with prop when it changes (e.g. URL navigation)
+	useEffect(() => {
+		setCurrentLocale(initialLocale);
+	}, [initialLocale]);
 
 	const setTranslations = useCallback(
 		(namespace: string, values: Record<string, string>) => {

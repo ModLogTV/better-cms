@@ -25,7 +25,7 @@
 		"elysia",
 		"nextjs"
 	],
-	"author": "",
+	"author": "Daniel Dopatka (ModLog UG)",
 	"license": "ISC",
 	"engines": {
 		"node": ">=20"

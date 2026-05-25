@@ -102,3 +102,8 @@ function ImageUploader() {
 ```
 
 `useMediaUpload` handles both the presign request and the PUT upload in a single `upload(file)` call.
+
+
+---
+
+[← Pages Plugin](pages-plugin.md) | [Fallback Plugin →](fallback-plugin.md)

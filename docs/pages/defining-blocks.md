@@ -134,3 +134,8 @@ Pages are stored as `JSON` in the database:
 ```
 
 The `data` field is untyped in the DB — validation only happens on write via the Zod schema.
+
+
+---
+
+[← Using Translations](../translations/using-translations.md) | [Using Page Content →](using-page-content.md)

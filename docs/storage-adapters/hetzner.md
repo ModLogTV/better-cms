@@ -37,3 +37,8 @@ hetznerS3Adapter({
 ## Endpoint
 
 The adapter uses the Hetzner S3-compatible endpoint: `https://{region}.your-objectstorage.com`.
+
+
+---
+
+[← Cloudflare R2 Adapter](cloudflare-r2.md) | [Local Storage Adapter (Dev Only) →](local.md)

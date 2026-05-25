@@ -7,5 +7,10 @@ export interface CMSConfig {
 	database: CMSAdapter;
 	namespaces: NamespaceDef<NamespaceDefinition>[];
 	plugins?: CMSPlugin[];
-	auth: { internalToken: string };
+	auth: {
+		/** Token for read-only access (translations, public pages) */
+		readToken: string;
+		/** Token for administrative access (writes, locales, media) */
+		adminToken: string;
+	};
 }

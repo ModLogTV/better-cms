@@ -78,3 +78,8 @@ export default function TranslationsPage() {
 - Server functions run on the server — the `CMS_INTERNAL_TOKEN` is never exposed to the browser
 - `createServerFns` is a thin wrapper — it does not add caching or error handling beyond what `AdminClient` provides
 - For React hooks in TanStack Start apps, you can still use `createAdminHooks` from `@modlog/better-cms/admin/react` — it works in any React environment with TanStack Query
+
+
+---
+
+[← Next.js Adapter](next.md) | [Prisma Adapter →](../database-adapters/prisma.md)

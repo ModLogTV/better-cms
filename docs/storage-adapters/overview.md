@@ -71,3 +71,8 @@ export const myAdapter: CMSStorageAdapter = {
   },
 };
 ```
+
+
+---
+
+[← Drizzle Adapter](../database-adapters/drizzle.md) | [AWS S3 Adapter →](aws-s3.md)

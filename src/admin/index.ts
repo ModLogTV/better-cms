@@ -44,7 +44,7 @@ async function apiFetch<T>(
  * ```ts
  * const admin = createAdminClient({
  *   cmsUrl: process.env.CMS_URL,
- *   token: process.env.CMS_WRITE_TOKEN,
+ *   token: process.env.CMS_ADMIN_TOKEN,
  * })
  * ```
  */

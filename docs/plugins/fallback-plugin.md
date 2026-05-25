@@ -83,3 +83,8 @@ The dynamic `import()` path must match `outputDir` relative to where the `cms-cl
 - Files are only written when a translation is **updated** via the API. If the database has content but no update has been made since deployment, the files won't exist yet.
 - For initial population of fallback files on first deploy, run a manual sync or use `fallbackSyncPlugin` for the first boot.
 - Only the API process can write to `outputDir`. The frontend process must have read access to the same path.
+
+
+---
+
+[← Media Plugin](media-plugin.md) | [Fallback Sync Plugin →](fallback-sync-plugin.md)

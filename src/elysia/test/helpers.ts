@@ -48,7 +48,7 @@ export function makeApp(
 	const cms = createCMS({
 		database: adapter,
 		namespaces: [ns],
-		auth: { internalToken: TOKEN },
+		auth: { readToken: TOKEN, adminToken: TOKEN },
 		plugins,
 	});
 	return new Elysia().use(toElysiaPlugin(cms));

@@ -37,13 +37,12 @@ const app = new Elysia()
 
 ## Authentication
 
-All routes require the `x-internal-token` header matching `auth.internalToken`.
+All routes require the `x-internal-token` header. The token value must match either the `readToken` or `adminToken` configured in your `createCMS` instance:
 
-```
-x-internal-token: your-secret-token
-```
+- **`readToken`**: Required for translation read routes and single page content requests.
+- **`adminToken`**: Required for all administrative write operations, listing pages, and media uploads.
 
-Requests without the token receive `401 Unauthorized`.
+Requests without a valid token for the given route receive `401 Unauthorized`.
 
 ## Custom prefix
 
@@ -72,3 +71,8 @@ const app = new Elysia()
   .get("/health", () => ({ ok: true }))
   .listen(3001);
 ```
+
+
+---
+
+[← Using Page Content](../pages/using-page-content.md) | [Next.js Adapter →](next.md)

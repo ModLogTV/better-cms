@@ -202,3 +202,8 @@ Avoid: embedding `CMS_INTERNAL_TOKEN` in `NEXT_PUBLIC_*` env vars or client bund
 | Rich text | Tiptap, Lexical, or Slate |
 | Drag-and-drop | @dnd-kit/core |
 | Routing | Next.js App Router or TanStack Router |
+
+
+---
+
+[← Admin Hooks (React)](admin-hooks.md) | [Subpath Exports →](../api-reference/exports.md)

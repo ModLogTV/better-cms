@@ -1,3 +1,12 @@
+import { loadTranslations } from "../client/translations";
+import type { NamespaceDef } from "../i18n/namespace";
+import { createRichTranslator, createTranslator } from "../i18n/translator";
+import type {
+	NamespaceDefinition,
+	RichTranslatorFn,
+	TranslatorFn,
+} from "../i18n/types";
+
 export type { NextMiddlewareOptions } from "./middleware";
 export { createNextMiddleware } from "./middleware";
 
@@ -12,7 +21,7 @@ export { createNextMiddleware } from "./middleware";
  *
  * export default async function RootLayout({ children }) {
  *   const locale = await getLocale()
- *   return <Providers locale={locale}>{children}</Providers>
+ *   return <Providers initialLocale={locale}>{children}</Providers>
  * }
  * ```
  */
@@ -50,4 +59,32 @@ export async function getLocale(opts?: {
  */
 export function toNextHandler(handle: (req: Request) => Promise<Response>) {
 	return { GET: handle, PUT: handle, POST: handle };
+}
+
+/**
+ * Returns typed `t()` and `tRich()` functions for a namespace in Next.js Server Components.
+ * Automatically detects the locale using `getLocale()`.
+ *
+ * @example
+ * ```tsx
+ * import { getTranslations } from "@modlog/better-cms/next"
+ * import { commonNamespace } from "@repo/cms-config"
+ *
+ * export default async function Page() {
+ *   const { t } = await getTranslations(commonNamespace)
+ *   return <h1>{t("title")}</h1>
+ * }
+ * ```
+ */
+export async function getTranslations<T extends NamespaceDefinition>(
+	ns: NamespaceDef<T>,
+	opts?: { locale?: string },
+): Promise<{ t: TranslatorFn<T>; tRich: RichTranslatorFn<T> }> {
+	const locale = opts?.locale ?? (await getLocale());
+	const data = await loadTranslations(ns.name, locale);
+
+	return {
+		t: createTranslator(ns, data, locale),
+		tRich: createRichTranslator(ns, data, locale),
+	};
 }

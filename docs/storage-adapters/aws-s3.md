@@ -53,3 +53,8 @@ The bucket must allow `s3:PutObject` for the configured credentials. For public 
   ]
 }
 ```
+
+
+---
+
+[← Storage Adapters](overview.md) | [Cloudflare R2 Adapter →](cloudflare-r2.md)

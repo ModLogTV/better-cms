@@ -71,3 +71,8 @@ It is **not** a hosted service, not a WordPress alternative, and not a drop-in U
   - [Building an Admin UI](./admin/building-admin-ui.md)
 - **API Reference**
   - [Subpath Exports](./api-reference/exports.md)
+
+
+---
+
+[Installation →](getting-started/installation.md)

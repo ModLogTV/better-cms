@@ -161,3 +161,8 @@ try {
 ```
 
 `CMSError` has a `.status` number property (the HTTP status code).
+
+
+---
+
+[← Fallback Sync Plugin](../plugins/fallback-sync-plugin.md) | [Admin Hooks (React) →](admin-hooks.md)

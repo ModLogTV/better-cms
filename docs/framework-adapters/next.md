@@ -10,7 +10,7 @@ import { getLocale } from "better-cms/next";
 // app/layout.tsx
 export default async function RootLayout({ children }) {
   const locale = await getLocale(); // reads "locale" cookie, falls back to "en"
-  return <Providers locale={locale}>{children}</Providers>;
+  return <Providers initialLocale={locale}>{children}</Providers>;
 }
 
 // app/page.tsx
@@ -185,3 +185,8 @@ export default {
 ```
 
 Next.js 15+ enables instrumentation by default. See [Fallback Sync Plugin](../plugins/fallback-sync-plugin.md).
+
+
+---
+
+[← Elysia Adapter](elysia.md) | [TanStack Start Adapter →](tanstack-start.md)

@@ -52,7 +52,7 @@ export default async function RootLayout({ children, params }) {
     <html lang={params.locale}>
       <body>
         <CMSProvider
-          locale={params.locale}
+          initialLocale={params.locale}
           initialTranslations={{ [commonNamespace.name]: common }}
         >
           {children}
@@ -67,18 +67,15 @@ Now `useTranslations(commonNamespace)` in any child component reads from context
 
 ## Server components (RSC)
 
-React Server Components cannot use hooks. Use `loadTranslations` + `createTranslator` directly:
+React Server Components cannot use hooks. Use `getTranslations` (for Next.js) to automatically resolve the locale and fetch translations:
 
 ```tsx
 // app/page.tsx (Server Component)
-import { loadTranslations } from "@modlog/better-cms/client";
-import { createTranslator, createRichTranslator } from "@modlog/better-cms/i18n";
+import { getTranslations } from "@modlog/better-cms/next";
 import { commonNamespace } from "@repo/cms-config";
 
-export default async function Page({ params }) {
-  const data = await loadTranslations(commonNamespace.name, params.locale);
-  const t = createTranslator(commonNamespace, data, params.locale);
-  const tRich = createRichTranslator(commonNamespace, data, params.locale);
+export default async function Page() {
+  const { t, tRich } = await getTranslations(commonNamespace);
 
   return (
     <div>
@@ -87,6 +84,16 @@ export default async function Page({ params }) {
     </div>
   );
 }
+```
+
+If you are not using Next.js, use `loadTranslations` + `createTranslator` directly:
+
+```tsx
+import { loadTranslations } from "@modlog/better-cms/client";
+import { createTranslator } from "@modlog/better-cms/i18n";
+
+const data = await loadTranslations(ns.name, locale);
+const t = createTranslator(ns, data, locale);
 ```
 
 `loadTranslations` respects the in-memory cache — if the layout already fetched `common/en`, this call returns immediately.
@@ -165,9 +172,14 @@ export function LocaleSwitcher() {
 Keep translations fresh for long-lived sessions:
 
 ```tsx
-<CMSProvider locale="en" refetchInterval={300}>
+<CMSProvider initialLocale="en" refetchInterval={300}>
   {children}
 </CMSProvider>
 ```
 
 Every 300 seconds, all loaded namespaces are re-fetched in parallel and context is updated.
+
+
+---
+
+[← Defining Namespaces](defining-namespaces.md) | [Defining Page Blocks →](../pages/defining-blocks.md)

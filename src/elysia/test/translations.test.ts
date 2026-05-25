@@ -68,7 +68,7 @@ describe("translations routes", () => {
 			const instance = createCMS({
 				database: adapter,
 				namespaces: [ns],
-				auth: { internalToken: TOKEN },
+				auth: { readToken: TOKEN, adminToken: TOKEN },
 			});
 			instance.events.on("translations:updated", (e: unknown) =>
 				events.push(e),

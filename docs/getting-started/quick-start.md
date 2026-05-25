@@ -115,17 +115,20 @@ import { join } from "node:path";
 
 const prisma = new PrismaClient();
 
+// CMS Singleton
 export const cms = createCMS({
   database: prismaAdapter(prisma),
   namespaces: ALL_NAMESPACES,
   auth: {
-    internalToken: process.env.CMS_INTERNAL_TOKEN!,
+    readToken: process.env.CMS_READ_TOKEN!,
+    adminToken: process.env.CMS_ADMIN_TOKEN!,
   },
   plugins: [
     pagesPlugin({ blocks: ALL_PAGE_BLOCKS }),
     fallbackPlugin({
-      // Path your web app can import from (same disk, e.g. monorepo)
-      outputDir: join(__dirname, "../../../apps/web/locales"),
+      // Path your web app fallback locales (same disk, e.g. monorepo)
+      // If your API does not have disk accesst to the fallback locale directory, look at fallbackSyncPlugin()
+      outputDir: join(__dirname, "../../../apps/web/<your-locale-folder>"),
     }),
   ],
 });
@@ -156,12 +159,13 @@ This mounts all CMS routes under `/cms/*`.
 ```ts
 import { configureCMSClient } from "@modlog/better-cms/client";
 
+// this does not need to be exported as it will be registered as a side-effect import
 configureCMSClient({
   cmsUrl: process.env.NEXT_PUBLIC_CMS_URL!,
   readToken: process.env.NEXT_PUBLIC_CMS_READ_TOKEN!,
   fallback: async (ns, locale) => {
     try {
-      return (await import(`../locales/${locale}/${ns}.json`)).default;
+      return (await import(`../<your-locale-folder>/${locale}/${ns}.json`)).default;
     } catch {
       return null;
     }
@@ -176,12 +180,22 @@ configureCMSClient({
 ```tsx
 import "./cms-client"; // side-effect import — must run before any data fetch
 import { CMSProvider } from "@modlog/better-cms/react";
+import { getLocale } from "@modlog/better-cms/next";
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ 
+  children,
+  params 
+}: { 
+  children: React.ReactNode;
+  params: { locale: string };
+}) {
+  // Read locale from URL params or fallback to cookie/default
+  const locale = params.locale ?? await getLocale();
+
   return (
-    <html>
+    <html lang={locale}>
       <body>
-        <CMSProvider locale="en">
+        <CMSProvider initialLocale={locale}>
           {children}
         </CMSProvider>
       </body>
@@ -206,14 +220,11 @@ export function SubmitButton() {
 ### Use translations in a server component
 
 ```tsx
-import { loadTranslations } from "@modlog/better-cms/client";
-import { createTranslator } from "@modlog/better-cms/i18n";
+import { getTranslations } from "@modlog/better-cms/next";
 import { commonNamespace } from "@repo/cms-config";
 
 export default async function Page() {
-  const data = await loadTranslations(commonNamespace.name, "en");
-  const t = createTranslator(commonNamespace, data, "en");
-
+  const { t } = await getTranslations(commonNamespace);
   return <h1>{t("greeting", { name: "Alice" })}</h1>;
 }
 ```
@@ -222,13 +233,14 @@ export default async function Page() {
 
 ## Environment variables
 
-| Variable | Where | Description |
-|----------|-------|-------------|
-| `CMS_INTERNAL_TOKEN` | API | Secret token for all admin writes |
-| `NEXT_PUBLIC_CMS_URL` | Web | Public URL of the CMS API |
-| `NEXT_PUBLIC_CMS_READ_TOKEN` | Web | Token for read-only endpoints |
+| Variable                     | Where | Description                       |
+| ---------------------------- | ----- | --------------------------------- |
+| `CMS_READ_TOKEN`             | API   | Token for read-only access        |
+| `CMS_ADMIN_TOKEN`            | API   | Secret token for all admin writes |
+| `NEXT_PUBLIC_CMS_URL`        | Web   | Public URL of the CMS API         |
+| `NEXT_PUBLIC_CMS_READ_TOKEN` | Web   | Token for read-only endpoints     |
 
-> The read token and internal token are currently the same token (`internalToken`). Both read and write routes use `x-internal-token`. Keep this secret and do not expose the write token to the browser — use `NEXT_PUBLIC_*` only for read access.
+> The `readToken` is for GET requests to translations and single pages. The `adminToken` is for everything else (writes, media, locales, listing all pages). Both use the `x-internal-token` header. Keep the `adminToken` secret and never expose it to the browser. Use `NEXT_PUBLIC_CMS_READ_TOKEN` for client-side read access.
 
 ---
 
@@ -238,3 +250,8 @@ export default async function Page() {
 - [Using Translations](../translations/using-translations.md) — SSR, client hooks, locale switching
 - [Plugins](../plugins/pages-plugin.md) — pages, media, fallback
 - [Building an Admin UI](../admin/building-admin-ui.md)
+
+
+---
+
+[← Installation](installation.md) | [Database Schema →](database-schema.md)

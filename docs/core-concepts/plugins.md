@@ -45,7 +45,10 @@ interface CMSContext {
   namespaces: NamespaceDef[];
   adapter: CMSAdapter;        // DB adapter (Prisma, Drizzle, etc.)
   storage?: CMSStorageAdapter; // set by mediaPlugin
-  auth: { internalToken: string };
+  auth: {
+    readToken: string;
+    adminToken: string;
+  };
   events: CMSEventEmitter;    // translation update events
   elysiaApp: ElysiaLike;      // mount routes here
 }
@@ -120,3 +123,8 @@ See individual plugin docs for full configuration:
 - [Media Plugin](../plugins/media-plugin.md)
 - [Fallback Plugin](../plugins/fallback-plugin.md)
 - [Fallback Sync Plugin](../plugins/fallback-sync-plugin.md)
+
+
+---
+
+[← Caching](caching.md) | [Defining Namespaces →](../translations/defining-namespaces.md)

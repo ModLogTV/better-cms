@@ -63,3 +63,8 @@ Place the schema in your shared database package (e.g., `packages/db/schema.pris
 ## Drizzle
 
 Drizzle support is **not yet implemented**. The `@modlog/better-cms/drizzle` export is a stub. See [Drizzle adapter docs](../database-adapters/drizzle.md) for the current status.
+
+
+---
+
+[← Quick Start](quick-start.md) | [Architecture →](../core-concepts/architecture.md)

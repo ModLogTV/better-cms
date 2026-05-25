@@ -57,7 +57,7 @@ export default async function Page({ params }) {
 const homeBlocks = await loadPageContent("home", "en");
 
 <CMSProvider
-  locale="en"
+  initialLocale="en"
   initialContent={{ home: homeBlocks }}
 >
   {children}
@@ -112,3 +112,8 @@ The public-facing hooks never expose draft content.
 | `POST` | `/cms/pages/:id/publish` | Promote draft to published |
 
 All page routes require `pagesPlugin` to be registered.
+
+
+---
+
+[← Defining Page Blocks](defining-blocks.md) | [Elysia Adapter →](../framework-adapters/elysia.md)

@@ -182,3 +182,8 @@ const meta = await admin.namespaces.describe("nav");
 ```
 
 See [Admin Client](../admin/admin-client.md).
+
+
+---
+
+[← Plugin System](../core-concepts/plugins.md) | [Using Translations →](using-translations.md)

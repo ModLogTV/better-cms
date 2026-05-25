@@ -208,7 +208,8 @@ export const cms = createCMS({
   database: prismaAdapter(prisma),
   namespaces: ALL_NAMESPACES,
   auth: {
-    internalToken: process.env.CMS_INTERNAL_TOKEN!,
+    readToken: process.env.CMS_READ_TOKEN!,
+    adminToken: process.env.CMS_ADMIN_TOKEN!,
   },
   plugins: [
     pagesPlugin({ blocks: ALL_PAGE_BLOCKS }),
@@ -287,7 +288,7 @@ import { CMSProvider } from "@modlog/better-cms/react";
 
 export default function RootLayout({ children }) {
   return (
-    <CMSProvider locale="en">
+    <CMSProvider initialLocale="en">
       {children}
     </CMSProvider>
   );
@@ -378,7 +379,7 @@ import { createAdminHooks, AdminQueryProvider } from "@modlog/better-cms/admin/r
 
 const adminClient = createAdminClient({
   cmsUrl: "/api",
-  token: process.env.CMS_INTERNAL_TOKEN!,
+  token: process.env.CMS_ADMIN_TOKEN!,
 });
 
 export const {
@@ -408,7 +409,7 @@ import { createServerFns } from "@modlog/better-cms/tanstack-start";
 
 const admin = createAdminClient({
   cmsUrl: process.env.CMS_URL!,
-  token: process.env.CMS_INTERNAL_TOKEN!,
+  token: process.env.CMS_ADMIN_TOKEN!,
 });
 
 const rawFns = createServerFns(admin);
@@ -551,4 +552,4 @@ configureCMSClient({
 ```
 
 > [!NOTE]
-> `startFallbackSync` uses `readToken` (the same `x-internal-token` used by the read API). You do **not** need the full write token.
+> `startFallbackSync` uses `readToken` (via the `x-internal-token` header). You do **not** need the `adminToken` for this operation.

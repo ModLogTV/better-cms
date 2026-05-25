@@ -16,8 +16,11 @@ export function createCMS(config: CMSConfig): CMSInstance {
 	if (config.namespaces.length === 0) {
 		throw new Error("createCMS: namespaces must not be empty");
 	}
-	if (!config.auth.internalToken) {
-		throw new Error("createCMS: auth.internalToken must not be empty");
+	if (!config.auth.readToken) {
+		throw new Error("createCMS: auth.readToken must not be empty");
+	}
+	if (!config.auth.adminToken) {
+		throw new Error("createCMS: auth.adminToken must not be empty");
 	}
 
 	const events = new CMSEventEmitter();

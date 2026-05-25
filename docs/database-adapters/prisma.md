@@ -98,3 +98,8 @@ import { prismaAdapter } from "@modlog/better-cms/prisma";
 const prisma = new PrismaClient();
 const db = prismaAdapter(prisma);
 ```
+
+
+---
+
+[← TanStack Start Adapter](../framework-adapters/tanstack-start.md) | [Drizzle Adapter →](drizzle.md)

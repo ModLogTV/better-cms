@@ -52,3 +52,8 @@ plugins: [
   mediaPlugin({ storage }),
 ]
 ```
+
+
+---
+
+[← Hetzner Object Storage Adapter](hetzner.md) | [Pages Plugin →](../plugins/pages-plugin.md)

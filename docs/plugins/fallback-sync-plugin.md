@@ -124,3 +124,8 @@ For real-time fallback updates in a separate-container setup, combine both plugi
 - `startFallbackSync` in the frontend: syncs from API on schedule
 
 Or implement a webhook-triggered sync using the `translations:updated` event.
+
+
+---
+
+[← Fallback Plugin](fallback-plugin.md) | [Admin Client →](../admin/admin-client.md)

@@ -104,3 +104,8 @@ The initial sync is `await`ed — Next.js won't serve any requests until fallbac
 ## Why this matters
 
 In production, the CMS API should be considered a non-critical dependency for read traffic. A database restart, a deploy window, or a network blip should not take down your frontend. The fallback JSON files are a static snapshot that allows continued rendering from the last known state.
+
+
+---
+
+[← Locales](locales.md) | [Caching →](caching.md)

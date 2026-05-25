@@ -61,3 +61,8 @@ export const drizzleCMSAdapter: CMSAdapter = {
   // ... implement remaining methods
 };
 ```
+
+
+---
+
+[← Prisma Adapter](prisma.md) | [Storage Adapters →](../storage-adapters/overview.md)

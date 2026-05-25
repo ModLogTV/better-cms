@@ -1,7 +1,7 @@
 import { Elysia, t } from "elysia";
 import { describeNamespace } from "../../admin/describe";
 import type { CMSInstance } from "../../core/index";
-import { requireReadToken } from "../auth";
+import { requireFullToken, requireReadToken } from "../auth";
 
 export function adminRoutes(cms: CMSInstance) {
 	return new Elysia({ prefix: "/admin" })
@@ -24,6 +24,7 @@ export function adminRoutes(cms: CMSInstance) {
 			},
 		)
 		.get("/locales", () => cms.adapter.listLocales())
+		.use(requireFullToken(cms))
 		.put(
 			"/locales",
 			async ({ body }) => {

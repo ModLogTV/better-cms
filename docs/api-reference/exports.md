@@ -211,3 +211,8 @@ Fallback sync — Node.js.
 | Export | Description |
 |--------|-------------|
 | `localStorageAdapter(opts)` | Local filesystem adapter (dev only) |
+
+
+---
+
+[← Building an Admin UI](../admin/building-admin-ui.md)

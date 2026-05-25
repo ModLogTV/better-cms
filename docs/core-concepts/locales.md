@@ -104,9 +104,14 @@ const handleChange = (locale: string) => {
 Pass the current locale to `CMSProvider`. All hooks (`useTranslations`, `usePageContent`) inherit it from context.
 
 ```tsx
-<CMSProvider locale={params.locale}>
+<CMSProvider initialLocale={params.locale}>
   {children}
 </CMSProvider>
 ```
 
 In Next.js with locale-prefixed routes (`/[locale]/...`), read `params.locale` from the layout's params and pass it down.
+
+
+---
+
+[← Namespaces & Markers](namespaces.md) | [Fallback Strategy →](fallback-strategy.md)

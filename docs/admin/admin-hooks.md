@@ -192,3 +192,8 @@ import { useQueryClient } from "@tanstack/react-query";
 const qc = useQueryClient();
 await qc.invalidateQueries({ queryKey: ["cms", "translations"] });
 ```
+
+
+---
+
+[← Admin Client](admin-client.md) | [Building an Admin UI →](building-admin-ui.md)

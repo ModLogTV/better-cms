@@ -41,3 +41,8 @@ The adapter connects to `https://{accountId}.r2.cloudflarestorage.com` using the
 ## Public access
 
 Enable "Public Access" on your R2 bucket in the Cloudflare dashboard, or configure a custom domain. The `publicUrl` must match your public domain.
+
+
+---
+
+[← AWS S3 Adapter](aws-s3.md) | [Hetzner Object Storage Adapter →](hetzner.md)

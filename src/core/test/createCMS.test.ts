@@ -27,12 +27,13 @@ describe("createCMS", () => {
 		const cms = createCMS({
 			database: mockAdapter,
 			namespaces: [ns],
-			auth: { internalToken: "secret" },
+			auth: { readToken: "read", adminToken: "admin" },
 		});
 
 		expect(cms.namespaces).toHaveLength(1);
 		expect(cms.namespaces[0].name).toBe("nav");
-		expect(cms.auth.internalToken).toBe("secret");
+		expect(cms.auth.readToken).toBe("read");
+		expect(cms.auth.adminToken).toBe("admin");
 		expect(cms.$Infer.Namespaces["nav"]).toBeDefined();
 	});
 
@@ -41,19 +42,29 @@ describe("createCMS", () => {
 			createCMS({
 				database: mockAdapter,
 				namespaces: [],
-				auth: { internalToken: "x" },
+				auth: { readToken: "x", adminToken: "x" },
 			}),
 		).toThrow("namespaces must not be empty");
 	});
 
-	test("throws if internalToken empty", () => {
+	test("throws if readToken empty", () => {
 		expect(() =>
 			createCMS({
 				database: mockAdapter,
 				namespaces: [ns],
-				auth: { internalToken: "" },
+				auth: { readToken: "", adminToken: "x" },
 			}),
-		).toThrow("internalToken must not be empty");
+		).toThrow("auth.readToken must not be empty");
+	});
+
+	test("throws if adminToken empty", () => {
+		expect(() =>
+			createCMS({
+				database: mockAdapter,
+				namespaces: [ns],
+				auth: { readToken: "x", adminToken: "" },
+			}),
+		).toThrow("auth.adminToken must not be empty");
 	});
 
 	test("runs plugins and extends $Infer", () => {
@@ -68,7 +79,7 @@ describe("createCMS", () => {
 		const cms = createCMS({
 			database: mockAdapter,
 			namespaces: [ns],
-			auth: { internalToken: "x" },
+			auth: { readToken: "x", adminToken: "x" },
 			plugins: [plugin],
 		});
 		expect(plugin.init).toHaveBeenCalledTimes(1);

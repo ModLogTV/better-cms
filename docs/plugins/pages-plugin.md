@@ -79,3 +79,8 @@ const myBlock: PageBlock = {
 ```
 
 `PageBlock` is an alias for `BlockDefinition<Type, Data>`. Both names are exported.
+
+
+---
+
+[← Local Storage Adapter (Dev Only)](../storage-adapters/local.md) | [Media Plugin →](media-plugin.md)
