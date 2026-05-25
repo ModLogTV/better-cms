@@ -1,61 +1,62 @@
 import { describe, expect, test } from "bun:test";
-import { createNextMiddleware } from "../middleware";
+import { createNextProxy } from "../proxy";
 
-const middleware = createNextMiddleware({
-	locales: ["en", "de", "fr"],
+const proxy = createNextProxy({
+	locales: ["en", "de"],
 	defaultLocale: "en",
-	cookieName: "locale",
 });
 
 function makeRequest(
 	pathname: string,
 	opts?: { cookie?: string; acceptLanguage?: string },
-): Parameters<typeof middleware>[0] {
+): Parameters<typeof proxy>[0] {
 	return {
-		nextUrl: {
-			pathname,
-			clone() {
-				return new URL(`http://localhost${pathname}`);
+		nextUrl: { pathname, href: `http://localhost${pathname}` },
+		headers: {
+			get: (name: string) => {
+				if (name.toLowerCase() === "accept-language")
+					return opts?.acceptLanguage ?? null;
+				return null;
 			},
 		},
 		cookies: {
-			get: (name: string) =>
-				name === "locale" && opts?.cookie ? { value: opts.cookie } : undefined,
-		},
-		headers: {
-			get: (name: string) =>
-				name === "accept-language" ? (opts?.acceptLanguage ?? null) : null,
+			get: (name: string) => {
+				if (name === "locale" && opts?.cookie) return { value: opts.cookie };
+				return undefined;
+			},
 		},
 	};
 }
 
-describe("createNextMiddleware", () => {
+describe("createNextProxy", () => {
 	test("returns undefined if pathname already has locale", () => {
-		expect(middleware(makeRequest("/en/about"))).toBeUndefined();
-		expect(middleware(makeRequest("/de"))).toBeUndefined();
+		expect(proxy(makeRequest("/en/about"))).toBeUndefined();
+		expect(proxy(makeRequest("/de"))).toBeUndefined();
 	});
 
 	test("redirects to default locale when no hints", () => {
-		const result = middleware(makeRequest("/about"));
+		const result = proxy(makeRequest("/about"));
 		expect(result?.locale).toBe("en");
-		expect(result?.redirect).toContain("/en/about");
+		expect(result?.redirect.pathname).toBe("/en/about");
 	});
 
 	test("uses cookie locale when available", () => {
-		const result = middleware(makeRequest("/about", { cookie: "de" }));
+		const result = proxy(makeRequest("/about", { cookie: "de" }));
 		expect(result?.locale).toBe("de");
-		expect(result?.redirect).toContain("/de/about");
+		expect(result?.redirect.pathname).toBe("/de/about");
 	});
 
 	test("uses Accept-Language when no cookie", () => {
-		const result = middleware(
-			makeRequest("/about", { acceptLanguage: "fr-FR,fr;q=0.9" }),
+		const result = proxy(
+			makeRequest("/about", { acceptLanguage: "de-DE,de;q=0.9" }),
 		);
-		expect(result?.locale).toBe("fr");
+		expect(result?.locale).toBe("de");
+		expect(result?.redirect.pathname).toBe("/de/about");
 	});
 
 	test("falls back to default for unknown Accept-Language", () => {
-		const result = middleware(makeRequest("/about", { acceptLanguage: "ja" }));
+		const result = proxy(makeRequest("/about", { acceptLanguage: "ja" }));
 		expect(result?.locale).toBe("en");
+		expect(result?.redirect.pathname).toBe("/en/about");
 	});
 });

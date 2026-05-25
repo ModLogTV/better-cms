@@ -58,21 +58,21 @@ await admin.locales.delete({ code: "fr" });
 
 At most one locale should have `isDefault: true`. The database adapter does not enforce uniqueness of `isDefault` — if you need enforcement, handle it in your admin UI logic.
 
-The default locale is used by `createNextMiddleware` when no preference is detected from the cookie or `Accept-Language` header.
+The default locale is used by `createNextProxy` when no preference is detected from the cookie or `Accept-Language` header.
 
 ## Locale detection in Next.js
 
-`createNextMiddleware` reads the locale from (in order of priority):
+`createNextProxy` reads the locale from (in order of priority):
 
 1. The locale cookie (default name: `"locale"`)
 2. The `Accept-Language` request header
 3. The configured `defaultLocale`
 
 ```ts
-// middleware.ts
-import { createNextMiddleware } from "@modlog/better-cms/next";
+// proxy.ts
+import { createNextProxy } from "@modlog/better-cms/next";
 
-export default createNextMiddleware({
+export default createNextProxy({
   locales: ["en", "de", "fr"],
   defaultLocale: "en",
   cookieName: "locale", // optional, default is "locale"
@@ -83,7 +83,7 @@ export const config = {
 };
 ```
 
-The middleware redirects `/about` → `/en/about` if no locale prefix is present, and sets the `x-locale` response header for reading in RSCs.
+The proxy redirects `/about` → `/en/about` if no locale prefix is present, and sets the `x-locale` response header for reading in RSCs.
 
 ## Locale switching in React
 

@@ -7,8 +7,8 @@ import type {
 	TranslatorFn,
 } from "../i18n/types";
 
-export type { NextMiddlewareOptions } from "./middleware";
-export { createNextMiddleware } from "./middleware";
+export type { NextProxyOptions } from "./proxy";
+export { createNextProxy } from "./proxy";
 
 /**
  * Reads the active locale in a Next.js Server Component, Server Action, or Route Handler.

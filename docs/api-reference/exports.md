@@ -94,8 +94,8 @@ Next.js integration — Node.js.
 | Export | Type | Description |
 |--------|------|-------------|
 | `toNextHandler(handle)` | function | Wraps Elysia handle as Next.js route exports |
-| `createNextMiddleware(opts)` | function | Locale detection + redirect middleware |
-| `NextMiddlewareOptions` | type | Options for `createNextMiddleware` |
+| `createNextProxy(opts)` | function | Locale detection + redirect proxy |
+| `NextProxyOptions` | type | Options for `createNextProxy` |
 
 ---
 

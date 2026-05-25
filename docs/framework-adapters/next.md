@@ -2,7 +2,7 @@
 
 ## Reading the locale in Server Components
 
-`getLocale` reads the active locale directly from the `locale` cookie set by `useLocale` / `setLocale`. Use it in any Server Component, Server Action, or Route Handler — no middleware required.
+`getLocale` reads the active locale directly from the `locale` cookie set by `useLocale` / `setLocale`. Use it in any Server Component, Server Action, or Route Handler — no proxy required.
 
 ```ts
 import { getLocale } from "better-cms/next";
@@ -78,24 +78,24 @@ const { GET, PUT, POST } = toNextHandler(toElysiaPlugin(cms).handle);
 export { GET, PUT, POST };
 ```
 
-## Locale middleware
+## Locale proxy
 
-`createNextMiddleware` handles locale detection and URL prefixing:
+`createNextProxy` handles locale detection and URL prefixing:
 
-**`middleware.ts`** (at the root of your Next.js app)
+**`proxy.ts`** (at the root of your Next.js app)
 
 ```ts
 import { NextResponse } from "next/server";
-import { createNextMiddleware } from "@modlog/better-cms/next";
+import { createNextProxy } from "@modlog/better-cms/next";
 
-const cmsMiddleware = createNextMiddleware({
+const cmsProxy = createNextProxy({
   locales: ["en", "de", "fr"],
   defaultLocale: "en",
   cookieName: "locale", // optional, default: "locale"
 });
 
-export function middleware(request) {
-  const result = cmsMiddleware(request);
+export function proxy(request) {
+  const result = cmsProxy(request);
 
   if (result?.redirect) {
     return NextResponse.redirect(result.redirect, {
@@ -113,7 +113,7 @@ export const config = {
 };
 ```
 
-### What the middleware does
+### What the proxy does
 
 1. Checks if the URL already has a locale prefix (`/en/about`) — skips if yes
 2. Detects locale from (in order): cookie → `Accept-Language` header → `defaultLocale`
@@ -122,7 +122,7 @@ export const config = {
 
 ### Reading locale in RSCs
 
-In a Server Component, read the locale from the `x-locale` header set by the middleware:
+In a Server Component, read the locale from the `x-locale` header set by the proxy:
 
 ```ts
 import { headers } from "next/headers";

@@ -37,7 +37,7 @@
 | `@modlog/better-cms/client`                | Neutral  | `configureCMSClient`, `loadTranslations`, `loadPageContent`     |
 | `@modlog/better-cms/react`                 | Browser  | `CMSProvider`, `useTranslations`, `usePageContent`, `useLocale` |
 | `@modlog/better-cms/elysia`                | Node     | `toElysiaPlugin` — mounts routes                                |
-| `@modlog/better-cms/next`                  | Node     | `toNextHandler`, `createNextMiddleware`                         |
+| `@modlog/better-cms/next`                  | Node     | `toNextHandler`, `createNextProxy`                         |
 | `@modlog/better-cms/next/client`           | Browser  | Next.js-specific client utilities                               |
 | `@modlog/better-cms/tanstack-start`        | Node     | `createServerFns`                                               |
 | `@modlog/better-cms/prisma`                | Node     | `prismaAdapter`                                                 |

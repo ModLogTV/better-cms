@@ -46,7 +46,7 @@ Install the peer dependencies relevant to your stack. Everything is optional exc
 | `react`                                                | `@modlog/better-cms/react` hooks                     |
 | `@tanstack/react-query`                                | Admin hooks (`@modlog/better-cms/admin/react`)       |
 | `elysia`                                               | `@modlog/better-cms/elysia` backend adapter          |
-| `next`                                                 | `@modlog/better-cms/next` handler + middleware       |
+| `next`                                                 | `@modlog/better-cms/next` handler + proxy       |
 | `@tanstack/start`                                      | `@modlog/better-cms/tanstack-start` server functions |
 | `@prisma/client`                                       | `@modlog/better-cms/prisma` database adapter         |
 | `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner` | AWS S3 storage adapter                               |
