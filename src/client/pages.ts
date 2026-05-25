@@ -1,6 +1,7 @@
 import type { RawBlock } from "../core/adapter";
 import { getCached, setCached } from "./cache";
 import { getClientConfig } from "./config";
+import { cmsEvents } from "./events";
 
 const TTL_MS = 60_000;
 
@@ -24,8 +25,13 @@ export async function loadPageContent(opts: {
 	if (existing) return existing;
 
 	const promise = (async () => {
+		const config = getClientConfig();
+		const ev = { type: "pages" as const, key: cacheKey };
+		cmsEvents.emit("client:fetch:start", ev);
+		config.onFetchStart?.(ev);
+
 		try {
-			const { cmsUrl, readToken } = getClientConfig();
+			const { cmsUrl, readToken } = config;
 			const encodedSlug = encodeURIComponent(slug);
 			const res = await fetch(
 				`${cmsUrl}/cms/pages/${encodedSlug}?locale=${locale}`,
@@ -36,8 +42,17 @@ export async function loadPageContent(opts: {
 			if (!res.ok) throw new Error(res.statusText);
 			const data = (await res.json()) as RawBlock[];
 			setCached({ key: cacheKey, value: data, ttlMs: TTL_MS });
+
+			const successEv = { ...ev, data };
+			cmsEvents.emit("client:fetch:success", successEv);
+			config.onFetchSuccess?.(successEv);
+
 			return data;
-		} catch {
+		} catch (err) {
+			const error = err instanceof Error ? err : new Error(String(err));
+			const errorEv = { ...ev, error };
+			cmsEvents.emit("client:fetch:error", errorEv);
+			config.onFetchError?.(errorEv);
 			return [];
 		} finally {
 			inflight.delete(cacheKey);

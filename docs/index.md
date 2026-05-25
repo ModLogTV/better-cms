@@ -41,6 +41,7 @@ It is **not** a hosted service, not a WordPress alternative, and not a drop-in U
   - [Fallback Strategy](./core-concepts/fallback-strategy.md)
   - [Caching](./core-concepts/caching.md)
   - [Plugin System](./core-concepts/plugins.md)
+  - [Lifecycle & Events](./core-concepts/lifecycle.md)
 - **Translations**
   - [Defining Namespaces](./translations/defining-namespaces.md)
   - [Using Translations](./translations/using-translations.md)

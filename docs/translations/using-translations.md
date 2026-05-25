@@ -10,8 +10,13 @@ import { useTranslations } from "@modlog/better-cms/react";
 import { commonNamespace } from "@repo/cms-config";
 
 export function SubmitButton() {
-  const { t, tRich } = useTranslations(commonNamespace);
+  const { t, tRich, isLoading, error } = useTranslations(commonNamespace, {
+    onSuccess: (data) => console.log("Translations loaded"),
+    onError: (err) => console.error(err),
+  });
 
+  if (isLoading) return <span>...</span>;
+...
   return (
     <div>
       <button type="submit">{t("submit")}</button>
@@ -30,9 +35,9 @@ export function SubmitButton() {
 
 1. Checks `CMSProvider` context for the namespace — if pre-loaded server-side, returns immediately (no fetch)
 2. If missing, calls `loadTranslations({ namespace: ns.name, locale })` in a `useEffect`
-3. Returns `{ t, tRich }` — both functions are typed to your namespace definition
+3. Returns `{ t, tRich, isLoading, error }` — both functions are typed to your namespace definition
 
-The hook never suspends. On the first render before data loads, `t("submit")` returns `""` (empty string from an empty translations object). Pre-seeding via `initialTranslations` avoids this.
+The hook never suspends. While `isLoading` is true, `t("submit")` returns `""`. Pre-seeding via `initialTranslations` avoids this.
 
 ### Pre-seeding to avoid flash
 

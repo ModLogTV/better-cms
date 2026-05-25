@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { deleteCached } from "../cache";
 import { configureCMSClient } from "../config";
+import { cmsEvents } from "../events";
 import { loadTranslations } from "../translations";
 
 const CMS_URL = "http://cms.test";
@@ -19,6 +20,62 @@ beforeEach(() => {
 });
 
 describe("loadTranslations", () => {
+	test("emits fetch events", async () => {
+		const events: string[] = [];
+		cmsEvents.on("client:fetch:start", () => {
+			events.push("start");
+		});
+		cmsEvents.on("client:fetch:success", () => {
+			events.push("success");
+		});
+
+		const spy = mockFetch(() =>
+			Promise.resolve(
+				new Response(JSON.stringify({ title: "Home" }), { status: 200 }),
+			),
+		);
+		await loadTranslations({ namespace: "nav", locale: "en" });
+		expect(events).toEqual(["start", "success"]);
+		spy.mockRestore();
+	});
+
+	test("emits error event on failure", async () => {
+		const events: string[] = [];
+		cmsEvents.on("client:fetch:error", () => {
+			events.push("error");
+		});
+
+		const spy = mockFetch(() =>
+			Promise.resolve(new Response("error", { status: 500 })),
+		);
+		await loadTranslations({ namespace: "nav", locale: "de" });
+		expect(events).toEqual(["error"]);
+		spy.mockRestore();
+	});
+
+	test("calls global configuration callbacks", async () => {
+		const calls: string[] = [];
+		configureCMSClient({
+			cmsUrl: CMS_URL,
+			readToken: TOKEN,
+			onFetchStart: () => {
+				calls.push("start");
+			},
+			onFetchSuccess: () => {
+				calls.push("success");
+			},
+		});
+
+		const spy = mockFetch(() =>
+			Promise.resolve(
+				new Response(JSON.stringify({ title: "Home" }), { status: 200 }),
+			),
+		);
+		await loadTranslations({ namespace: "nav", locale: "en" });
+		expect(calls).toEqual(["start", "success"]);
+		spy.mockRestore();
+	});
+
 	test("returns translations from API", async () => {
 		const spy = mockFetch(() =>
 			Promise.resolve(

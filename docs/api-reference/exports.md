@@ -55,6 +55,8 @@ Frontend data fetching — platform neutral.
 | Export | Type | Description |
 |--------|------|-------------|
 | `configureCMSClient(config)` | function | Initializes the client singleton |
+| `cmsEvents` | constant | Global `CMSEventEmitter` for fetch events |
+| `CMSClientConfig` | type | Options: `cmsUrl`, `readToken`, `fallback`, `onFetchStart`, `onFetchSuccess`, `onFetchError` |
 | `loadTranslations({ namespace, locale })` | function | Fetches translations (cached) |
 | `loadPageContent({ slug, locale })` | function | Fetches page blocks (cached) |
 | `getCached<T>(key)` | function | Read from in-memory cache |
@@ -71,9 +73,10 @@ React hooks and provider — browser.
 | Export | Type | Description |
 |--------|------|-------------|
 | `CMSProvider` | component | Context provider for locale + translations |
-| `useTranslations(ns)` | hook | Returns `{ t, tRich }` |
-| `usePageContent(slug)` | hook | Returns `RawBlock[]` |
+| `useTranslations(ns)` | hook | Returns `{ t, tRich, isLoading, error }` |
+| `usePageContent(slug)` | hook | Returns `{ data, isLoading, error }` |
 | `useLocale()` | hook | Returns `{ locale, setLocale }` |
+| `useCMSClientEvents(ev, fn)` | hook | Subscribes to client-side events |
 
 ---
 

@@ -7,7 +7,10 @@
 import { usePageContent } from "@modlog/better-cms/react";
 
 export function DynamicPage({ slug }: { slug: string }) {
-  const blocks = usePageContent(slug);
+  const { data: blocks, isLoading, error } = usePageContent({ slug });
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
 
   return (
     <main>
@@ -26,7 +29,19 @@ export function DynamicPage({ slug }: { slug: string }) {
 }
 ```
 
-`usePageContent(slug)` returns `RawBlock[]` — `{ type: string; data: unknown }[]`. Cast `data` to your known type, or use `cms.$Infer.PageBlocks` for type-safe rendering.
+`usePageContent({ slug })` returns `{ data: RawBlock[], isLoading: boolean, error: Error | null }`. Cast `data` to your known type, or use `cms.$Infer.PageBlocks` for type-safe rendering.
+
+### Lifecycle callbacks
+
+You can provide `onSuccess` and `onError` callbacks for local handling:
+
+```tsx
+const { data } = usePageContent({
+  slug: "home",
+  onSuccess: (blocks) => console.log("Loaded blocks:", blocks),
+  onError: (err) => toast.error(err.message),
+});
+```
 
 ### How `usePageContent` works
 
@@ -64,7 +79,7 @@ const homeBlocks = await loadPageContent({ slug: "home", locale: "en" });
 </CMSProvider>
 ```
 
-`usePageContent("home")` in a child component will read from context without an additional fetch.
+`usePageContent({ slug: "home" })` in a child component will read from context without an additional fetch.
 
 ## Type-safe block rendering
 

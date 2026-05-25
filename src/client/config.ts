@@ -12,6 +12,19 @@ interface CMSClientConfig {
 	fallback?: FallbackLoader;
 	/** Set to false to disable in-memory translation cache. Defaults to true. */
 	cache?: boolean;
+
+	// Global lifecycle callbacks
+	onFetchStart?: (ev: { type: "translations" | "pages"; key: string }) => void;
+	onFetchSuccess?: (ev: {
+		type: "translations" | "pages";
+		key: string;
+		data: any;
+	}) => void;
+	onFetchError?: (ev: {
+		type: "translations" | "pages";
+		key: string;
+		error: Error;
+	}) => void;
 }
 
 let _config: CMSClientConfig | null = null;

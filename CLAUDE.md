@@ -31,7 +31,7 @@ This is a headless, type-safe CMS for translations and page blocks, designed for
 
 - **`configureCMSClient`:** Must be called globally (e.g., imported in Next.js `layout.tsx`) to set the singleton API endpoint.
 - **Caching:** Uses an internal Promise Map to deduplicate concurrent requests. Do not attempt to replace this with TanStack Query on the consumer side.
-- **Hooks:** `useTranslations(ns)` and `usePageContent(slug)` read from `CMSProvider` context to avoid initial layout shift, falling back to network if empty.
+- **Hooks:** `useTranslations(ns)` and `usePageContent({ slug })` read from `CMSProvider` context, exposing `{ data, isLoading, error }`.
 - **Server Components (RSC):** Cannot use hooks. Use `loadTranslations({ namespace: ns.name, locale })` + `createTranslator({ ns, translations: data, locale })` manually.
 
 ## Admin UI
