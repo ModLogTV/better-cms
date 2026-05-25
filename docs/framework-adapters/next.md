@@ -24,10 +24,10 @@ export default async function Page() {
 
 Options:
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `cookieName` | `"locale"` | Cookie name written by `setLocale` |
-| `defaultLocale` | `"en"` | Fallback when cookie is absent |
+| Option          | Default    | Description                        |
+| --------------- | ---------- | ---------------------------------- |
+| `cookieName`    | `"locale"` | Cookie name written by `setLocale` |
+| `defaultLocale` | `"en"`     | Fallback when cookie is absent     |
 
 The `setLocale` function from `useLocale()` writes a `locale` cookie with `max-age=31536000` and `SameSite=Lax`. `getLocale` reads that same cookie server-side. Call `router.refresh()` after `setLocale` to re-run RSCs with the new locale.
 
@@ -80,22 +80,29 @@ export { GET, PUT, POST };
 
 ## Locale proxy
 
-`createNextProxy` handles locale detection and URL prefixing:
+`createNextProxy` handles locale detection and URL prefixing. You can define locales statically or fetch them dynamically from the CMS:
 
 **`proxy.ts`** (at the root of your Next.js app)
 
 ```ts
 import { NextResponse } from "next/server";
 import { createNextProxy } from "@modlog/better-cms/next";
+import { loadLocales } from "@modlog/better-cms/client";
+
+// Side-effect: configure the client for the proxy environment
+import "./src/cms-client"; 
 
 const cmsProxy = createNextProxy({
-  locales: ["en", "de", "fr"],
+  // Dynamic: fetches active locales from your DB
+  locales: async () => {
+    const locales = await loadLocales();
+    return locales.map(l => l.code);
+  },
   defaultLocale: "en",
-  cookieName: "locale", // optional, default: "locale"
 });
 
-export function proxy(request) {
-  const result = cmsProxy(request);
+export async function proxy(request) {
+  const result = await cmsProxy(request);
 
   if (result?.redirect) {
     return NextResponse.redirect(result.redirect, {
@@ -113,6 +120,14 @@ export const config = {
 };
 ```
 
+### Dynamic vs. Static locales
+
+| Approach    | Pro                  | Con                                         |
+| ----------- | -------------------- | ------------------------------------------- |
+| **Static**  | Fastest (no network) | Out of sync if DB changes                   |
+| **Dynamic** | Always in sync       | Added latency (mitigated by internal cache) |
+
+If you use the **Dynamic** approach, ensure `src/cms-client.ts` is imported in your `proxy.ts` so the client knows your API URL and token. `loadLocales` uses an internal 5-minute cache to minimize network overhead.
 ### What the proxy does
 
 1. Checks if the URL already has a locale prefix (`/en/about`) — skips if yes

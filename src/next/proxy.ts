@@ -1,5 +1,6 @@
 export interface NextProxyOptions {
-	locales: string[];
+	/** List of supported locale codes, or an async function that returns them. */
+	locales: string[] | (() => Promise<string[]>);
 	defaultLocale: string;
 	cookieName?: string;
 }
@@ -13,24 +14,30 @@ export interface NextProxyOptions {
  * @example
  * ```ts
  * // proxy.ts
- * export default createNextProxy({ locales: ["en", "de"], defaultLocale: "en" })
+ * export default createNextProxy({
+ *   locales: ["en", "de"],
+ *   defaultLocale: "en"
+ * })
  * ```
  */
 export function createNextProxy(opts: NextProxyOptions) {
 	const { locales, defaultLocale, cookieName = "locale" } = opts;
 
 	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: regex + logic
-	return function cmsLocaleProxy(request: {
+	return async function cmsLocaleProxy(request: {
 		nextUrl: { pathname: string; href: string };
 		headers: { get(name: string): string | null };
 		cookies: { get(name: string): { value: string } | undefined };
 	}) {
 		const { pathname } = request.nextUrl;
 
+		// Resolve locales if it's a function (e.g. fetching from CMS)
+		const activeLocales =
+			typeof locales === "function" ? await locales() : locales;
+
 		// 1. Skip if URL already starts with a supported locale
-		const hasLocale = locales.some(
-			(locale) =>
-				pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`,
+		const hasLocale = activeLocales.some(
+			(l) => pathname.startsWith(`/${l}/`) || pathname === `/${l}`,
 		);
 		if (hasLocale) return;
 
@@ -43,14 +50,14 @@ export function createNextProxy(opts: NextProxyOptions) {
 			const accept = request.headers.get("accept-language");
 			if (accept) {
 				const preferred = accept.split(",")[0].split("-")[0];
-				if (locales.includes(preferred)) {
+				if (activeLocales.includes(preferred)) {
 					locale = preferred;
 				}
 			}
 		}
 
 		// c. Default
-		if (!locale || !locales.includes(locale)) {
+		if (!locale || !activeLocales.includes(locale)) {
 			locale = defaultLocale;
 		}
 

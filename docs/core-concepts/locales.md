@@ -71,16 +71,17 @@ The default locale is used by `createNextProxy` when no preference is detected f
 ```ts
 // proxy.ts
 import { createNextProxy } from "@modlog/better-cms/next";
+import { loadLocales } from "@modlog/better-cms/client";
+import "./src/cms-client";
 
 export default createNextProxy({
-  locales: ["en", "de", "fr"],
+  // Dynamic: fetches active locales from your DB
+  locales: async () => {
+    const locales = await loadLocales();
+    return locales.map(l => l.code);
+  },
   defaultLocale: "en",
-  cookieName: "locale", // optional, default is "locale"
 });
-
-export const config = {
-  matcher: ["/((?!api|_next|.*\\..*).*)"],
-};
 ```
 
 The proxy redirects `/about` → `/en/about` if no locale prefix is present, and sets the `x-locale` response header for reading in RSCs.
