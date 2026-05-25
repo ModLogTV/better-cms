@@ -31,7 +31,11 @@ export function createCMS(config: CMSConfig): CMSInstance {
 
 		for (const locale of config.initialLocales) {
 			void config.database
-				.upsertLocale(locale.code, locale.name, locale.isDefault)
+				.upsertLocale({
+					code: locale.code,
+					name: locale.name,
+					isDefault: locale.isDefault,
+				})
 				.catch((err) => {
 					console.error(
 						`[cms] Failed to upsert initial locale ${locale.code}:`,

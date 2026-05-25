@@ -30,9 +30,9 @@ deleteCached("translations:common:en");
 
 ## Tier 2: CMS API
 
-`loadTranslations(namespace, locale)` sends `GET /cms/translations/{namespace}/{locale}` with the `x-internal-token` header. Returns `Record<string, string>`.
+`loadTranslations({ namespace, locale })` sends `GET /cms/translations/{namespace}/{locale}` with the `x-internal-token` header. Returns `Record<string, string>`.
 
-Request deduplication: if two components call `loadTranslations("common", "en")` at the same time (before the first response arrives), only one HTTP request is sent. Both callers receive the same Promise.
+Request deduplication: if two components call `loadTranslations({ namespace: "common", locale: "en" })` at the same time (before the first response arrives), only one HTTP request is sent. Both callers receive the same Promise.
 
 ## Tier 3: Local JSON fallback
 

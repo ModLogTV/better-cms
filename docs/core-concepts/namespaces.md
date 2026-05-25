@@ -7,9 +7,12 @@ A namespace is a named group of translation keys. It maps to one database row pe
 ```ts
 import { defineNamespace, key } from "@modlog/better-cms/i18n";
 
-export const commonNamespace = defineNamespace("common", {
-  submit: key,
-  cancel: key,
+export const commonNamespace = defineNamespace({
+  name: "common",
+  definition: {
+    submit: key,
+    cancel: key,
+  },
 });
 ```
 
@@ -24,8 +27,11 @@ Markers are how you declare the _type_ of each translation key. TypeScript uses 
 ```ts
 import { key } from "@modlog/better-cms/i18n";
 
-const ns = defineNamespace("example", {
-  submit: key,
+const ns = defineNamespace({
+  name: "example",
+  definition: {
+    submit: key,
+  },
 });
 
 // Usage:
@@ -39,8 +45,11 @@ No arguments. Value in DB: `"Submit"`.
 ```ts
 import { vars } from "@modlog/better-cms/i18n";
 
-const ns = defineNamespace("example", {
-  greeting: vars<{ name: string }>(),
+const ns = defineNamespace({
+  name: "example",
+  definition: {
+    greeting: vars<{ name: string }>(),
+  },
 });
 
 // Usage:
@@ -56,8 +65,11 @@ TypeScript enforces that `{ name: string }` is passed — missing or extra keys 
 ```ts
 import { plural } from "@modlog/better-cms/i18n";
 
-const ns = defineNamespace("example", {
-  itemCount: plural<{ count: number }>(),
+const ns = defineNamespace({
+  name: "example",
+  definition: {
+    itemCount: plural<{ count: number }>(),
+  },
 });
 
 // Usage:
@@ -79,8 +91,11 @@ Supported suffixes depend on the locale's CLDR plural rules: `zero`, `one`, `two
 ```ts
 import { rich } from "@modlog/better-cms/i18n";
 
-const ns = defineNamespace("example", {
-  terms: rich<"b" | "link">(),
+const ns = defineNamespace({
+  name: "example",
+  definition: {
+    terms: rich<"b" | "link">(),
+  },
 });
 
 // Usage (in a component):
@@ -101,10 +116,13 @@ Value in DB uses `<tagName>content</tagName>` syntax. Tags that are not in the `
 Keys can be nested with objects. Flat access uses dot notation:
 
 ```ts
-const ns = defineNamespace("nav", {
-  topNav: {
-    aboutUs: key,
-    contact: key,
+const ns = defineNamespace({
+  name: "nav",
+  definition: {
+    topNav: {
+      aboutUs: key,
+      contact: key,
+    },
   },
 });
 

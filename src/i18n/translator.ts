@@ -12,7 +12,11 @@ import type {
  * Interpolates a translation string with variables.
  * Replaces `{varName}` tokens with values from `vars`.
  */
-function interpolate(value: string, vars: Record<string, unknown>): string {
+function interpolate(opts: {
+	value: string;
+	vars: Record<string, unknown>;
+}): string {
+	const { value, vars } = opts;
 	return value.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? `{${k}}`));
 }
 
@@ -20,10 +24,11 @@ function interpolate(value: string, vars: Record<string, unknown>): string {
  * Parses a rich-text string into an array of strings and tag-wrapped segments.
  * Handles `<tagName>content</tagName>` syntax.
  */
-function parseRich(
-	value: string,
-	tags: Record<string, (chunks: ReactNode) => ReactNode>,
-): ReactNode {
+function parseRich(opts: {
+	value: string;
+	tags: Record<string, (chunks: ReactNode) => ReactNode>;
+}): ReactNode {
+	const { value, tags } = opts;
 	const tagNames = Object.keys(tags).join("|");
 	if (!tagNames) return value;
 
@@ -52,11 +57,12 @@ function parseRich(
  *
  * Falls back to the key string itself if a translation is missing.
  */
-export function createTranslator<T extends NamespaceDefinition>(
-	_ns: NamespaceDef<T>,
-	translations: Record<string, string>,
-	locale: string,
-): TranslatorFn<T> {
+export function createTranslator<T extends NamespaceDefinition>(opts: {
+	ns: NamespaceDef<T>;
+	translations: Record<string, string>;
+	locale: string;
+}): TranslatorFn<T> {
+	const { locale, translations } = opts;
 	const rules = new Intl.PluralRules(locale);
 
 	return (<K extends PlainFlatKeys<T>>(
@@ -82,7 +88,7 @@ export function createTranslator<T extends NamespaceDefinition>(
 		}
 
 		if (value === undefined) return key as string;
-		return vars ? interpolate(value, vars) : value;
+		return vars ? interpolate({ value, vars }) : value;
 	}) as TranslatorFn<T>;
 }
 
@@ -93,21 +99,22 @@ export function createTranslator<T extends NamespaceDefinition>(
  *
  * @example
  * ```tsx
- * const { tRich } = createRichTranslator(ns, translations, "en")
+ * const { tRich } = createRichTranslator({ ns, translations, locale: "en" })
  * tRich("terms", { b: chunks => <b>{chunks}</b> })
  * ```
  */
-export function createRichTranslator<T extends NamespaceDefinition>(
-	_ns: NamespaceDef<T>,
-	translations: Record<string, string>,
-	_locale: string,
-): RichTranslatorFn<T> {
+export function createRichTranslator<T extends NamespaceDefinition>(opts: {
+	ns: NamespaceDef<T>;
+	translations: Record<string, string>;
+	locale: string;
+}): RichTranslatorFn<T> {
+	const { translations } = opts;
 	return (<K extends RichFlatKeys<T>>(
 		key: K,
 		tags: Record<string, (chunks: ReactNode) => ReactNode>,
 	) => {
 		const value = translations[key as string];
 		if (value === undefined) return key as string;
-		return parseRich(value, tags);
+		return parseRich({ value, tags });
 	}) as RichTranslatorFn<T>;
 }

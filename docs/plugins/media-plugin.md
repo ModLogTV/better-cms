@@ -71,9 +71,10 @@ const { uploadUrl, publicUrl } = await admin.media.presign({
 await fetch(uploadUrl, { method: "PUT", body: file });
 
 // Use publicUrl in your block data
-await admin.pages.update(pageId, [
-  { type: "hero", data: { imageUrl: publicUrl } },
-]);
+await admin.pages.update({
+  id: pageId,
+  blocks: [{ type: "hero", data: { imageUrl: publicUrl } }],
+});
 ```
 
 ## Using the React hook
@@ -87,7 +88,7 @@ function ImageUploader() {
   const { upload, isPending } = useMediaUpload();
 
   const handleFile = async (file: File) => {
-    const { publicUrl } = await upload(file);
+    const { publicUrl } = await upload({ file });
     console.log("Uploaded to:", publicUrl);
   };
 
@@ -101,7 +102,7 @@ function ImageUploader() {
 }
 ```
 
-`useMediaUpload` handles both the presign request and the PUT upload in a single `upload(file)` call.
+`useMediaUpload` handles both the presign request and the PUT upload in a single `upload({ file })` call.
 
 
 ---

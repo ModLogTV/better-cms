@@ -40,7 +40,11 @@ describe("locale management routes", () => {
 		);
 		expect(res.status).toBe(200);
 		expect(await res.json()).toEqual({ ok: true });
-		expect(adapter.upsertLocale).toHaveBeenCalledWith("de", "German", false);
+		expect(adapter.upsertLocale).toHaveBeenCalledWith({
+			code: "de",
+			name: "German",
+			isDefault: false,
+		});
 	});
 
 	test("DELETE /cms/admin/locales/:code removes a locale", async () => {
@@ -49,6 +53,6 @@ describe("locale management routes", () => {
 		);
 		expect(res.status).toBe(200);
 		expect(await res.json()).toEqual({ ok: true });
-		expect(adapter.deleteLocale).toHaveBeenCalledWith("de");
+		expect(adapter.deleteLocale).toHaveBeenCalledWith({ code: "de" });
 	});
 });

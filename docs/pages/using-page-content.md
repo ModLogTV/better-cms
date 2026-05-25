@@ -31,7 +31,7 @@ export function DynamicPage({ slug }: { slug: string }) {
 ### How `usePageContent` works
 
 1. Checks `CMSProvider` context for the slug — no fetch if pre-loaded
-2. If missing, calls `loadPageContent(slug, locale)` in a `useEffect`
+2. If missing, calls `loadPageContent({ slug, locale })` in a `useEffect`
 3. Updates context so other components sharing the same slug don't fetch again
 
 ## Server components
@@ -40,7 +40,7 @@ export function DynamicPage({ slug }: { slug: string }) {
 import { loadPageContent } from "@modlog/better-cms/client";
 
 export default async function Page({ params }) {
-  const blocks = await loadPageContent(params.slug, params.locale);
+  const blocks = await loadPageContent({ slug: params.slug, locale: params.locale });
 
   return (
     <main>
@@ -54,7 +54,7 @@ export default async function Page({ params }) {
 
 ```tsx
 // Server layout
-const homeBlocks = await loadPageContent("home", "en");
+const homeBlocks = await loadPageContent({ slug: "home", locale: "en" });
 
 <CMSProvider
   initialLocale="en"
@@ -97,7 +97,7 @@ By default, `loadPageContent` and `usePageContent` only return published pages. 
 
 ```ts
 const admin = createAdminClient({ ... });
-const page = await admin.pages.get(slug, locale, true); // draft = true
+const page = await admin.pages.get({ slug, locale, draft: true }); // draft = true
 ```
 
 The public-facing hooks never expose draft content.

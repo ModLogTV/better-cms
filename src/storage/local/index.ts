@@ -18,7 +18,8 @@ export function localStorageAdapter(
 	opts: LocalStorageOptions,
 ): CMSStorageAdapter {
 	return {
-		async presign(key) {
+		async presign(presignOpts) {
+			const { key } = presignOpts;
 			await mkdir(opts.dir, { recursive: true });
 			const filePath = join(opts.dir, key);
 			// Write an empty placeholder so the path exists; actual content written on PUT

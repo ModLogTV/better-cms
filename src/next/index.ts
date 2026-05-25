@@ -81,10 +81,10 @@ export async function getTranslations<T extends NamespaceDefinition>(
 	opts?: { locale?: string },
 ): Promise<{ t: TranslatorFn<T>; tRich: RichTranslatorFn<T> }> {
 	const locale = opts?.locale ?? (await getLocale());
-	const data = await loadTranslations(ns.name, locale);
+	const data = await loadTranslations({ namespace: ns.name, locale });
 
 	return {
-		t: createTranslator(ns, data, locale),
-		tRich: createRichTranslator(ns, data, locale),
+		t: createTranslator({ ns, translations: data, locale }),
+		tRich: createRichTranslator({ ns, translations: data, locale }),
 	};
 }

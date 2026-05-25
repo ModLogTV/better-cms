@@ -3,11 +3,12 @@ import type { NamespaceDefinition } from "../i18n/types";
 import type { InputHint, KeyMetadata, KeyType } from "./types";
 
 /** Recursively flattens a namespace definition tree into a list of key metadata. */
-function walk(
-	def: NamespaceDefinition,
-	prefix: string,
-	out: KeyMetadata[],
-): void {
+function walk(opts: {
+	def: NamespaceDefinition;
+	prefix: string;
+	out: KeyMetadata[];
+}): void {
+	const { def, prefix, out } = opts;
 	for (const [k, v] of Object.entries(def)) {
 		const flatKey = prefix ? `${prefix}.${k}` : k;
 		if (typeof v !== "object" || v === null) continue;
@@ -59,7 +60,7 @@ function walk(
 				...(tags ? { tags } : {}),
 			});
 		} else {
-			walk(v as NamespaceDefinition, flatKey, out);
+			walk({ def: v as NamespaceDefinition, prefix: flatKey, out });
 		}
 	}
 }
@@ -69,7 +70,7 @@ function walk(
  *
  * @example
  * ```ts
- * describeNamespace(ns)
+ * describeNamespace({ ns })
  * // [
  * //   { key: "nav.home",    type: "key",    inputHint: "text" },
  * //   { key: "nav.welcome", type: "vars",   inputHint: "text+vars", vars: ["name"] },
@@ -78,10 +79,10 @@ function walk(
  * // ]
  * ```
  */
-export function describeNamespace(
-	ns: NamespaceDef<NamespaceDefinition>,
-): KeyMetadata[] {
+export function describeNamespace(opts: {
+	ns: NamespaceDef<NamespaceDefinition>;
+}): KeyMetadata[] {
 	const out: KeyMetadata[] = [];
-	walk(ns.definition, "", out);
+	walk({ def: opts.ns.definition, prefix: "", out });
 	return out;
 }

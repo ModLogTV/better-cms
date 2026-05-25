@@ -17,7 +17,7 @@ export function adminRoutes(cms: CMSInstance) {
 					set.status = 404;
 					return { error: `Namespace not found: ${params.namespace}` };
 				}
-				return describeNamespace(ns);
+				return describeNamespace({ ns });
 			},
 			{
 				params: t.Object({ namespace: t.String() }),
@@ -28,7 +28,11 @@ export function adminRoutes(cms: CMSInstance) {
 		.put(
 			"/locales",
 			async ({ body }) => {
-				await cms.adapter.upsertLocale(body.code, body.name, body.isDefault);
+				await cms.adapter.upsertLocale({
+					code: body.code,
+					name: body.name,
+					isDefault: body.isDefault,
+				});
 				return { ok: true };
 			},
 			{
@@ -42,7 +46,7 @@ export function adminRoutes(cms: CMSInstance) {
 		.delete(
 			"/locales/:code",
 			async ({ params }) => {
-				await cms.adapter.deleteLocale(params.code);
+				await cms.adapter.deleteLocale({ code: params.code });
 				return { ok: true };
 			},
 			{

@@ -105,12 +105,12 @@ describe("pages routes", () => {
 			req("/cms/pages/page-1/publish", { method: "POST" }),
 		);
 		expect(res.status).toBe(200);
-		expect(adapter.publishPage).toHaveBeenCalledWith("page-1");
+		expect(adapter.publishPage).toHaveBeenCalledWith({ id: "page-1" });
 	});
 
 	test("GET ?draft=true passes draft=true to adapter", async () => {
 		const adapter = makeAdapter({
-			getPage: async (_slug, _locale, draft) => {
+			getPage: async ({ draft }) => {
 				return draft ? makePage({ status: "draft" }) : null;
 			},
 		});

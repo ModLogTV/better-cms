@@ -24,12 +24,12 @@ const namespaces = await admin.namespaces.list();
 // [{ name: "common" }, { name: "dashboard" }]
 ```
 
-### `admin.namespaces.describe(namespace)`
+### `admin.namespaces.describe({ namespace })`
 
 Returns metadata for each key in the namespace. Useful for building admin editor UIs that need to know which input widget to render.
 
 ```ts
-const meta = await admin.namespaces.describe("common");
+const meta = await admin.namespaces.describe({ namespace: "common" });
 // [
 //   { key: "submit", type: "key", inputHint: "text" },
 //   { key: "greeting", type: "vars", vars: ["name"], inputHint: "text+vars" },
@@ -38,30 +38,35 @@ const meta = await admin.namespaces.describe("common");
 // ]
 ```
 
-`inputHint` values:
+inputHint values:
 
 | Value | When to use |
 |-------|-------------|
-| `"text"` | Plain string input |
-| `"text+vars"` | Input with variable hints displayed |
-| `"text+count"` | Input for each plural suffix (`_one`, `_other`, etc.) |
-| `"rich-text"` | Rich text editor with tag support |
+| "text" | Plain string input |
+| "text+vars" | Input with variable hints displayed |
+| "text+count" | Input for each plural suffix (_one, _other, etc.) |
+| "rich-text" | Rich text editor with tag support |
 
-### `admin.namespaces.getTranslations(namespace, locale)`
+### `admin.namespaces.getTranslations({ namespace, locale })`
 
 Returns all key→value pairs for a namespace + locale.
 
 ```ts
-const translations = await admin.namespaces.getTranslations("common", "en");
+const translations = await admin.namespaces.getTranslations({ namespace: "common", locale: "en" });
 // { "submit": "Submit", "greeting": "Hello, {name}!" }
 ```
 
-### `admin.namespaces.updateTranslation(namespace, locale, key, value)`
+### `admin.namespaces.updateTranslation({ namespace, locale, key, value })`
 
 Updates a single translation key. Internally: fetches current state, merges the change, PUTs the full object back.
 
 ```ts
-await admin.namespaces.updateTranslation("common", "en", "submit", "Submit Form");
+await admin.namespaces.updateTranslation({
+  namespace: "common",
+  locale: "en",
+  key: "submit",
+  value: "Submit Form",
+});
 ```
 
 ## Pages
@@ -75,34 +80,37 @@ const pages = await admin.pages.list();
 // [{ id: "...", slug: "home", locale: "en", status: "published", updatedAt: Date }]
 ```
 
-### `admin.pages.get(slug, locale, draft?)`
+### `admin.pages.get({ slug, locale, draft })`
 
 Returns a full page including blocks.
 
 ```ts
-const page = await admin.pages.get("home", "en");
-const draft = await admin.pages.get("home", "en", true); // fetch draft
+const page = await admin.pages.get({ slug: "home", locale: "en" });
+const draft = await admin.pages.get({ slug: "home", locale: "en", draft: true }); // fetch draft
 ```
 
-### `admin.pages.update(id, blocks)`
+### `admin.pages.update({ id, blocks })`
 
 Saves block data to a page. Sets status to `"draft"`.
 
 ```ts
-await admin.pages.update(pageId, [
-  { type: "hero", data: { title: "Welcome", ctaLabel: "Start", ctaHref: "/" } },
-  { type: "feature-grid", data: { items: ["Speed", "Safety", "DX"] } },
-]);
+await admin.pages.update({
+  id: pageId,
+  blocks: [
+    { type: "hero", data: { title: "Welcome", ctaLabel: "Start", ctaHref: "/" } },
+    { type: "feature-grid", data: { items: ["Speed", "Safety", "DX"] } },
+  ],
+});
 ```
 
 The API validates each block against its registered Zod schema. Invalid blocks are rejected with a 400 error.
 
-### `admin.pages.publish(id)`
+### `admin.pages.publish({ id })`
 
 Promotes the current draft to `"published"` status.
 
 ```ts
-await admin.pages.publish(pageId);
+await admin.pages.publish({ id: pageId });
 ```
 
 ## Media
@@ -131,17 +139,17 @@ const locales = await admin.locales.list();
 // [{ code: "en", name: "English", isDefault: true, updatedAt: Date }]
 ```
 
-### `admin.locales.upsert(code, name, isDefault?)`
+### `admin.locales.upsert({ code, name, isDefault })`
 
 ```ts
-await admin.locales.upsert("de", "German");
-await admin.locales.upsert("en", "English", true); // set as default
+await admin.locales.upsert({ code: "de", name: "German" });
+await admin.locales.upsert({ code: "en", name: "English", isDefault: true }); // set as default
 ```
 
-### `admin.locales.delete(code)`
+### `admin.locales.delete({ code })`
 
 ```ts
-await admin.locales.delete("fr");
+await admin.locales.delete({ code: "fr" });
 ```
 
 ## Error handling
@@ -152,7 +160,7 @@ All methods throw `CMSError` on non-2xx responses:
 import { CMSError } from "@modlog/better-cms/admin";
 
 try {
-  await admin.pages.update(id, blocks);
+  await admin.pages.update({ id, blocks });
 } catch (err) {
   if (err instanceof CMSError) {
     console.error(`CMS error ${err.status}: ${err.message}`);

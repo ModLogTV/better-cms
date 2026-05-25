@@ -25,17 +25,23 @@ import { z } from "zod";
 import type { PageBlock } from "@modlog/better-cms/plugins/pages";
 
 // Translation namespaces
-export const commonNamespace = defineNamespace("common", {
-  submit: key,
-  cancel: key,
-  greeting: vars<{ name: string }>(),
-  itemCount: plural<{ count: number }>(),
-  termsAndConditions: rich<"b" | "link">(),
+export const commonNamespace = defineNamespace({
+  name: "common",
+  definition: {
+    submit: key,
+    cancel: key,
+    greeting: vars<{ name: string }>(),
+    itemCount: plural<{ count: number }>(),
+    termsAndConditions: rich<"b" | "link">(),
+  },
 });
 
-export const dashboardNamespace = defineNamespace("dashboard", {
-  title: key,
-  welcomeBack: vars<{ name: string }>(),
+export const dashboardNamespace = defineNamespace({
+  name: "dashboard",
+  definition: {
+    title: key,
+    welcomeBack: vars<{ name: string }>(),
+  },
 });
 
 export const ALL_NAMESPACES = [commonNamespace, dashboardNamespace];

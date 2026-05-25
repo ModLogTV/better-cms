@@ -23,5 +23,5 @@ export function cloudflareR2Adapter(opts: R2Options) {
 		region: "auto",
 		credentials: opts.credentials,
 	});
-	return createS3Presigner(client, opts.bucket, opts.cdnUrl);
+	return createS3Presigner({ client, bucket: opts.bucket, cdnUrl: opts.cdnUrl });
 }

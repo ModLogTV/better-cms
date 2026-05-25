@@ -15,10 +15,11 @@ This pattern keeps the CMS API small and avoids memory pressure from streaming l
 
 ```ts
 interface CMSStorageAdapter {
-  presign(
-    key: string,
-    opts: { mimeType: string; ttl?: number }
-  ): Promise<{ uploadUrl: string; publicUrl: string }>;
+  presign(opts: {
+    key: string;
+    mimeType: string;
+    ttl?: number;
+  }): Promise<{ uploadUrl: string; publicUrl: string }>;
 }
 ```
 
@@ -64,7 +65,7 @@ Implement `CMSStorageAdapter` from `@modlog/better-cms`:
 import type { CMSStorageAdapter } from "@modlog/better-cms";
 
 export const myAdapter: CMSStorageAdapter = {
-  async presign(key, { mimeType, ttl = 300 }) {
+  async presign({ key, mimeType, ttl = 300 }) {
     const uploadUrl = await generatePresignedUrl(key, mimeType, ttl);
     const publicUrl = `https://cdn.example.com/${key}`;
     return { uploadUrl, publicUrl };

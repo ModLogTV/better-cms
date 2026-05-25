@@ -14,8 +14,8 @@ function mockFetch(fn: () => Promise<Response>) {
 
 beforeEach(() => {
 	configureCMSClient({ cmsUrl: CMS_URL, readToken: TOKEN });
-	deleteCached("translations:nav:en");
-	deleteCached("translations:nav:de");
+	deleteCached({ key: "translations:nav:en" });
+	deleteCached({ key: "translations:nav:de" });
 });
 
 describe("loadTranslations", () => {
@@ -25,7 +25,7 @@ describe("loadTranslations", () => {
 				new Response(JSON.stringify({ title: "Home" }), { status: 200 }),
 			),
 		);
-		const result = await loadTranslations("nav", "en");
+		const result = await loadTranslations({ namespace: "nav", locale: "en" });
 		expect(result).toEqual({ title: "Home" });
 		spy.mockRestore();
 	});
@@ -38,8 +38,8 @@ describe("loadTranslations", () => {
 				new Response(JSON.stringify({ title: "Cached" }), { status: 200 }),
 			);
 		});
-		await loadTranslations("nav", "en");
-		await loadTranslations("nav", "en");
+		await loadTranslations({ namespace: "nav", locale: "en" });
+		await loadTranslations({ namespace: "nav", locale: "en" });
 		expect(callCount).toBe(1);
 		spy.mockRestore();
 	});
@@ -61,8 +61,8 @@ describe("loadTranslations", () => {
 			);
 		});
 		const [a, b] = await Promise.all([
-			loadTranslations("nav", "en"),
-			loadTranslations("nav", "en"),
+			loadTranslations({ namespace: "nav", locale: "en" }),
+			loadTranslations({ namespace: "nav", locale: "en" }),
 		]);
 		expect(callCount).toBe(1);
 		expect(a).toEqual(b);
@@ -73,13 +73,13 @@ describe("loadTranslations", () => {
 		configureCMSClient({
 			cmsUrl: CMS_URL,
 			readToken: TOKEN,
-			fallback: async (ns, locale) =>
-				ns === "nav" && locale === "en" ? { title: "Fallback" } : null,
+			fallback: async ({ namespace, locale }) =>
+				namespace === "nav" && locale === "en" ? { title: "Fallback" } : null,
 		});
 		const spy = mockFetch(() =>
 			Promise.resolve(new Response("error", { status: 500 })),
 		);
-		const result = await loadTranslations("nav", "en");
+		const result = await loadTranslations({ namespace: "nav", locale: "en" });
 		expect(result).toEqual({ title: "Fallback" });
 		spy.mockRestore();
 	});
@@ -88,7 +88,7 @@ describe("loadTranslations", () => {
 		const spy = mockFetch(() =>
 			Promise.resolve(new Response("error", { status: 500 })),
 		);
-		const result = await loadTranslations("nav", "de");
+		const result = await loadTranslations({ namespace: "nav", locale: "de" });
 		expect(result).toEqual({});
 		spy.mockRestore();
 	});

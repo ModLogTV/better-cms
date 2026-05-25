@@ -11,7 +11,10 @@ export function translationRoutes(cms: CMSInstance) {
 			"/translations/:namespace/:locale",
 			async ({ params, set }) => {
 				set.headers["Cache-Control"] = CACHE_HEADER;
-				return cms.adapter.getTranslations(params.namespace, params.locale);
+				return cms.adapter.getTranslations({
+					namespace: params.namespace,
+					locale: params.locale,
+				});
 			},
 			{
 				params: t.Object({ namespace: t.String(), locale: t.String() }),
@@ -25,11 +28,11 @@ export function translationRoutes(cms: CMSInstance) {
 				if (!known.includes(params.namespace)) {
 					return { ok: false, error: `Unknown namespace: ${params.namespace}` };
 				}
-				await cms.adapter.upsertTranslations(
-					params.namespace,
-					params.locale,
-					body as Record<string, string>,
-				);
+				await cms.adapter.upsertTranslations({
+					namespace: params.namespace,
+					locale: params.locale,
+					values: body as Record<string, string>,
+				});
 				cms.events.emit("translations:updated", {
 					namespace: params.namespace,
 					locale: params.locale,

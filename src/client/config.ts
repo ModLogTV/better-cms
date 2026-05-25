@@ -1,9 +1,9 @@
 import { setCacheEnabled } from "./cache";
 
-export type FallbackLoader = (
-	namespace: string,
-	locale: string,
-) => Promise<Record<string, string> | null>;
+export type FallbackLoader = (opts: {
+	namespace: string;
+	locale: string;
+}) => Promise<Record<string, string> | null>;
 
 interface CMSClientConfig {
 	cmsUrl: string;
@@ -24,8 +24,8 @@ let _config: CMSClientConfig | null = null;
  *   cmsUrl: process.env.CMS_URL,
  *   readToken: process.env.CMS_READ_TOKEN,
  *   // optional: your bundler resolves these
- *   fallback: async (ns, locale) => {
- *     try { return await import(`./locales/${locale}/${ns}.json`) } catch { return null }
+ *   fallback: async ({ namespace, locale }) => {
+ *     try { return await import(`./locales/${locale}/${namespace}.json`) } catch { return null }
  *   },
  * })
  * ```

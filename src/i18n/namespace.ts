@@ -11,15 +11,18 @@ export interface NamespaceDef<T extends NamespaceDefinition> {
  *
  * @example
  * ```ts
- * export const nav = defineNamespace("nav", {
- *   topNav: {
- *     aboutUs: key,
- *     greeting: vars<{ name: string }>(),
- *   },
+ * export const nav = defineNamespace({
+ *   name: "nav",
+ *   definition: {
+ *     topNav: {
+ *       aboutUs: key,
+ *       greeting: vars<{ name: string }>("name"),
+ *     },
+ *   }
  * })
  * ```
  */
-export const defineNamespace = <T extends NamespaceDefinition>(
-	name: string,
-	definition: T,
-): NamespaceDef<T> => ({ name, definition });
+export const defineNamespace = <T extends NamespaceDefinition>(opts: {
+	name: string;
+	definition: T;
+}): NamespaceDef<T> => ({ name: opts.name, definition: opts.definition });

@@ -25,7 +25,7 @@ export const {
   useLocales,
   useUpsertLocale,
   useDeleteLocale,
-} = createAdminHooks(admin);
+} = createAdminHooks({ client: admin });
 
 // Wrap your admin app root:
 export function AdminProvider({ children }) {
@@ -63,12 +63,12 @@ const queryClient = new QueryClient({
 
 ## Hooks reference
 
-### `useNamespaceTranslations(namespace, locale)`
+### `useNamespaceTranslations({ namespace, locale })`
 
 Fetches all translations for a namespace + locale.
 
 ```tsx
-const { data, isLoading, error } = useNamespaceTranslations("common", "en");
+const { data, isLoading, error } = useNamespaceTranslations({ namespace: "common", locale: "en" });
 // data: Record<string, string> | undefined
 ```
 
@@ -100,13 +100,13 @@ const { data: pages } = usePages();
 
 Query key: `["cms", "pages"]`
 
-### `usePage(slug, locale, draft?)`
+### `usePage({ slug, locale, draft? })`
 
 Fetches a single page with its blocks.
 
 ```tsx
-const { data: page } = usePage("home", "en");
-const { data: draft } = usePage("home", "en", true);
+const { data: page } = usePage({ slug: "home", locale: "en" });
+const { data: draft } = usePage({ slug: "home", locale: "en", draft: true });
 // data: Page | undefined
 ```
 
@@ -133,15 +133,15 @@ Mutation to publish a page.
 
 ```tsx
 const { mutate: publish } = usePublishPage();
-publish(pageId);
+publish({ id: pageId });
 ```
 
-### `useDescribeNamespace(namespace)`
+### `useDescribeNamespace({ namespace })`
 
 Fetches key metadata for building editor UIs.
 
 ```tsx
-const { data: keys } = useDescribeNamespace("common");
+const { data: keys } = useDescribeNamespace({ namespace: "common" });
 // data: KeyMetadata[] | undefined
 // [{ key: "submit", type: "key", inputHint: "text" }, ...]
 ```
@@ -154,7 +154,7 @@ Handles the full presign + upload flow in one call.
 const { upload, isPending } = useMediaUpload();
 
 const handleFile = async (file: File) => {
-  const { publicUrl } = await upload(file);
+  const { publicUrl } = await upload({ file });
   // use publicUrl in block data
 };
 ```
@@ -177,7 +177,7 @@ mutate({ code: "fr", name: "French", isDefault: false });
 
 ```tsx
 const { mutate } = useDeleteLocale();
-mutate("fr");
+mutate({ code: "fr" });
 ```
 
 ## TanStack Query keys

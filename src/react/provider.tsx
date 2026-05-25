@@ -68,11 +68,11 @@ export function CMSProvider({
 			const slugs = Object.keys(contentRef.current);
 			await Promise.all([
 				...namespaces.map(async (ns) => {
-					const data = await loadTranslations(ns, currentLocale);
+					const data = await loadTranslations({ namespace: ns, locale: currentLocale });
 					setTranslations(ns, data);
 				}),
 				...slugs.map(async (slug) => {
-					const data = await loadPageContent(slug, currentLocale);
+					const data = await loadPageContent({ slug, locale: currentLocale });
 					setContent(slug, data);
 				}),
 			]);

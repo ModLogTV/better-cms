@@ -19,27 +19,35 @@ export function createServerFns(admin: AdminClient) {
 	return {
 		listNamespaces: () => admin.namespaces.list(),
 		describeNamespace: (namespace: string) =>
-			admin.namespaces.describe(namespace),
+			admin.namespaces.describe({ namespace }),
 		getTranslations: (namespace: string, locale: string) =>
-			admin.namespaces.getTranslations(namespace, locale),
+			admin.namespaces.getTranslations({ namespace, locale }),
 		updateTranslation: (
 			namespace: string,
 			locale: string,
 			key: string,
 			value: string,
-		) => admin.namespaces.updateTranslation(namespace, locale, key, value),
+		) => admin.namespaces.updateTranslation({ namespace, locale, key, value }),
 
 		listPages: () => admin.pages.list(),
 		getPage: (slug: string, locale: string, draft?: boolean) =>
-			admin.pages.get(slug, locale, draft),
+			admin.pages.get({ slug, locale, draft }),
 		updatePage: (id: string, blocks: unknown[]) =>
-			admin.pages.update(id, blocks as RawBlock[]),
-		publishPage: (id: string) => admin.pages.publish(id),
+			admin.pages.update({ id, blocks: blocks as RawBlock[] }),
+		publishPage: (id: string) => admin.pages.publish({ id }),
 
 		presignMedia: (opts: {
 			filename: string;
 			mimeType: string;
 			size: number;
 		}) => admin.media.presign(opts),
+
+		listLocales: () => admin.locales.list(),
+		upsertLocale: (opts: {
+			code: string;
+			name: string;
+			isDefault?: boolean;
+		}) => admin.locales.upsert(opts),
+		deleteLocale: (code: string) => admin.locales.delete({ code }),
 	};
 }

@@ -4,12 +4,15 @@ import { key, plural, rich, vars } from "../markers";
 import { defineNamespace } from "../namespace";
 import { createRichTranslator, createTranslator } from "../translator";
 
-const ns = defineNamespace("nav", {
-	topNav: {
-		aboutUs: key,
-		greeting: vars<{ name: string }>(),
-		items: plural<{ count: number }>(),
-		terms: rich<"b" | "link">(),
+const ns = defineNamespace({
+	name: "nav",
+	definition: {
+		topNav: {
+			aboutUs: key,
+			greeting: vars<{ name: string }>(),
+			items: plural<{ count: number }>(),
+			terms: rich<"b" | "link">(),
+		},
 	},
 });
 
@@ -20,8 +23,8 @@ const translations = {
 	"topNav.terms": "Read our <b>terms</b> and <link>privacy</link>.",
 };
 
-const t = createTranslator(ns, translations, "en");
-const tRich = createRichTranslator(ns, translations, "en");
+const t = createTranslator({ ns, translations, locale: "en" });
+const tRich = createRichTranslator({ ns, translations, locale: "en" });
 
 describe("createTranslator", () => {
 	test("plain key returns string", () => {
@@ -44,13 +47,17 @@ describe("createTranslator", () => {
 			"topNav.items_one": "One item",
 			"topNav.items_other": "{count} items",
 		};
-		const tPlural = createTranslator(ns, pluralTranslations, "en");
+		const tPlural = createTranslator({
+			ns,
+			translations: pluralTranslations,
+			locale: "en",
+		});
 		expect(tPlural("topNav.items", { count: 1 })).toBe("One item");
 		expect(tPlural("topNav.items", { count: 2 })).toBe("2 items");
 	});
 
 	test("missing key returns key string as fallback", () => {
-		const t2 = createTranslator(ns, {}, "en");
+		const t2 = createTranslator({ ns, translations: {}, locale: "en" });
 		expect(t2("topNav.aboutUs")).toBe("topNav.aboutUs");
 	});
 });
@@ -71,7 +78,7 @@ describe("createRichTranslator", () => {
 	});
 
 	test("missing key returns key string as fallback", () => {
-		const tRich2 = createRichTranslator(ns, {}, "en");
+		const tRich2 = createRichTranslator({ ns, translations: {}, locale: "en" });
 		expect(tRich2("topNav.terms", { b: (c) => c, link: (c) => c })).toBe(
 			"topNav.terms",
 		);

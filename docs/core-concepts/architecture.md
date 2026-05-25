@@ -58,10 +58,10 @@
 ```
 1. Frontend requests "common" namespace, locale "en"
 2. In-memory cache hit? → return immediately
-3. loadTranslations("common", "en") → GET /cms/translations/common/en
+3. loadTranslations({ namespace: "common", locale: "en" }) → GET /cms/translations/common/en
 4. API reads from DB via adapter → returns Record<string, string>
 5. Cache stores result with 60s TTL
-6. createTranslator(ns, data, "en") → typed t() function
+6. createTranslator({ ns, translations: data, locale: "en" }) → typed t() function
 7. t("greeting", { name: "Ada" }) → "Hello, Ada!"
 ```
 
@@ -75,7 +75,7 @@ If the API is unreachable and a `fallback` loader is configured:
 
 ```
 1. Frontend requests slug "/about", locale "en"
-2. loadPageContent("/about", "en") → GET /cms/pages/about?locale=en
+2. loadPageContent({ slug: "/about", locale: "en" }) → GET /cms/pages/about?locale=en
 3. API returns { blocks: [{ type: "hero", data: { title: "..." } }] }
 4. Frontend renders blocks by type
 ```

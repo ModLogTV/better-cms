@@ -23,12 +23,17 @@ export const getNamespaces = createServerFn({ method: "GET" })
 
 export const getTranslations = createServerFn({ method: "GET" })
   .validator((d: { namespace: string; locale: string }) => d)
-  .handler(({ data }) => fns.getTranslations(data.namespace, data.locale));
+  .handler(({ data }) => fns.getTranslations({ namespace: data.namespace, locale: data.locale }));
 
 export const updateTranslation = createServerFn({ method: "POST" })
   .validator((d: { namespace: string; locale: string; key: string; value: string }) => d)
   .handler(({ data }) =>
-    fns.updateTranslation(data.namespace, data.locale, data.key, data.value)
+    fns.updateTranslation({
+      namespace: data.namespace,
+      locale: data.locale,
+      key: data.key,
+      value: data.value,
+    })
   );
 
 export const getPages = createServerFn({ method: "GET" })
@@ -36,11 +41,11 @@ export const getPages = createServerFn({ method: "GET" })
 
 export const updatePage = createServerFn({ method: "POST" })
   .validator((d: { id: string; blocks: unknown[] }) => d)
-  .handler(({ data }) => fns.updatePage(data.id, data.blocks));
+  .handler(({ data }) => fns.updatePage({ id: data.id, blocks: data.blocks }));
 
 export const publishPage = createServerFn({ method: "POST" })
   .validator((d: { id: string }) => d)
-  .handler(({ data }) => fns.publishPage(data.id));
+  .handler(({ data }) => fns.publishPage({ id: data.id }));
 ```
 
 ## Available server fn wrappers
@@ -50,12 +55,12 @@ export const publishPage = createServerFn({ method: "POST" })
 | Method | Delegates to |
 |--------|-------------|
 | `listNamespaces()` | `admin.namespaces.list()` |
-| `getTranslations(namespace, locale)` | `admin.namespaces.getTranslations()` |
-| `updateTranslation(namespace, locale, key, value)` | `admin.namespaces.updateTranslation()` |
+| `getTranslations({ namespace, locale })` | `admin.namespaces.getTranslations()` |
+| `updateTranslation({ namespace, locale, key, value })` | `admin.namespaces.updateTranslation()` |
 | `listPages()` | `admin.pages.list()` |
-| `getPage(slug, locale, draft?)` | `admin.pages.get()` |
-| `updatePage(id, blocks)` | `admin.pages.update()` |
-| `publishPage(id)` | `admin.pages.publish()` |
+| `getPage({ slug, locale, draft? })` | `admin.pages.get()` |
+| `updatePage({ id, blocks })` | `admin.pages.update()` |
+| `publishPage({ id })` | `admin.pages.publish()` |
 | `listLocales()` | `admin.locales.list()` |
 
 ## Usage in routes

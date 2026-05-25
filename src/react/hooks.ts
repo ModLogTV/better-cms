@@ -31,14 +31,16 @@ export function useTranslations<T extends NamespaceDefinition>(
 			setLocalTranslations(existing);
 			return;
 		}
-		void loadTranslations(ns.name, ctx.locale).then((data) => {
-			ctx.setTranslations(ns.name, data);
-			setLocalTranslations(data);
-		});
+		void loadTranslations({ namespace: ns.name, locale: ctx.locale }).then(
+			(data) => {
+				ctx.setTranslations(ns.name, data);
+				setLocalTranslations(data);
+			},
+		);
 	}, [ns.name, ctx.locale, existing, ctx.setTranslations]);
 
-	const t = createTranslator(ns, translations, ctx.locale);
-	const tRich = createRichTranslator(ns, translations, ctx.locale);
+	const t = createTranslator({ ns, translations, locale: ctx.locale });
+	const tRich = createRichTranslator({ ns, translations, locale: ctx.locale });
 
 	return { t, tRich };
 }
@@ -47,7 +49,7 @@ export function useTranslations<T extends NamespaceDefinition>(
  * Returns page blocks for the given slug.
  * Reads from CMSProvider context — no fetch if slug was pre-loaded server-side.
  */
-export function usePageContent(slug: string): RawBlock[] {
+export function usePageContent({ slug }: { slug: string }): RawBlock[] {
 	const ctx = useCMSContext();
 	const existing = ctx.content[slug];
 
@@ -58,7 +60,7 @@ export function usePageContent(slug: string): RawBlock[] {
 			setBlocks(existing);
 			return;
 		}
-		void loadPageContent(slug, ctx.locale).then((data) => {
+		void loadPageContent({ slug, locale: ctx.locale }).then((data) => {
 			ctx.setContent(slug, data);
 			setBlocks(data);
 		});

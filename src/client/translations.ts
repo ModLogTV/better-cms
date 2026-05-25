@@ -10,16 +10,17 @@ const inflight = new Map<string, Promise<Record<string, string>>>();
  * Loads translations for a namespace+locale with 3-tier fallback:
  * 1. In-memory cache (TTL 60s)
  * 2. GET /cms/translations/:namespace/:locale
- * 3. `config.fallback(namespace, locale)` if provided
+ * 3. `config.fallback({ namespace, locale })` if provided
  * 4. {} — t() returns the key string
  */
-export async function loadTranslations(
-	namespace: string,
-	locale: string,
-): Promise<Record<string, string>> {
+export async function loadTranslations(opts: {
+	namespace: string;
+	locale: string;
+}): Promise<Record<string, string>> {
+	const { namespace, locale } = opts;
 	const cacheKey = `translations:${namespace}:${locale}`;
 
-	const cached = getCached<Record<string, string>>(cacheKey);
+	const cached = getCached<Record<string, string>>({ key: cacheKey });
 	if (cached) return cached;
 
 	const existing = inflight.get(cacheKey);
@@ -36,14 +37,14 @@ export async function loadTranslations(
 			);
 			if (!res.ok) throw new Error(res.statusText);
 			const data = (await res.json()) as Record<string, string>;
-			setCached(cacheKey, data, TTL_MS);
+			setCached({ key: cacheKey, value: data, ttlMs: TTL_MS });
 			return data;
 		} catch {
 			const { fallback } = getClientConfig();
 			if (fallback) {
-				const data = await fallback(namespace, locale).catch(() => null);
+				const data = await fallback({ namespace, locale }).catch(() => null);
 				if (data) {
-					setCached(cacheKey, data, TTL_MS);
+					setCached({ key: cacheKey, value: data, ttlMs: TTL_MS });
 					return data;
 				}
 			}

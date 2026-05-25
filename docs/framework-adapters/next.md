@@ -16,8 +16,8 @@ export default async function RootLayout({ children }) {
 // app/page.tsx
 export default async function Page() {
   const locale = await getLocale();
-  const data = await loadTranslations("common", locale);
-  const t = createTranslator(commonNamespace, data, locale);
+  const data = await loadTranslations({ namespace: "common", locale });
+  const t = createTranslator({ ns: commonNamespace, translations: data, locale });
   return <h1>{t("greeting", { name: "Guest" })}</h1>;
 }
 ```

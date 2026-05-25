@@ -20,7 +20,11 @@ export function pageRoutes(ctx: CMSContext, blocks: PageBlock[]) {
 			async ({ params, query, set }) => {
 				const draft = query.draft === "true";
 				const locale = query.locale ?? "en";
-				const page = await ctx.adapter.getPage(params.slug, locale, draft);
+				const page = await ctx.adapter.getPage({
+					slug: params.slug,
+					locale,
+					draft,
+				});
 				if (!page) return set.status === 200 ? (set.status = 404) : null;
 				set.headers["Cache-Control"] = CACHE_HEADER;
 				return page.blocks;
@@ -47,7 +51,7 @@ export function pageRoutes(ctx: CMSContext, blocks: PageBlock[]) {
 						return { ok: false, error: result.error.message };
 					}
 				}
-				await ctx.adapter.upsertPage(params.id, rawBlocks);
+				await ctx.adapter.upsertPage({ id: params.id, blocks: rawBlocks });
 				return { ok: true };
 			},
 			{
@@ -58,7 +62,7 @@ export function pageRoutes(ctx: CMSContext, blocks: PageBlock[]) {
 		.post(
 			"/pages/:id/publish",
 			async ({ params }) => {
-				await ctx.adapter.publishPage(params.id);
+				await ctx.adapter.publishPage({ id: params.id });
 				return { ok: true };
 			},
 			{ params: t.Object({ id: t.String() }) },

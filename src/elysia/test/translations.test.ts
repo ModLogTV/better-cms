@@ -64,7 +64,7 @@ describe("translations routes", () => {
 			const { createCMS } = require("../../core/index");
 			const { defineNamespace } = require("../../i18n/namespace");
 			const { key } = require("../../i18n/markers");
-			const ns = defineNamespace("nav", { title: key });
+			const ns = defineNamespace({ name: "nav", definition: { title: key } });
 			const instance = createCMS({
 				database: adapter,
 				namespaces: [ns],

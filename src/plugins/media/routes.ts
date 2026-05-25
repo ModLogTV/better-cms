@@ -10,7 +10,8 @@ export function mediaRoutes(ctx: CMSContext) {
 				return { ok: false, error: "No storage adapter configured" };
 			}
 			const key = `${Date.now()}-${body.filename}`;
-			const { uploadUrl, publicUrl } = await ctx.storage.presign(key, {
+			const { uploadUrl, publicUrl } = await ctx.storage.presign({
+				key,
 				mimeType: body.mimeType,
 				size: body.size,
 			});

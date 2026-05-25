@@ -31,13 +31,13 @@ Translation utilities — platform neutral.
 
 | Export | Type | Description |
 |--------|------|-------------|
-| `defineNamespace(name, def)` | function | Creates a `NamespaceDef` |
+| `defineNamespace({ name, definition })` | function | Creates a `NamespaceDef` |
 | `key` | constant | Plain string marker |
 | `vars<T>()` | function | Interpolated string marker |
 | `plural<T>()` | function | Pluralization marker |
 | `rich<Tags>()` | function | Rich text marker |
-| `createTranslator(ns, data, locale)` | function | Returns typed `t()` |
-| `createRichTranslator(ns, data, locale)` | function | Returns typed `tRich()` |
+| `createTranslator({ ns, translations, locale })` | function | Returns typed `t()` |
+| `createRichTranslator({ ns, translations, locale })` | function | Returns typed `tRich()` |
 | `NamespaceDef<T>` | type | `{ name: string; definition: T }` |
 | `KeyMarker` | type | Marker type for `key` |
 | `VarsMarker<T>` | type | Marker type for `vars<T>()` |
@@ -55,8 +55,8 @@ Frontend data fetching — platform neutral.
 | Export | Type | Description |
 |--------|------|-------------|
 | `configureCMSClient(config)` | function | Initializes the client singleton |
-| `loadTranslations(namespace, locale)` | function | Fetches translations (cached) |
-| `loadPageContent(slug, locale)` | function | Fetches page blocks (cached) |
+| `loadTranslations({ namespace, locale })` | function | Fetches translations (cached) |
+| `loadPageContent({ slug, locale })` | function | Fetches page blocks (cached) |
 | `getCached<T>(key)` | function | Read from in-memory cache |
 | `setCached<T>(key, value, ttlMs)` | function | Write to in-memory cache |
 | `deleteCached(key)` | function | Invalidate cache entry |

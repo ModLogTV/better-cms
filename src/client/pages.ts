@@ -10,13 +10,14 @@ const inflight = new Map<string, Promise<RawBlock[]>>();
  * Loads page blocks for a slug+locale with fallback to empty array.
  * Uses the same 3-tier pattern as loadTranslations (cache → API → []).
  */
-export async function loadPageContent(
-	slug: string,
-	locale: string,
-): Promise<RawBlock[]> {
+export async function loadPageContent(opts: {
+	slug: string;
+	locale: string;
+}): Promise<RawBlock[]> {
+	const { slug, locale } = opts;
 	const cacheKey = `pages:${slug}:${locale}`;
 
-	const cached = getCached<RawBlock[]>(cacheKey);
+	const cached = getCached<RawBlock[]>({ key: cacheKey });
 	if (cached) return cached;
 
 	const existing = inflight.get(cacheKey);
@@ -34,7 +35,7 @@ export async function loadPageContent(
 			);
 			if (!res.ok) throw new Error(res.statusText);
 			const data = (await res.json()) as RawBlock[];
-			setCached(cacheKey, data, TTL_MS);
+			setCached({ key: cacheKey, value: data, ttlMs: TTL_MS });
 			return data;
 		} catch {
 			return [];

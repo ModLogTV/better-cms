@@ -29,7 +29,7 @@ export function SubmitButton() {
 ### How `useTranslations` works
 
 1. Checks `CMSProvider` context for the namespace — if pre-loaded server-side, returns immediately (no fetch)
-2. If missing, calls `loadTranslations(ns.name, locale)` in a `useEffect`
+2. If missing, calls `loadTranslations({ namespace: ns.name, locale })` in a `useEffect`
 3. Returns `{ t, tRich }` — both functions are typed to your namespace definition
 
 The hook never suspends. On the first render before data loads, `t("submit")` returns `""` (empty string from an empty translations object). Pre-seeding via `initialTranslations` avoids this.
@@ -46,7 +46,10 @@ import { commonNamespace } from "@repo/cms-config";
 import "./cms-client"; // initialize singleton
 
 export default async function RootLayout({ children, params }) {
-  const common = await loadTranslations(commonNamespace.name, params.locale);
+  const common = await loadTranslations({
+    namespace: commonNamespace.name,
+    locale: params.locale,
+  });
 
   return (
     <html lang={params.locale}>
@@ -92,8 +95,8 @@ If you are not using Next.js, use `loadTranslations` + `createTranslator` direct
 import { loadTranslations } from "@modlog/better-cms/client";
 import { createTranslator } from "@modlog/better-cms/i18n";
 
-const data = await loadTranslations(ns.name, locale);
-const t = createTranslator(ns, data, locale);
+const data = await loadTranslations({ namespace: ns.name, locale });
+const t = createTranslator({ ns, translations: data, locale });
 ```
 
 `loadTranslations` respects the in-memory cache — if the layout already fetched `common/en`, this call returns immediately.
@@ -103,7 +106,7 @@ const t = createTranslator(ns, data, locale);
 ### `t(key, vars?)` — plain and vars keys
 
 ```ts
-const t = createTranslator(ns, translations, "en");
+const t = createTranslator({ ns, translations, locale: "en" });
 
 t("submit")                           // "Submit"
 t("greeting", { name: "Alice" })      // "Hello, Alice!"
@@ -119,7 +122,7 @@ TypeScript enforces:
 ### `tRich(key, tags)` — rich text keys
 
 ```ts
-const tRich = createRichTranslator(ns, translations, "en");
+const tRich = createRichTranslator({ ns, translations, locale: "en" });
 
 tRich("terms", {
   b: (chunks) => <strong>{chunks}</strong>,

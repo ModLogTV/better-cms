@@ -15,12 +15,13 @@ interface AdminClientOptions {
 	token: string;
 }
 
-async function apiFetch<T>(
-	cmsUrl: string,
-	token: string,
-	path: string,
-	init?: RequestInit,
-): Promise<T> {
+async function apiFetch<T>(opts: {
+	cmsUrl: string;
+	token: string;
+	path: string;
+	init?: RequestInit;
+}): Promise<T> {
+	const { cmsUrl, token, path, init } = opts;
 	const res = await fetch(`${cmsUrl}${path}`, {
 		...init,
 		headers: {
@@ -50,16 +51,26 @@ async function apiFetch<T>(
  */
 export function createAdminClient(opts: AdminClientOptions): AdminClient {
 	const { cmsUrl, token } = opts;
-	const get = <T>(path: string) => apiFetch<T>(cmsUrl, token, path);
+	const get = <T>(path: string) => apiFetch<T>({ cmsUrl, token, path });
 	const put = <T>(path: string, body: unknown) =>
-		apiFetch<T>(cmsUrl, token, path, {
-			method: "PUT",
-			body: JSON.stringify(body),
+		apiFetch<T>({
+			cmsUrl,
+			token,
+			path,
+			init: {
+				method: "PUT",
+				body: JSON.stringify(body),
+			},
 		});
 	const post = <T>(path: string, body?: unknown) =>
-		apiFetch<T>(cmsUrl, token, path, {
-			method: "POST",
-			body: body != null ? JSON.stringify(body) : undefined,
+		apiFetch<T>({
+			cmsUrl,
+			token,
+			path,
+			init: {
+				method: "POST",
+				body: body != null ? JSON.stringify(body) : undefined,
+			},
 		});
 
 	return {
@@ -70,16 +81,17 @@ export function createAdminClient(opts: AdminClientOptions): AdminClient {
 			 * Returns metadata for all keys in a namespace, including their types (rich, vars, etc.)
 			 * and suggested UI input hints.
 			 */
-			describe: (namespace) =>
-				get<KeyMetadata[]>(`/cms/admin/namespaces/${namespace}/describe`),
+			describe: (opts) =>
+				get<KeyMetadata[]>(`/cms/admin/namespaces/${opts.namespace}/describe`),
 			/** Fetches all raw translation key-value pairs for a specific namespace and locale. */
-			getTranslations: (namespace, locale) =>
-				get(`/cms/translations/${namespace}/${locale}`),
+			getTranslations: (opts) =>
+				get(`/cms/translations/${opts.namespace}/${opts.locale}`),
 			/**
 			 * Updates a single translation key. Fetches the current state, merges the change,
 			 * and persists it back to the adapter.
 			 */
-			updateTranslation: async (namespace, locale, key, value) => {
+			updateTranslation: async (opts) => {
+				const { namespace, locale, key, value } = opts;
 				const current = await get<Record<string, string>>(
 					`/cms/translations/${namespace}/${locale}`,
 				);
@@ -96,14 +108,16 @@ export function createAdminClient(opts: AdminClientOptions): AdminClient {
 			 * Fetches a single page by its slug.
 			 * @param draft If true, fetches the latest saved draft instead of the published version.
 			 */
-			get: (slug, locale, draft = false) =>
-				get(
+			get: (opts) => {
+				const { slug, locale, draft = false } = opts;
+				return get(
 					`/cms/pages/${encodeURIComponent(slug)}?locale=${locale}&draft=${draft}`,
-				),
+				);
+			},
 			/** Updates the blocks of a page. Validates blocks against the registered schema. */
-			update: (id, blocks) => put(`/cms/pages/${id}`, blocks),
+			update: (opts) => put(`/cms/pages/${opts.id}`, opts.blocks),
 			/** Promotes the current draft of a page to the published status. */
-			publish: (id) => post(`/cms/pages/${id}/publish`),
+			publish: (opts) => post(`/cms/pages/${opts.id}/publish`),
 		},
 		media: {
 			/**
@@ -116,12 +130,16 @@ export function createAdminClient(opts: AdminClientOptions): AdminClient {
 			/** Lists all active locales in the CMS. */
 			list: () => get("/cms/admin/locales"),
 			/** Adds or updates a locale definition. */
-			upsert: (code, name, isDefault) =>
-				put("/cms/admin/locales", { code, name, isDefault }),
+			upsert: (opts) => put("/cms/admin/locales", opts),
 			/** Permanently removes a locale. */
-			delete: (code) =>
-				apiFetch(cmsUrl, token, `/cms/admin/locales/${code}`, {
-					method: "DELETE",
+			delete: (opts) =>
+				apiFetch({
+					cmsUrl,
+					token,
+					path: `/cms/admin/locales/${opts.code}`,
+					init: {
+						method: "DELETE",
+					},
 				}),
 		},
 	};

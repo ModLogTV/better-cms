@@ -37,7 +37,7 @@ setCached("translations:common:en", data, 60_000);
 
 ## Request deduplication
 
-If multiple concurrent requests (during SSR) call `loadTranslations("common", "en")` before the first response arrives, only **one** HTTP request is sent. All callers share the same in-flight Promise.
+If multiple concurrent requests (during SSR) call `loadTranslations({ namespace: "common", locale: "en" })` before the first response arrives, only **one** HTTP request is sent. All callers share the same in-flight Promise.
 
 This prevents the "waterfall" problem where 10 server components each trigger a separate network request for the same namespace.
 
@@ -51,7 +51,7 @@ import { loadTranslations } from "@modlog/better-cms/client";
 import { commonNamespace } from "@repo/cms-config";
 
 export default async function Layout({ children }) {
-  const common = await loadTranslations(commonNamespace.name, "en");
+  const common = await loadTranslations({ namespace: commonNamespace.name, locale: "en" });
 
   return (
     <CMSProvider

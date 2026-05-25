@@ -15,7 +15,7 @@ apps/web/                      ← imports from @repo/cms-config
 ```ts
 import { defineNamespace } from "@modlog/better-cms/i18n";
 
-export const ns = defineNamespace(name, definition);
+export const ns = defineNamespace({ name, definition });
 ```
 
 - `name`: unique string identifier — used in API URLs and fallback file paths
@@ -30,9 +30,12 @@ Returns a `NamespaceDef<T>` — an object with `.name` and `.definition`. Pass t
 ```ts
 import { key } from "@modlog/better-cms/i18n";
 
-const ns = defineNamespace("ui", {
-  submitButton: key,
-  cancelButton: key,
+const ns = defineNamespace({
+  name: "ui",
+  definition: {
+    submitButton: key,
+    cancelButton: key,
+  },
 });
 ```
 
@@ -43,9 +46,12 @@ const ns = defineNamespace("ui", {
 ```ts
 import { vars } from "@modlog/better-cms/i18n";
 
-const ns = defineNamespace("ui", {
-  greeting: vars<{ name: string }>(),
-  priceLabel: vars<{ price: number; currency: string }>(),
+const ns = defineNamespace({
+  name: "ui",
+  definition: {
+    greeting: vars<{ name: string }>(),
+    priceLabel: vars<{ price: number; currency: string }>(),
+  },
 });
 ```
 
@@ -66,9 +72,12 @@ t("greeting", { name: "Alice" }) // ✓
 ```ts
 import { plural } from "@modlog/better-cms/i18n";
 
-const ns = defineNamespace("ui", {
-  itemCount: plural<{ count: number }>(),
-  daysRemaining: plural<{ count: number }>(),
+const ns = defineNamespace({
+  name: "ui",
+  definition: {
+    itemCount: plural<{ count: number }>(),
+    daysRemaining: plural<{ count: number }>(),
+  },
 });
 ```
 
@@ -94,8 +103,11 @@ If a specific suffix key is missing, falls back to `_other`.
 ```ts
 import { rich } from "@modlog/better-cms/i18n";
 
-const ns = defineNamespace("legal", {
-  termsAccept: rich<"b" | "termsLink" | "privacyLink">(),
+const ns = defineNamespace({
+  name: "legal",
+  definition: {
+    termsAccept: rich<"b" | "termsLink" | "privacyLink">(),
+  },
 });
 ```
 
@@ -121,17 +133,20 @@ Returns `ReactNode`. TypeScript errors if:
 ## Nested keys
 
 ```ts
-const ns = defineNamespace("nav", {
-  topNav: {
-    home: key,
-    about: key,
-    contact: key,
-  },
-  footer: {
-    copyright: vars<{ year: number }>(),
-    links: {
-      privacy: key,
-      terms: key,
+const ns = defineNamespace({
+  name: "nav",
+  definition: {
+    topNav: {
+      home: key,
+      about: key,
+      contact: key,
+    },
+    footer: {
+      copyright: vars<{ year: number }>(),
+      links: {
+        privacy: key,
+        terms: key,
+      },
     },
   },
 });
@@ -173,7 +188,7 @@ Unregistered namespaces can still be fetched from the DB (the API serves any nam
 The admin API exposes a `describe` endpoint that returns metadata for each key — useful for building admin editor UIs:
 
 ```ts
-const meta = await admin.namespaces.describe("nav");
+const meta = await admin.namespaces.describe({ namespace: "nav" });
 // [
 //   { key: "topNav.home", type: "key", inputHint: "text" },
 //   { key: "footer.copyright", type: "vars", vars: ["year"], inputHint: "text+vars" },

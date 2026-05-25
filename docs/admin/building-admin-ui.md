@@ -35,7 +35,7 @@ export const {
   useLocales,
   useUpsertLocale,
   useDeleteLocale,
-} = createAdminHooks(admin);
+} = createAdminHooks({ client: admin });
 
 export function AdminProvider({ children }) {
   return <AdminQueryProvider>{children}</AdminQueryProvider>;
@@ -48,8 +48,8 @@ Pattern: show all keys for a namespace, render the appropriate input per `inputH
 
 ```tsx
 function TranslationEditor({ namespace, locale }: { namespace: string; locale: string }) {
-  const { data: translations } = useNamespaceTranslations(namespace, locale);
-  const { data: keys } = useDescribeNamespace(namespace);
+  const { data: translations } = useNamespaceTranslations({ namespace, locale });
+  const { data: keys } = useDescribeNamespace({ namespace });
   const { mutate: updateTranslation } = useUpdateTranslation();
 
   if (!keys || !translations) return <div>Loading...</div>;
@@ -117,14 +117,14 @@ Pattern: show a list of blocks, allow drag-to-reorder, inline field editing per 
 
 ```tsx
 function PageEditor({ slug, locale }: { slug: string; locale: string }) {
-  const { data: page } = usePage(slug, locale, true); // fetch draft
+  const { data: page } = usePage({ slug, locale, draft: true }); // fetch draft
   const { mutate: updatePage } = useUpdatePage();
   const { mutate: publishPage } = usePublishPage();
 
   const [blocks, setBlocks] = useState(page?.blocks ?? []);
 
   const save = () => updatePage({ id: page!.id, blocks });
-  const publish = () => publishPage(page!.id);
+  const publish = () => publishPage({ id: page!.id });
 
   return (
     <div>
@@ -150,7 +150,7 @@ function MediaUploader({ onUpload }: { onUpload: (url: string) => void }) {
       onChange={async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        const { publicUrl } = await upload(file);
+        const { publicUrl } = await upload({ file });
         onUpload(publicUrl);
       }}
     />
@@ -172,7 +172,7 @@ function LocaleManager() {
         <div key={locale.code}>
           {locale.code} — {locale.name}
           {locale.isDefault && " (default)"}
-          <button onClick={() => remove(locale.code)}>Remove</button>
+          <button onClick={() => remove({ code: locale.code })}>Remove</button>
         </div>
       ))}
       <button onClick={() => upsert({ code: "fr", name: "French" })}>

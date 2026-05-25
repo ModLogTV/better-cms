@@ -36,10 +36,11 @@ interface UpdateTranslationArgs {
  */
 export function createAdminHooks(admin: AdminClient) {
 	return {
-		useNamespaceTranslations(namespace: string, locale: string) {
+		useNamespaceTranslations(opts: { namespace: string; locale: string }) {
+			const { namespace, locale } = opts;
 			return useQuery({
 				queryKey: ["cms", "translations", namespace, locale],
-				queryFn: () => admin.namespaces.getTranslations(namespace, locale),
+				queryFn: () => admin.namespaces.getTranslations({ namespace, locale }),
 			});
 		},
 
@@ -51,13 +52,8 @@ export function createAdminHooks(admin: AdminClient) {
 				UpdateTranslationArgs,
 				{ prev?: Record<string, string> }
 			>({
-				mutationFn: ({
-					namespace,
-					locale,
-					key,
-					value,
-				}: UpdateTranslationArgs) =>
-					admin.namespaces.updateTranslation(namespace, locale, key, value),
+				mutationFn: (args: UpdateTranslationArgs) =>
+					admin.namespaces.updateTranslation(args),
 				onMutate: async ({
 					namespace,
 					locale,
@@ -105,18 +101,19 @@ export function createAdminHooks(admin: AdminClient) {
 			});
 		},
 
-		usePage(slug: string, locale: string, draft = false) {
+		usePage(opts: { slug: string; locale: string; draft?: boolean }) {
+			const { slug, locale, draft = false } = opts;
 			return useQuery({
 				queryKey: ["cms", "page", slug, locale, draft],
-				queryFn: () => admin.pages.get(slug, locale, draft),
+				queryFn: () => admin.pages.get({ slug, locale, draft }),
 			});
 		},
 
 		useUpdatePage() {
 			const qc = useQueryClient();
 			return useMutation<void, Error, { id: string; blocks: RawBlock[] }>({
-				mutationFn: ({ id, blocks }: { id: string; blocks: RawBlock[] }) =>
-					admin.pages.update(id, blocks),
+				mutationFn: (args: { id: string; blocks: RawBlock[] }) =>
+					admin.pages.update(args),
 				onSettled: () =>
 					void qc.invalidateQueries({ queryKey: ["cms", "pages"] }),
 			});
@@ -124,23 +121,28 @@ export function createAdminHooks(admin: AdminClient) {
 
 		usePublishPage() {
 			const qc = useQueryClient();
-			return useMutation<void, Error, string>({
-				mutationFn: (pageId: string) => admin.pages.publish(pageId),
+			return useMutation<void, Error, { id: string }>({
+				mutationFn: (args: { id: string }) => admin.pages.publish(args),
 				onSettled: () =>
 					void qc.invalidateQueries({ queryKey: ["cms", "pages"] }),
 			});
 		},
 
-		useDescribeNamespace(namespace: string) {
+		useDescribeNamespace(opts: { namespace: string }) {
+			const { namespace } = opts;
 			return useQuery<KeyMetadata[]>({
 				queryKey: ["cms", "namespace", namespace, "describe"],
-				queryFn: () => admin.namespaces.describe(namespace),
+				queryFn: () => admin.namespaces.describe({ namespace }),
 			});
 		},
 
 		useMediaUpload() {
-			const mutation = useMutation<{ publicUrl: string }, Error, File>({
-				mutationFn: async (file: File) => {
+			const mutation = useMutation<
+				{ publicUrl: string },
+				Error,
+				{ file: File }
+			>({
+				mutationFn: async ({ file }: { file: File }) => {
 					const { uploadUrl, publicUrl } = await admin.media.presign({
 						filename: file.name,
 						mimeType: file.type,
@@ -152,7 +154,7 @@ export function createAdminHooks(admin: AdminClient) {
 			});
 
 			return {
-				upload: (file: File) => mutation.mutateAsync(file),
+				upload: (opts: { file: File }) => mutation.mutateAsync(opts),
 				isPending: mutation.isPending,
 			};
 		},
@@ -171,8 +173,7 @@ export function createAdminHooks(admin: AdminClient) {
 				Error,
 				{ code: string; name: string; isDefault?: boolean }
 			>({
-				mutationFn: (data) =>
-					admin.locales.upsert(data.code, data.name, data.isDefault),
+				mutationFn: (data) => admin.locales.upsert(data),
 				onSettled: () =>
 					void qc.invalidateQueries({ queryKey: ["cms", "locales"] }),
 			});
@@ -180,8 +181,8 @@ export function createAdminHooks(admin: AdminClient) {
 
 		useDeleteLocale() {
 			const qc = useQueryClient();
-			return useMutation<void, Error, string>({
-				mutationFn: (code: string) => admin.locales.delete(code),
+			return useMutation<void, Error, { code: string }>({
+				mutationFn: (opts: { code: string }) => admin.locales.delete(opts),
 				onSettled: () =>
 					void qc.invalidateQueries({ queryKey: ["cms", "locales"] }),
 			});

@@ -17,9 +17,12 @@ const mockAdapter: CMSAdapter = {
 	deleteLocale: mock(async () => {}),
 };
 
-const ns = defineNamespace("nav", {
-	title: key,
-	greeting: vars<{ name: string }>(),
+const ns = defineNamespace({
+	name: "nav",
+	definition: {
+		title: key,
+		greeting: vars<{ name: string }>(),
+	},
 });
 
 describe("createCMS", () => {
@@ -90,7 +93,7 @@ describe("createCMS", () => {
 		const upserted: any[] = [];
 		const adapter = {
 			...mockAdapter,
-			upsertLocale: async (code: any, name: any, isDefault: any) => {
+			upsertLocale: async ({ code, name, isDefault }: any) => {
 				upserted.push({ code, name, isDefault });
 			},
 		} as any;

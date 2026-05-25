@@ -8,9 +8,12 @@ import { toElysiaPlugin } from "../index";
 
 export const TOKEN = "test-token";
 
-export const ns = defineNamespace("nav", {
-	title: key,
-	greeting: vars<{ name: string }>(),
+export const ns = defineNamespace({
+	name: "nav",
+	definition: {
+		title: key,
+		greeting: vars<{ name: string }>(),
+	},
 });
 
 export function makeAdapter(overrides: Partial<CMSAdapter> = {}): CMSAdapter {

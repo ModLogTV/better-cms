@@ -124,19 +124,28 @@ import { z } from "zod";
 import type { PageBlock } from "@modlog/better-cms/plugins/pages";
 
 // 1. Define Translation Namespaces
-export const commonNamespace = defineNamespace("common", {
-  greeting: vars<{ name: string }>(), // Interpolated variables: "Hello, {name}!"
-  items: plural<{ count: number }>(), // Pluralization: "items_one": "One item", "items_other": "{count} items"
-  termsAndConditions: rich<"b" | "link">(), // Rich-text with JSX tags: "Accept <b>Terms</b>"
-  submit: key, // Simple static string: "Submit"
+export const commonNamespace = defineNamespace({
+  name: "common",
+  definition: {
+    greeting: vars<{ name: string }>(), // Interpolated variables: "Hello, {name}!"
+    items: plural<{ count: number }>(), // Pluralization: "items_one": "One item", "items_other": "{count} items"
+    termsAndConditions: rich<"b" | "link">(), // Rich-text with JSX tags: "Accept <b>Terms</b>"
+    submit: key, // Simple static string: "Submit"
+  },
 });
 
-export const dashboardNamespace = defineNamespace("dashboard", {
-  // ...
+export const dashboardNamespace = defineNamespace({
+  name: "dashboard",
+  definition: {
+    // ...
+  },
 });
 
-export const settingsNamespace = defineNamespace("settings", {
-  // ...
+export const settingsNamespace = defineNamespace({
+  name: "settings",
+  definition: {
+    // ...
+  },
 });
 
 // 2. Define Page Blocks
@@ -335,8 +344,8 @@ import { createTranslator } from "@modlog/better-cms/i18n";
 import { commonNamespace } from "@repo/cms-config";
 
 export default async function Page() {
-  const data = await loadTranslations(commonNamespace.name, "en");
-  const t = createTranslator(commonNamespace, data, "en");
+  const data = await loadTranslations({ namespace: commonNamespace.name, locale: "en" });
+  const t = createTranslator({ ns: commonNamespace, translations: data, locale: "en" });
 
   return <h1>{t("submit")}</h1>;
 }
@@ -419,7 +428,7 @@ export const getPages = createServerFn({ method: "GET" })
 
 export const updatePage = createServerFn({ method: "POST" })
   .validator((d: { id: string, blocks: any[] }) => d)
-  .handler(({ data }) => rawFns.updatePage(data.id, data.blocks));
+  .handler(({ data }) => rawFns.updatePage({ id: data.id, blocks: data.blocks }));
 ```
 
 ## Adapters

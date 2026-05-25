@@ -27,22 +27,22 @@ export interface AdminClient {
 		 * Returns metadata for all keys in a namespace, including their types (rich, vars, etc.)
 		 * and suggested UI input hints.
 		 */
-		describe(namespace: string): Promise<KeyMetadata[]>;
+		describe(opts: { namespace: string }): Promise<KeyMetadata[]>;
 		/** Fetches all raw translation key-value pairs for a specific namespace and locale. */
-		getTranslations(
-			namespace: string,
-			locale: string,
-		): Promise<Record<string, string>>;
+		getTranslations(opts: {
+			namespace: string;
+			locale: string;
+		}): Promise<Record<string, string>>;
 		/**
 		 * Updates a single translation key. Fetches the current state, merges the change,
 		 * and persists it back to the adapter.
 		 */
-		updateTranslation(
-			namespace: string,
-			locale: string,
-			key: string,
-			value: string,
-		): Promise<void>;
+		updateTranslation(opts: {
+			namespace: string;
+			locale: string;
+			key: string;
+			value: string;
+		}): Promise<void>;
 	};
 	pages: {
 		/** Lists all pages available in the CMS with their basic status and metadata. */
@@ -51,11 +51,15 @@ export interface AdminClient {
 		 * Fetches a single page by its slug.
 		 * @param draft If true, fetches the latest saved draft instead of the published version.
 		 */
-		get(slug: string, locale: string, draft?: boolean): Promise<Page>;
+		get(opts: {
+			slug: string;
+			locale: string;
+			draft?: boolean;
+		}): Promise<Page>;
 		/** Updates the blocks of a page. Validates blocks against the registered schema. */
-		update(id: string, blocks: RawBlock[]): Promise<void>;
+		update(opts: { id: string; blocks: RawBlock[] }): Promise<void>;
 		/** Promotes the current draft of a page to the published status. */
-		publish(id: string): Promise<void>;
+		publish(opts: { id: string }): Promise<void>;
 	};
 	media: {
 		/**
@@ -72,8 +76,12 @@ export interface AdminClient {
 		/** Lists all active locales in the CMS. */
 		list(): Promise<import("../core/adapter").Locale[]>;
 		/** Adds or updates a locale definition. */
-		upsert(code: string, name: string, isDefault?: boolean): Promise<void>;
+		upsert(opts: {
+			code: string;
+			name: string;
+			isDefault?: boolean;
+		}): Promise<void>;
 		/** Permanently removes a locale. */
-		delete(code: string): Promise<void>;
+		delete(opts: { code: string }): Promise<void>;
 	};
 }

@@ -47,11 +47,11 @@ const admin = createAdminClient({
 const locales = await admin.locales.list();
 
 // Add or update a locale
-await admin.locales.upsert("de", "German");
-await admin.locales.upsert("en", "English", true); // isDefault = true
+await admin.locales.upsert({ code: "de", name: "German" });
+await admin.locales.upsert({ code: "en", name: "English", isDefault: true }); // isDefault = true
 
 // Remove a locale
-await admin.locales.delete("fr");
+await admin.locales.delete({ code: "fr" });
 ```
 
 ## Default locale

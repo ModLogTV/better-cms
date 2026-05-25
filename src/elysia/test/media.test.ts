@@ -7,7 +7,7 @@ function makeStorage(
 	overrides: Partial<CMSStorageAdapter> = {},
 ): CMSStorageAdapter {
 	return {
-		presign: async (key) => ({
+		presign: async ({ key }) => ({
 			uploadUrl: `https://s3.example.com/${key}?sig=abc`,
 			publicUrl: `https://cdn.example.com/${key}`,
 		}),

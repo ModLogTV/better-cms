@@ -29,20 +29,28 @@ export interface Locale {
 }
 
 export interface CMSAdapter {
-	getTranslations(
-		namespace: string,
-		locale: string,
-	): Promise<Record<string, string>>;
-	upsertTranslations(
-		namespace: string,
-		locale: string,
-		values: Record<string, string>,
-	): Promise<void>;
-	getPage(slug: string, locale: string, draft: boolean): Promise<Page | null>;
-	upsertPage(id: string, blocks: RawBlock[]): Promise<void>;
-	publishPage(id: string): Promise<void>;
+	getTranslations(opts: {
+		namespace: string;
+		locale: string;
+	}): Promise<Record<string, string>>;
+	upsertTranslations(opts: {
+		namespace: string;
+		locale: string;
+		values: Record<string, string>;
+	}): Promise<void>;
+	getPage(opts: {
+		slug: string;
+		locale: string;
+		draft: boolean;
+	}): Promise<Page | null>;
+	upsertPage(opts: { id: string; blocks: RawBlock[] }): Promise<void>;
+	publishPage(opts: { id: string }): Promise<void>;
 	listPages(): Promise<PageSummary[]>;
 	listLocales(): Promise<Locale[]>;
-	upsertLocale(code: string, name: string, isDefault?: boolean): Promise<void>;
-	deleteLocale(code: string): Promise<void>;
+	upsertLocale(opts: {
+		code: string;
+		name: string;
+		isDefault?: boolean;
+	}): Promise<void>;
+	deleteLocale(opts: { code: string }): Promise<void>;
 }

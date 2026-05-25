@@ -67,14 +67,14 @@ interface PrismaClient {
  */
 export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 	return {
-		async getTranslations(namespace, locale) {
+		async getTranslations({ namespace, locale }) {
 			const row = await prisma.translationNamespace.findUnique({
 				where: { name_locale: { name: namespace, locale } },
 			});
 			return (row?.values as Record<string, string> | undefined) ?? {};
 		},
 
-		async upsertTranslations(namespace, locale, values) {
+		async upsertTranslations({ namespace, locale, values }) {
 			await prisma.translationNamespace.upsert({
 				where: { name_locale: { name: namespace, locale } },
 				create: { name: namespace, locale, values },
@@ -82,7 +82,7 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 			});
 		},
 
-		async getPage(slug, locale, draft) {
+		async getPage({ slug, locale, draft }) {
 			const row = await prisma.page.findUnique({
 				where: { slug_locale: { slug, locale } },
 			});
@@ -99,7 +99,7 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 			};
 		},
 
-		async upsertPage(id, blocks) {
+		async upsertPage({ id, blocks }) {
 			await prisma.page.upsert({
 				where: { id },
 				create: { id, slug: id, locale: "en", blocks },
@@ -107,7 +107,7 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 			});
 		},
 
-		async publishPage(id) {
+		async publishPage({ id }) {
 			await prisma.page.update({
 				where: { id },
 				data: { status: "published", publishedAt: new Date() },
@@ -139,7 +139,7 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 			);
 		},
 
-		async upsertLocale(code, name, isDefault = false) {
+		async upsertLocale({ code, name, isDefault = false }) {
 			await prisma.locale.upsert({
 				where: { code },
 				create: { code, name, isDefault },
@@ -147,7 +147,7 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 			});
 		},
 
-		async deleteLocale(code) {
+		async deleteLocale({ code }) {
 			await prisma.locale.delete({
 				where: { code },
 			});
