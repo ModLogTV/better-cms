@@ -1,7 +1,7 @@
 {
 	"name": "better-cms",
 	"version": "0.1.0",
-	"description": "Type-safe, self-hosted full-stack CMS for translations and page content.",
+	"description": "Framework-agnostic type-safe, self-hosted full-stack TypeScript CMS for translations, asset management and page content.",
 	"type": "commonjs",
 	"main": "./dist/core/index.js",
 	"types": "./dist/core/index.d.ts",
