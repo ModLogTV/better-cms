@@ -1,12 +1,13 @@
 import { Elysia, t } from "elysia";
+import { CMS_PERMISSIONS } from "../../auth/permissions";
 import type { CMSInstance } from "../../core/index";
-import { requireFullToken, requireReadToken } from "../auth";
+import { requirePermission } from "../auth";
 
 const CACHE_HEADER = "s-maxage=60, stale-while-revalidate=300";
 
 export function translationRoutes(cms: CMSInstance) {
 	return new Elysia()
-		.use(requireReadToken(cms))
+		.use(requirePermission({ cms, permissions: [CMS_PERMISSIONS.TRANSLATIONS_READ] }))
 		.get(
 			"/translations/:namespace/:locale",
 			async ({ params, set }) => {
@@ -20,7 +21,7 @@ export function translationRoutes(cms: CMSInstance) {
 				params: t.Object({ namespace: t.String(), locale: t.String() }),
 			},
 		)
-		.use(requireFullToken(cms))
+		.use(requirePermission({ cms, permissions: [CMS_PERMISSIONS.TRANSLATIONS_WRITE] }))
 		.put(
 			"/translations/:namespace/:locale",
 			async ({ params, body }) => {

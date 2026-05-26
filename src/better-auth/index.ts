@@ -1,0 +1,275 @@
+import type {
+	CMSAuthAdapter,
+	CMSAuthManagement,
+	CMSAuthResult,
+	CMSGroup,
+	CMSUserSummary,
+} from "../auth/adapter";
+import { CMS_WILDCARD_PERMISSION } from "../auth/permissions";
+
+interface BetterAuthLike {
+	api: {
+		getSession(opts: {
+			headers: Headers;
+		}): Promise<{ user: { id: string; email: string; name: string } } | null>;
+		signUpEmail(opts: {
+			body: { email: string; password: string; name: string };
+		}): Promise<unknown>;
+	};
+}
+
+interface BetterAuthUser {
+	id: string;
+	email: string;
+	name: string;
+	cmsPermissions: string[];
+	cmsGroups: Array<{ groupId: string; group: BetterAuthCmsGroup }>;
+}
+
+interface BetterAuthCmsGroup {
+	id: string;
+	name: string;
+	permissions: string[];
+}
+
+interface BetterAuthPrismaLike {
+	user: {
+		findUnique(args: {
+			where: { id?: string; email?: string };
+			include?: {
+				cmsGroups?: { include?: { group?: boolean } };
+			};
+		}): Promise<BetterAuthUser | null>;
+		update(args: {
+			where: { id?: string; email?: string };
+			data: { cmsPermissions?: string[] };
+		}): Promise<BetterAuthUser>;
+		findMany(args?: {
+			include?: { cmsGroups?: { include?: { group?: boolean } } };
+		}): Promise<BetterAuthUser[]>;
+	};
+	cmsGroup: {
+		findMany(): Promise<BetterAuthCmsGroup[]>;
+		findUnique(args: {
+			where: { id: string };
+		}): Promise<BetterAuthCmsGroup | null>;
+		create(args: {
+			data: { name: string; permissions: string[] };
+		}): Promise<BetterAuthCmsGroup>;
+		update(args: {
+			where: { id: string };
+			data: Partial<{ name: string; permissions: string[] }>;
+		}): Promise<BetterAuthCmsGroup>;
+		delete(args: { where: { id: string } }): Promise<unknown>;
+	};
+	cmsUserGroup: {
+		create(args: {
+			data: { userId: string; groupId: string };
+		}): Promise<unknown>;
+		delete(args: {
+			where: { userId_groupId: { userId: string; groupId: string } };
+		}): Promise<unknown>;
+	};
+}
+
+interface BetterAuthCMSAdapterOptions {
+	auth: BetterAuthLike;
+	prisma: BetterAuthPrismaLike;
+	/**
+	 * Optional service-level token for server-side reads without a user session.
+	 * Accepted via `x-cms-token` or `x-internal-token` header.
+	 * Grants read-only permissions (translations, locales, pages, admin-read).
+	 */
+	serviceToken?: string;
+}
+
+async function resolvePermissions(
+	prisma: BetterAuthPrismaLike,
+	userId: string,
+): Promise<string[]> {
+	const user = await prisma.user.findUnique({
+		where: { id: userId },
+		include: { cmsGroups: { include: { group: true } } },
+	});
+	if (!user) return [];
+	const groupPerms = user.cmsGroups.flatMap((ug) => ug.group.permissions);
+	return [...new Set([...user.cmsPermissions, ...groupPerms])];
+}
+
+function buildManagement(prisma: BetterAuthPrismaLike): CMSAuthManagement {
+	return {
+		async listUsers() {
+			const users = await prisma.user.findMany({
+				include: { cmsGroups: { include: { group: true } } },
+			});
+			return users.map(
+				(u): CMSUserSummary => ({
+					id: u.id,
+					email: u.email,
+					name: u.name,
+					permissions: u.cmsPermissions,
+					groupIds: u.cmsGroups.map((ug) => ug.groupId),
+				}),
+			);
+		},
+
+		async getUserPermissions({ userId }) {
+			return resolvePermissions(prisma, userId);
+		},
+
+		async setUserPermissions({ userId, permissions }) {
+			await prisma.user.update({
+				where: { id: userId },
+				data: { cmsPermissions: permissions },
+			});
+		},
+
+		async getUserGroups({ userId }) {
+			const user = await prisma.user.findUnique({
+				where: { id: userId },
+				include: { cmsGroups: { include: { group: true } } },
+			});
+			if (!user) return [];
+			return user.cmsGroups.map(
+				(ug): CMSGroup => ({
+					id: ug.group.id,
+					name: ug.group.name,
+					permissions: ug.group.permissions,
+				}),
+			);
+		},
+
+		async addUserToGroup({ userId, groupId }) {
+			await prisma.cmsUserGroup.create({ data: { userId, groupId } });
+		},
+
+		async removeUserFromGroup({ userId, groupId }) {
+			await prisma.cmsUserGroup.delete({
+				where: { userId_groupId: { userId, groupId } },
+			});
+		},
+
+		async listGroups() {
+			const groups = await prisma.cmsGroup.findMany();
+			return groups.map(
+				(g): CMSGroup => ({
+					id: g.id,
+					name: g.name,
+					permissions: g.permissions,
+				}),
+			);
+		},
+
+		async createGroup({ name, permissions }) {
+			const g = await prisma.cmsGroup.create({ data: { name, permissions } });
+			return { id: g.id, name: g.name, permissions: g.permissions };
+		},
+
+		async updateGroup({ id, ...opts }) {
+			const g = await prisma.cmsGroup.update({
+				where: { id },
+				data: opts,
+			});
+			return { id: g.id, name: g.name, permissions: g.permissions };
+		},
+
+		async deleteGroup({ id }) {
+			await prisma.cmsGroup.delete({ where: { id } });
+		},
+	};
+}
+
+/** Read-only permission subset granted to service tokens. */
+const SERVICE_TOKEN_PERMISSIONS = [
+	"cms:translations:read",
+	"cms:locales:read",
+	"cms:pages:read",
+	"cms:admin:read",
+];
+
+/**
+ * Auth adapter that integrates better-auth sessions with granular CMS permissions.
+ *
+ * Users are resolved via better-auth sessions. Their permissions come from:
+ * 1. Direct `cmsPermissions` on the user record
+ * 2. Permissions inherited from `CmsGroup` memberships
+ *
+ * An optional `serviceToken` allows server-side frontend code to read translations
+ * without a user session.
+ *
+ * @example
+ * ```ts
+ * import { betterAuthCMSAdapter } from "better-cms/better-auth"
+ *
+ * const cms = createCMs({
+ *   auth: betterAuthCMSAdapter({ auth, prisma }),
+ *   initialAdminUser: {
+ *     email: "admin@example.com",
+ *     name: "Admin",
+ *     password: process.env.ADMIN_PASSWORD!,
+ *   },
+ * })
+ * ```
+ */
+export function betterAuthCMSAdapter(
+	opts: BetterAuthCMSAdapterOptions,
+): CMSAuthAdapter {
+	return {
+		async verifyRequest(headers): Promise<CMSAuthResult> {
+			// 1. Check service token
+			if (opts.serviceToken) {
+				const token = headers["x-cms-token"] ?? headers["x-internal-token"];
+				if (token === opts.serviceToken) {
+					return { authorized: true, permissions: SERVICE_TOKEN_PERMISSIONS };
+				}
+			}
+
+			// 2. Resolve better-auth session
+			const session = await opts.auth.api.getSession({
+				headers: new Headers(headers as Record<string, string>),
+			});
+			if (!session) return { authorized: false, permissions: [] };
+
+			const permissions = await resolvePermissions(
+				opts.prisma,
+				session.user.id,
+			);
+			return {
+				authorized: true,
+				permissions,
+				userId: session.user.id,
+			};
+		},
+
+		async upsertAdminUser(user) {
+			const existing = await opts.prisma.user.findUnique({
+				where: { email: user.email },
+			});
+
+			if (!existing) {
+				await opts.auth.api.signUpEmail({
+					body: { email: user.email, password: user.password, name: user.name },
+				});
+			}
+
+			// Ensure wildcard permission
+			const target = await opts.prisma.user.findUnique({
+				where: { email: user.email },
+			});
+			if (!target) {
+				throw new Error(
+					`betterAuthCMSAdapter: failed to find user after creation (email: ${user.email})`,
+				);
+			}
+
+			if (!target.cmsPermissions.includes(CMS_WILDCARD_PERMISSION)) {
+				await opts.prisma.user.update({
+					where: { id: target.id },
+					data: { cmsPermissions: [CMS_WILDCARD_PERMISSION] },
+				});
+			}
+		},
+
+		management: buildManagement(opts.prisma),
+	};
+}

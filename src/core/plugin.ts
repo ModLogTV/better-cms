@@ -5,6 +5,7 @@ export interface ElysiaLike {
 	use(plugin: MaybeArray<MaybePromise<AnyElysia>>): this;
 }
 
+import type { CMSAuthAdapter } from "../auth/adapter";
 import type { NamespaceDef } from "../i18n/namespace";
 import type { NamespaceDefinition } from "../i18n/types";
 import type { CMSAdapter } from "./adapter";
@@ -20,10 +21,7 @@ export interface CMSContext {
 	namespaces: NamespaceDef<NamespaceDefinition>[];
 	adapter: CMSAdapter;
 	storage?: CMSStorageAdapter;
-	auth: {
-		readToken: string;
-		adminToken: string;
-	};
+	auth: CMSAuthAdapter;
 	events: CMSEventEmitter;
 	/** The Elysia app instance — plugins mount routes here via init() */
 	elysiaApp: ElysiaLike;

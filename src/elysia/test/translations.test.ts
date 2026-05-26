@@ -65,10 +65,11 @@ describe("translations routes", () => {
 			const { defineNamespace } = require("../../i18n/namespace");
 			const { key } = require("../../i18n/markers");
 			const ns = defineNamespace({ name: "nav", definition: { title: key } });
+			const { tokenAuthAdapter } = require("../../auth/token-adapter");
 			const instance = createCMS({
 				database: adapter,
 				namespaces: [ns],
-				auth: { readToken: TOKEN, adminToken: TOKEN },
+				auth: tokenAuthAdapter({ readToken: TOKEN, adminToken: TOKEN }),
 			});
 			instance.events.on("translations:updated", (e: unknown) =>
 				events.push(e),

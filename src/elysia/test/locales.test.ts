@@ -1,4 +1,5 @@
 import { describe, expect, mock, test } from "bun:test";
+import { tokenAuthAdapter } from "../../auth/token-adapter";
 import { createCMS } from "../../core/index";
 import { toElysiaPlugin } from "../index";
 import { makeAdapter, ns, req } from "./helpers";
@@ -15,7 +16,7 @@ describe("locale management routes", () => {
 	const cms = createCMS({
 		database: adapter,
 		namespaces: [ns],
-		auth: { readToken: "test-token", adminToken: "test-token" },
+		auth: tokenAuthAdapter({ readToken: "test-token", adminToken: "test-token" }),
 	});
 
 	const app = toElysiaPlugin(cms);

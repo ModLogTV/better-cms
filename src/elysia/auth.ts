@@ -1,35 +1,68 @@
 import { Elysia } from "elysia";
+import type { CMSAuthAdapter } from "../auth/adapter";
+import { hasPermission } from "../auth/permissions";
+import type { CMSPermission } from "../auth/permissions";
 
 interface WithAuth {
-	auth: {
-		readToken: string;
-		adminToken: string;
-	};
+	auth: CMSAuthAdapter;
 }
 
-export const requireReadToken = (cms: WithAuth) =>
-	new Elysia({ name: "cms-auth-read" }).derive(
+/**
+ * Elysia middleware that verifies the request and checks the given permissions.
+ * Returns 401 if not authorized, 403 if authorized but missing a permission.
+ * Injects `cmsUserId` and `cmsPermissions` into the handler context.
+ *
+ * @example
+ * ```ts
+ * app.use(requirePermission({ cms, permissions: [CMS_PERMISSIONS.TRANSLATIONS_READ] }))
+ * ```
+ */
+export function requirePermission(opts: {
+	cms: WithAuth;
+	permissions: CMSPermission[];
+}) {
+	const { cms, permissions } = opts;
+	const name = `cms-perm:${permissions.slice().sort().join(",")}`;
+	return new Elysia({ name }).derive(
 		{ as: "scoped" },
-		({ headers, set }) => {
-			const token = headers["x-internal-token"];
-			if (
-				!token ||
-				(token !== cms.auth.readToken && token !== cms.auth.adminToken)
-			) {
+		async ({ headers, set }) => {
+			const result = await cms.auth.verifyRequest(
+				headers as Record<string, string | undefined>,
+			);
+			if (!result.authorized) {
 				set.status = 401;
 				return { error: "Unauthorized" };
 			}
+			for (const perm of permissions) {
+				if (!hasPermission({ userPerms: result.permissions, required: perm })) {
+					set.status = 403;
+					return { error: "Forbidden", required: perm };
+				}
+			}
+			return {
+				cmsUserId: result.userId,
+				cmsPermissions: result.permissions,
+			};
 		},
 	);
+}
 
-export const requireFullToken = (cms: WithAuth) =>
-	new Elysia({ name: "cms-auth-full" }).derive(
+/** Shorthand: requires that the request is authorized (any valid credentials). */
+export function requireAuth(opts: { cms: WithAuth }) {
+	return new Elysia({ name: "cms-auth" }).derive(
 		{ as: "scoped" },
-		({ headers, set }) => {
-			const token = headers["x-internal-token"];
-			if (!token || token !== cms.auth.adminToken) {
+		async ({ headers, set }) => {
+			const result = await opts.cms.auth.verifyRequest(
+				headers as Record<string, string | undefined>,
+			);
+			if (!result.authorized) {
 				set.status = 401;
 				return { error: "Unauthorized" };
 			}
+			return {
+				cmsUserId: result.userId,
+				cmsPermissions: result.permissions,
+			};
 		},
 	);
+}

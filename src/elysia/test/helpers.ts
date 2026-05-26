@@ -1,5 +1,6 @@
 import { mock } from "bun:test";
 import { Elysia } from "elysia";
+import { tokenAuthAdapter } from "../../auth/token-adapter";
 import type { CMSAdapter, Page, PageSummary } from "../../core/adapter";
 import { createCMS } from "../../core/index";
 import { key, vars } from "../../i18n/markers";
@@ -51,7 +52,7 @@ export function makeApp(
 	const cms = createCMS({
 		database: adapter,
 		namespaces: [ns],
-		auth: { readToken: TOKEN, adminToken: TOKEN },
+		auth: tokenAuthAdapter({ readToken: TOKEN, adminToken: TOKEN }),
 		plugins,
 	});
 	return new Elysia().use(toElysiaPlugin(cms));

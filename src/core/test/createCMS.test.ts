@@ -1,4 +1,5 @@
 import { describe, expect, mock, test } from "bun:test";
+import { tokenAuthAdapter } from "../../auth/token-adapter";
 import { key, vars } from "../../i18n/markers";
 import { defineNamespace } from "../../i18n/namespace";
 import type { CMSAdapter } from "../adapter";
@@ -25,18 +26,19 @@ const ns = defineNamespace({
 	},
 });
 
+const testAuth = tokenAuthAdapter({ readToken: "read", adminToken: "admin" });
+
 describe("createCMS", () => {
 	test("returns CMSInstance with correct shape", () => {
 		const cms = createCMS({
 			database: mockAdapter,
 			namespaces: [ns],
-			auth: { readToken: "read", adminToken: "admin" },
+			auth: testAuth,
 		});
 
 		expect(cms.namespaces).toHaveLength(1);
 		expect(cms.namespaces[0].name).toBe("nav");
-		expect(cms.auth.readToken).toBe("read");
-		expect(cms.auth.adminToken).toBe("admin");
+		expect(typeof cms.auth.verifyRequest).toBe("function");
 		expect(cms.$Infer.Namespaces["nav"]).toBeDefined();
 	});
 
@@ -45,29 +47,9 @@ describe("createCMS", () => {
 			createCMS({
 				database: mockAdapter,
 				namespaces: [],
-				auth: { readToken: "x", adminToken: "x" },
+				auth: testAuth,
 			}),
 		).toThrow("namespaces must not be empty");
-	});
-
-	test("throws if readToken empty", () => {
-		expect(() =>
-			createCMS({
-				database: mockAdapter,
-				namespaces: [ns],
-				auth: { readToken: "", adminToken: "x" },
-			}),
-		).toThrow("auth.readToken must not be empty");
-	});
-
-	test("throws if adminToken empty", () => {
-		expect(() =>
-			createCMS({
-				database: mockAdapter,
-				namespaces: [ns],
-				auth: { readToken: "x", adminToken: "" },
-			}),
-		).toThrow("auth.adminToken must not be empty");
 	});
 
 	test("runs plugins and extends $Infer", () => {
@@ -82,7 +64,7 @@ describe("createCMS", () => {
 		const cms = createCMS({
 			database: mockAdapter,
 			namespaces: [ns],
-			auth: { readToken: "x", adminToken: "x" },
+			auth: testAuth,
 			plugins: [plugin],
 		});
 		expect(plugin.init).toHaveBeenCalledTimes(1);
@@ -90,25 +72,24 @@ describe("createCMS", () => {
 	});
 
 	test("upserts initialLocales on startup", async () => {
-		const upserted: any[] = [];
+		const upserted: unknown[] = [];
 		const adapter = {
 			...mockAdapter,
-			upsertLocale: async ({ code, name, isDefault }: any) => {
+			upsertLocale: async ({ code, name, isDefault }: { code: string; name: string; isDefault?: boolean }) => {
 				upserted.push({ code, name, isDefault });
 			},
-		} as any;
+		} as unknown as CMSAdapter;
 
 		createCMS({
 			database: adapter,
 			namespaces: [ns],
-			auth: { readToken: "r", adminToken: "a" },
+			auth: testAuth,
 			initialLocales: [
 				{ code: "en", name: "English", isDefault: true },
 				{ code: "de", name: "German" },
 			],
 		});
 
-		// wait for fire-and-forget promises
 		await new Promise((resolve) => setTimeout(resolve, 10));
 
 		expect(upserted).toHaveLength(2);
@@ -129,12 +110,51 @@ describe("createCMS", () => {
 			createCMS({
 				database: mockAdapter,
 				namespaces: [ns],
-				auth: { readToken: "r", adminToken: "a" },
+				auth: testAuth,
 				initialLocales: [
 					{ code: "en", name: "English", isDefault: true },
 					{ code: "de", name: "German", isDefault: true },
 				],
 			}),
 		).toThrow("createCMS: only one locale can be set as default");
+	});
+
+	test("warns and skips upsertAdminUser if adapter does not implement it", () => {
+		const warnSpy = mock(() => {});
+		const origWarn = console.warn;
+		console.warn = warnSpy;
+		try {
+			createCMS({
+				database: mockAdapter,
+				namespaces: [ns],
+				auth: testAuth,
+				initialAdminUser: { email: "admin@example.com", name: "Admin", password: "pw" },
+			});
+			expect(warnSpy).toHaveBeenCalledTimes(1);
+		} finally {
+			console.warn = origWarn;
+		}
+	});
+
+	test("calls upsertAdminUser if adapter implements it", async () => {
+		const upserted: unknown[] = [];
+		const authWithUpsert = {
+			...testAuth,
+			upsertAdminUser: async (user: unknown) => {
+				upserted.push(user);
+			},
+		};
+
+		createCMS({
+			database: mockAdapter,
+			namespaces: [ns],
+			auth: authWithUpsert,
+			initialAdminUser: { email: "admin@example.com", name: "Admin", password: "pw" },
+		});
+
+		await new Promise((resolve) => setTimeout(resolve, 10));
+
+		expect(upserted).toHaveLength(1);
+		expect(upserted[0]).toMatchObject({ email: "admin@example.com" });
 	});
 });
