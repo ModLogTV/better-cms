@@ -174,6 +174,116 @@ await admin.locales.upsert({ code: "en", name: "English", isDefault: true }); //
 await admin.locales.delete({ code: "fr" });
 ```
 
+## Users
+
+Available when `auth.management` is defined (e.g. `betterAuthCMSAdapter`). Requires `cms:users:manage` permission.
+
+### `admin.users.list()`
+
+Returns all CMS users with their direct permissions and group IDs.
+
+```ts
+const users = await admin.users.list();
+// [{ id: "...", email: "alice@example.com", name: "Alice", permissions: [], groupIds: ["group-1"] }]
+```
+
+### `admin.users.getPermissions({ userId })`
+
+Returns the resolved permission set — direct permissions merged with all group permissions.
+
+```ts
+const perms = await admin.users.getPermissions({ userId: "user-1" });
+// ["cms:translations:read", "cms:pages:write"]
+```
+
+### `admin.users.setPermissions({ userId, permissions })`
+
+Replaces the direct permissions on a user. Group-inherited permissions are unaffected.
+
+```ts
+await admin.users.setPermissions({
+  userId: "user-1",
+  permissions: ["cms:translations:write", "cms:locales:read"],
+});
+```
+
+Pass `[]` to clear all direct permissions.
+
+### `admin.users.getGroups({ userId })`
+
+Lists all groups the user belongs to.
+
+```ts
+const groups = await admin.users.getGroups({ userId: "user-1" });
+// [{ id: "group-1", name: "Editors", permissions: ["cms:translations:write"] }]
+```
+
+### `admin.users.addToGroup({ userId, groupId })`
+
+Adds a user to a group.
+
+```ts
+await admin.users.addToGroup({ userId: "user-1", groupId: "group-1" });
+```
+
+### `admin.users.removeFromGroup({ userId, groupId })`
+
+Removes a user from a group. Does not delete the group.
+
+```ts
+await admin.users.removeFromGroup({ userId: "user-1", groupId: "group-1" });
+```
+
+## Groups
+
+Available when `auth.management` is defined. Requires `cms:groups:manage` permission.
+
+### `admin.groups.list()`
+
+Returns all CMS groups.
+
+```ts
+const groups = await admin.groups.list();
+// [{ id: "group-1", name: "Editors", permissions: ["cms:translations:write", "cms:pages:write"] }]
+```
+
+### `admin.groups.create({ name, permissions })`
+
+Creates a new group. `permissions` is an array of `CMSPermission` strings.
+
+```ts
+import { CMS_PERMISSIONS } from "@modlog/better-cms/auth";
+
+const group = await admin.groups.create({
+  name: "Editors",
+  permissions: [
+    CMS_PERMISSIONS.TRANSLATIONS_WRITE,
+    CMS_PERMISSIONS.PAGES_WRITE,
+    CMS_PERMISSIONS.PAGES_PUBLISH,
+  ],
+});
+// { id: "...", name: "Editors", permissions: [...] }
+```
+
+### `admin.groups.update({ id, name?, permissions? })`
+
+Updates a group's name, permissions, or both.
+
+```ts
+await admin.groups.update({
+  id: "group-1",
+  permissions: [CMS_PERMISSIONS.TRANSLATIONS_WRITE],
+});
+```
+
+### `admin.groups.delete({ id })`
+
+Permanently removes a group. All user memberships are removed via cascade.
+
+```ts
+await admin.groups.delete({ id: "group-1" });
+```
+
 ## Error handling
 
 All methods throw `CMSError` on non-2xx responses:
