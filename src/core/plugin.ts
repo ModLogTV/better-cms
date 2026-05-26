@@ -13,8 +13,7 @@ import type { CMSStorageAdapter } from "./storage";
 
 export interface CMSInfer {
 	Namespaces: Record<string, NamespaceDef<NamespaceDefinition>>;
-	// biome-ignore lint/suspicious/noExplicitAny: replaced by pagesPlugin at runtime
-	PageBlocks: any;
+	PageBlocks: unknown;
 }
 
 export interface CMSContext {

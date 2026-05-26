@@ -18,7 +18,7 @@ interface CMSClientConfig {
 	onFetchSuccess?: (ev: {
 		type: "translations" | "pages";
 		key: string;
-		data: any;
+		data: unknown;
 	}) => void;
 	onFetchError?: (ev: {
 		type: "translations" | "pages";

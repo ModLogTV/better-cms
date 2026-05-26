@@ -13,7 +13,7 @@ interface EventMap {
 	"client:fetch:success": {
 		type: "translations" | "pages";
 		key: string;
-		data: any;
+		data: unknown;
 	};
 	"client:fetch:error": {
 		type: "translations" | "pages";
