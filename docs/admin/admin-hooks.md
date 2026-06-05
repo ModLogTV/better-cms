@@ -25,7 +25,17 @@ export const {
   useLocales,
   useUpsertLocale,
   useDeleteLocale,
-} = createAdminHooks({ client: admin });
+  useUsers,
+  useUserPermissions,
+  useSetUserPermissions,
+  useUserGroups,
+  useAddUserToGroup,
+  useRemoveUserFromGroup,
+  useGroups,
+  useCreateGroup,
+  useUpdateGroup,
+  useDeleteGroup,
+} = createAdminHooks(admin);
 
 // Wrap your admin app root:
 export function AdminProvider({ children }) {
@@ -179,6 +189,105 @@ mutate({ code: "fr", name: "French", isDefault: false });
 const { mutate } = useDeleteLocale();
 mutate({ code: "fr" });
 ```
+
+## User & Group hooks
+
+These hooks are only functional when the backend uses `betterAuthCMSAdapter` (i.e., `cms.auth.management` is present). If using `tokenAuthAdapter`, all user/group API calls return 404.
+
+### `useUsers()`
+
+Lists all CMS users with their direct permissions and group IDs.
+
+```tsx
+const { data: users } = useUsers();
+// data: CMSUserSummary[] | undefined
+// [{ id, email, name, permissions: string[], groupIds: string[] }]
+```
+
+Query key: `["cms", "users"]`
+
+### `useUserPermissions({ userId })`
+
+Returns the resolved permission set for a user (direct + inherited from groups).
+
+```tsx
+const { data: permissions } = useUserPermissions({ userId: "u1" });
+// data: string[] | undefined
+```
+
+Query key: `["cms", "users", userId, "permissions"]`
+
+### `useSetUserPermissions()`
+
+Replaces a user's direct permissions. Does not affect group-inherited permissions.
+
+```tsx
+const { mutate } = useSetUserPermissions();
+mutate({ userId: "u1", permissions: ["cms:translations:write"] });
+```
+
+Invalidates `["cms", "users", userId, "permissions"]` and `["cms", "users"]` on settle.
+
+### `useUserGroups({ userId })`
+
+Lists the groups a user belongs to.
+
+```tsx
+const { data: groups } = useUserGroups({ userId: "u1" });
+// data: CMSGroup[] | undefined
+```
+
+Query key: `["cms", "users", userId, "groups"]`
+
+### `useAddUserToGroup()`
+
+```tsx
+const { mutate } = useAddUserToGroup();
+mutate({ userId: "u1", groupId: "g1" });
+```
+
+### `useRemoveUserFromGroup()`
+
+```tsx
+const { mutate } = useRemoveUserFromGroup();
+mutate({ userId: "u1", groupId: "g1" });
+```
+
+### `useGroups()`
+
+Lists all CMS groups.
+
+```tsx
+const { data: groups } = useGroups();
+// data: CMSGroup[] | undefined
+// [{ id, name, permissions: string[] }]
+```
+
+Query key: `["cms", "groups"]`
+
+### `useCreateGroup()`
+
+```tsx
+const { mutate } = useCreateGroup();
+mutate({ name: "Editors", permissions: ["cms:translations:write", "cms:pages:write"] });
+```
+
+### `useUpdateGroup()`
+
+```tsx
+const { mutate } = useUpdateGroup();
+mutate({ id: "g1", name: "Senior Editors" });
+mutate({ id: "g1", permissions: ["cms:pages:publish"] });
+```
+
+### `useDeleteGroup()`
+
+```tsx
+const { mutate } = useDeleteGroup();
+mutate({ id: "g1" });
+```
+
+Invalidates `["cms", "groups"]` and `["cms", "users"]` on settle (group deletion affects user summaries).
 
 ## TanStack Query keys
 

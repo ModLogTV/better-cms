@@ -78,7 +78,7 @@ export function useTranslations<T extends NamespaceDefinition>(
 		setIsLoading(true);
 		loadTranslations({ namespace: ns.name, locale: ctx.locale })
 			.then((data) => {
-				ctx.setTranslations(ns.name, data);
+				ctx.setTranslations({ namespace: ns.name, values: data });
 				setLocalTranslations(data);
 				setError(null);
 				options?.onSuccess?.(data);
@@ -131,7 +131,7 @@ export function usePageContent(opts: {
 		setIsLoading(true);
 		loadPageContent({ slug, locale: ctx.locale })
 			.then((data) => {
-				ctx.setContent(slug, data);
+				ctx.setContent({ slug, blocks: data });
 				setBlocks(data);
 				setError(null);
 				onSuccess?.(data);

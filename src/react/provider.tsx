@@ -46,13 +46,13 @@ export function CMSProvider({
 	}, [initialLocale]);
 
 	const setTranslations = useCallback(
-		(namespace: string, values: Record<string, string>) => {
+		({ namespace, values }: { namespace: string; values: Record<string, string> }) => {
 			setAllTranslations((prev) => ({ ...prev, [namespace]: values }));
 		},
 		[],
 	);
 
-	const setContent = useCallback((slug: string, blocks: RawBlock[]) => {
+	const setContent = useCallback(({ slug, blocks }: { slug: string; blocks: RawBlock[] }) => {
 		setAllContent((prev) => ({ ...prev, [slug]: blocks }));
 	}, []);
 
@@ -69,11 +69,11 @@ export function CMSProvider({
 			await Promise.all([
 				...namespaces.map(async (ns) => {
 					const data = await loadTranslations({ namespace: ns, locale: currentLocale });
-					setTranslations(ns, data);
+					setTranslations({ namespace: ns, values: data });
 				}),
 				...slugs.map(async (slug) => {
 					const data = await loadPageContent({ slug, locale: currentLocale });
-					setContent(slug, data);
+					setContent({ slug, blocks: data });
 				}),
 			]);
 		}, refetchInterval * 1000);

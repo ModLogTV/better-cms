@@ -1,7 +1,7 @@
 {
 	"name": "better-cms",
 	"version": "0.1.0",
-	"description": "Type-safe, self-hosted full-stack CMS for translations and page content.",
+	"description": "Framework-agnostic type-safe, self-hosted full-stack TypeScript CMS for translations, asset management and page content.",
 	"type": "commonjs",
 	"main": "./dist/core/index.js",
 	"types": "./dist/core/index.d.ts",
@@ -31,6 +31,26 @@
 		"node": ">=20"
 	},
 	"exports": {
+		"./auth": {
+			"import": {
+				"types": "./dist/auth/index.d.mts",
+				"default": "./dist/auth/index.mjs"
+			},
+			"require": {
+				"types": "./dist/auth/index.d.ts",
+				"default": "./dist/auth/index.js"
+			}
+		},
+		"./better-auth": {
+			"import": {
+				"types": "./dist/better-auth/index.d.mts",
+				"default": "./dist/better-auth/index.mjs"
+			},
+			"require": {
+				"types": "./dist/better-auth/index.d.ts",
+				"default": "./dist/better-auth/index.js"
+			}
+		},
 		".": {
 			"import": {
 				"types": "./dist/core/index.d.mts",
@@ -228,6 +248,12 @@
 	},
 	"typesVersions": {
 		"*": {
+			"auth": [
+				"./dist/auth/index.d.ts"
+			],
+			"better-auth": [
+				"./dist/better-auth/index.d.ts"
+			],
 			"i18n": [
 				"./dist/i18n/index.d.ts"
 			],
@@ -288,6 +314,7 @@
 		}
 	},
 	"peerDependencies": {
+		"better-auth": ">=1",
 		"@aws-sdk/client-s3": ">=3",
 		"@aws-sdk/s3-request-presigner": ">=3",
 		"@prisma/client": ">=5",
@@ -318,6 +345,9 @@
 			"optional": true
 		},
 		"@tanstack/react-query": {
+			"optional": true
+		},
+		"better-auth": {
 			"optional": true
 		}
 	},

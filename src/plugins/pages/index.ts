@@ -17,7 +17,7 @@ export function pagesPlugin(opts?: { blocks?: PageBlock[] }): CMSPlugin {
 	return {
 		name: "pages",
 		init(ctx) {
-			ctx.elysiaApp.use(pageRoutes(ctx, blocks));
+			ctx.elysiaApp.use(pageRoutes({ ctx, blocks }));
 		},
 		extendInfer(current: CMSInfer): CMSInfer {
 			return {

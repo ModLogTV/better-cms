@@ -10,6 +10,7 @@ const ALL_PEER_DEPS = [
 	"react",
 	"@tanstack/react-query",
 	"zod",
+	"better-auth",
 ];
 
 const shared = {
@@ -26,6 +27,7 @@ export default defineConfig([
 		platform: "neutral",
 		external: ALL_PEER_DEPS,
 		entry: {
+			"auth/index": "src/auth/index.ts",
 			"core/index": "src/core/index.ts",
 			"i18n/index": "src/i18n/index.ts",
 			"client/index": "src/client/index.ts",
@@ -39,6 +41,7 @@ export default defineConfig([
 		platform: "node",
 		external: ALL_PEER_DEPS,
 		entry: {
+			"better-auth/index": "src/better-auth/index.ts",
 			"elysia/index": "src/elysia/index.ts",
 			"prisma/index": "src/prisma/index.ts",
 			"drizzle/index": "src/drizzle/index.ts",

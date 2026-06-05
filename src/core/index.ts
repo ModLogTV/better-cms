@@ -1,4 +1,5 @@
 import { Elysia } from "elysia";
+import type { CMSAuthAdapter } from "../auth/adapter";
 import type { CMSConfig } from "./config";
 import { CMSEventEmitter } from "./events";
 import type { CMSContext, CMSInfer } from "./plugin";
@@ -6,7 +7,7 @@ import type { CMSContext, CMSInfer } from "./plugin";
 export interface CMSInstance {
 	adapter: CMSConfig["database"];
 	namespaces: CMSConfig["namespaces"];
-	auth: CMSConfig["auth"];
+	auth: CMSAuthAdapter;
 	events: CMSEventEmitter;
 	elysiaApp: Elysia;
 	$Infer: CMSInfer;
@@ -15,12 +16,6 @@ export interface CMSInstance {
 export function createCMS(config: CMSConfig): CMSInstance {
 	if (config.namespaces.length === 0) {
 		throw new Error("createCMS: namespaces must not be empty");
-	}
-	if (!config.auth.readToken) {
-		throw new Error("createCMS: auth.readToken must not be empty");
-	}
-	if (!config.auth.adminToken) {
-		throw new Error("createCMS: auth.adminToken must not be empty");
 	}
 
 	if (config.initialLocales) {
@@ -42,6 +37,19 @@ export function createCMS(config: CMSConfig): CMSInstance {
 						err,
 					);
 				});
+		}
+	}
+
+	if (config.initialAdminUser) {
+		if (!config.auth.upsertAdminUser) {
+			console.warn(
+				"[cms] initialAdminUser is set but the auth adapter does not implement upsertAdminUser — skipping.",
+			);
+		} else {
+			const adminUser = config.initialAdminUser;
+			void config.auth.upsertAdminUser(adminUser).catch((err) => {
+				console.error("[cms] Failed to upsert initial admin user:", err);
+			});
 		}
 	}
 

@@ -1,10 +1,11 @@
 import { Elysia, t } from "elysia";
+import { CMS_PERMISSIONS } from "../../auth/permissions";
 import type { CMSContext } from "../../core/plugin";
-import { requireFullToken } from "../../elysia/auth";
+import { requirePermission } from "../../elysia/auth";
 
 export function mediaRoutes(ctx: CMSContext) {
 	return new Elysia()
-		.use(requireFullToken(ctx))
+		.use(requirePermission({ cms: ctx, permissions: [CMS_PERMISSIONS.MEDIA_UPLOAD] }))
 		.post(
 			"/media/presign",
 			async ({ body }) => {
@@ -27,6 +28,7 @@ export function mediaRoutes(ctx: CMSContext) {
 				}),
 			},
 		)
+		.use(requirePermission({ cms: ctx, permissions: [CMS_PERMISSIONS.MEDIA_DELETE] }))
 		.delete(
 			"/media/:key",
 			async ({ params }) => {

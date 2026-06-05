@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
+import { tokenAuthAdapter } from "../../../auth/token-adapter";
 import { CMSEventEmitter } from "../../../core/events";
 import { fallbackPlugin } from "../index";
 
@@ -17,7 +18,7 @@ describe("fallbackPlugin", () => {
 		plugin.init({
 			namespaces: [],
 			adapter: {} as never,
-			auth: { readToken: "x", adminToken: "x" },
+			auth: tokenAuthAdapter({ readToken: "x", adminToken: "x" }),
 			events,
 			elysiaApp: {} as never,
 		});

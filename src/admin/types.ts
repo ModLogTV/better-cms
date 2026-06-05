@@ -1,4 +1,7 @@
 import type { Page, PageSummary, RawBlock } from "../core/adapter";
+import type { CMSGroup, CMSUserSummary } from "../auth/adapter";
+
+export type { CMSGroup, CMSUserSummary };
 
 export interface NamespaceSummary {
 	name: string;
@@ -95,5 +98,29 @@ export interface AdminClient {
 		}): Promise<void>;
 		/** Permanently removes a locale. */
 		delete(opts: { code: string }): Promise<void>;
+	};
+	users: {
+		/** Lists all CMS users with their direct permissions and group memberships. */
+		list(): Promise<CMSUserSummary[]>;
+		/** Returns the resolved permission set for a user (direct + inherited from groups). */
+		getPermissions(opts: { userId: string }): Promise<string[]>;
+		/** Replaces the direct permissions on a user. Does not affect group-inherited permissions. */
+		setPermissions(opts: { userId: string; permissions: string[] }): Promise<void>;
+		/** Lists all groups the user belongs to. */
+		getGroups(opts: { userId: string }): Promise<CMSGroup[]>;
+		/** Adds a user to a group. */
+		addToGroup(opts: { userId: string; groupId: string }): Promise<void>;
+		/** Removes a user from a group. */
+		removeFromGroup(opts: { userId: string; groupId: string }): Promise<void>;
+	};
+	groups: {
+		/** Lists all CMS groups. */
+		list(): Promise<CMSGroup[]>;
+		/** Creates a new group with the given name and permissions. */
+		create(opts: { name: string; permissions: string[] }): Promise<CMSGroup>;
+		/** Updates the name and/or permissions of an existing group. */
+		update(opts: { id: string; name?: string; permissions?: string[] }): Promise<CMSGroup>;
+		/** Permanently removes a group. All user memberships are removed via cascade. */
+		delete(opts: { id: string }): Promise<void>;
 	};
 }

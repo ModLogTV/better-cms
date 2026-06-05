@@ -1,17 +1,19 @@
 import { Elysia, t } from "elysia";
+import { CMS_PERMISSIONS } from "../../auth/permissions";
 import type { CMSContext } from "../../core/plugin";
-import { requireFullToken, requireReadToken } from "../../elysia/auth";
+import { requirePermission } from "../../elysia/auth";
 import type { PageBlock } from "./types";
 
 const CACHE_HEADER = "s-maxage=60, stale-while-revalidate=300";
 
-export function pageRoutes(ctx: CMSContext, blocks: PageBlock[]) {
+export function pageRoutes(opts: { ctx: CMSContext; blocks: PageBlock[] }) {
+	const { ctx, blocks } = opts;
 	const blockSchemaMap = Object.fromEntries(
 		blocks.map((b) => [b.type, b.schema]),
 	);
 
 	return new Elysia()
-		.use(requireReadToken(ctx))
+		.use(requirePermission({ cms: ctx, permissions: [CMS_PERMISSIONS.PAGES_READ] }))
 		.get("/pages", async () => {
 			return ctx.adapter.listPages();
 		})
@@ -37,7 +39,7 @@ export function pageRoutes(ctx: CMSContext, blocks: PageBlock[]) {
 				}),
 			},
 		)
-		.use(requireFullToken(ctx))
+		.use(requirePermission({ cms: ctx, permissions: [CMS_PERMISSIONS.PAGES_WRITE] }))
 		.put(
 			"/pages/:id",
 			async ({ params, body }) => {
@@ -59,6 +61,7 @@ export function pageRoutes(ctx: CMSContext, blocks: PageBlock[]) {
 				body: t.Array(t.Object({ type: t.String(), data: t.Unknown() })),
 			},
 		)
+		.use(requirePermission({ cms: ctx, permissions: [CMS_PERMISSIONS.PAGES_PUBLISH] }))
 		.post(
 			"/pages/:id/publish",
 			async ({ params }) => {

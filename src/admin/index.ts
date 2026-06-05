@@ -98,7 +98,7 @@ export function createAdminClient(opts: AdminClientOptions): AdminClient {
 			/**
 			 * Updates a single translation key. Fetches the current state, merges the change,
 			 * and persists it back to the adapter.
-		 */
+			 */
 			updateTranslation: async (opts) => {
 				const { namespace, locale, key, value } = opts;
 				const current = await get<Record<string, string>>(
@@ -170,12 +170,45 @@ export function createAdminClient(opts: AdminClientOptions): AdminClient {
 			/** Permanently removes a locale. */
 			delete: (opts) => del(`/cms/admin/locales/${opts.code}`),
 		},
+		users: {
+			/** Lists all CMS users with their direct permissions and group memberships. */
+			list: () => get("/cms/admin/users"),
+			/** Returns the resolved permission set for a user (direct + inherited from groups). */
+			getPermissions: ({ userId }) =>
+				get(`/cms/admin/users/${userId}/permissions`),
+			/** Replaces the direct permissions on a user. Does not affect group-inherited permissions. */
+			setPermissions: ({ userId, permissions }) =>
+				put(`/cms/admin/users/${userId}/permissions`, { permissions }),
+			/** Lists all groups the user belongs to. */
+			getGroups: ({ userId }) =>
+				get(`/cms/admin/users/${userId}/groups`),
+			/** Adds a user to a group. */
+			addToGroup: ({ userId, groupId }) =>
+				post(`/cms/admin/users/${userId}/groups`, { groupId }),
+			/** Removes a user from a group. */
+			removeFromGroup: ({ userId, groupId }) =>
+				del(`/cms/admin/users/${userId}/groups/${groupId}`),
+		},
+		groups: {
+			/** Lists all CMS groups. */
+			list: () => get("/cms/admin/groups"),
+			/** Creates a new group with the given name and permissions. */
+			create: ({ name, permissions }) =>
+				post("/cms/admin/groups", { name, permissions }),
+			/** Updates the name and/or permissions of an existing group. */
+			update: ({ id, ...rest }) =>
+				put(`/cms/admin/groups/${id}`, rest),
+			/** Permanently removes a group. All user memberships are removed via cascade. */
+			delete: ({ id }) => del(`/cms/admin/groups/${id}`),
+		},
 	};
 }
 
 export { describeNamespace } from "./describe";
 export type {
 	AdminClient,
+	CMSGroup,
+	CMSUserSummary,
 	InputHint,
 	KeyMetadata,
 	KeyType,

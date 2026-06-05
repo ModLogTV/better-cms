@@ -6,7 +6,7 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import { createElement, type ReactNode } from "react";
-import type { AdminClient, KeyMetadata } from "../admin/types";
+import type { AdminClient, CMSGroup, CMSUserSummary, KeyMetadata } from "../admin/types";
 import type { PageSummary, RawBlock } from "../core/adapter";
 
 export { QueryClientProvider };
@@ -185,6 +185,96 @@ export function createAdminHooks(admin: AdminClient) {
 				mutationFn: (opts: { code: string }) => admin.locales.delete(opts),
 				onSettled: () =>
 					void qc.invalidateQueries({ queryKey: ["cms", "locales"] }),
+			});
+		},
+
+		useUsers() {
+			return useQuery<CMSUserSummary[]>({
+				queryKey: ["cms", "users"],
+				queryFn: () => admin.users.list(),
+			});
+		},
+
+		useUserPermissions(opts: { userId: string }) {
+			const { userId } = opts;
+			return useQuery<string[]>({
+				queryKey: ["cms", "users", userId, "permissions"],
+				queryFn: () => admin.users.getPermissions({ userId }),
+			});
+		},
+
+		useSetUserPermissions() {
+			const qc = useQueryClient();
+			return useMutation<void, Error, { userId: string; permissions: string[] }>({
+				mutationFn: (args) => admin.users.setPermissions(args),
+				onSettled: (_d, _e, { userId }) => {
+					void qc.invalidateQueries({ queryKey: ["cms", "users", userId, "permissions"] });
+					void qc.invalidateQueries({ queryKey: ["cms", "users"] });
+				},
+			});
+		},
+
+		useUserGroups(opts: { userId: string }) {
+			const { userId } = opts;
+			return useQuery<CMSGroup[]>({
+				queryKey: ["cms", "users", userId, "groups"],
+				queryFn: () => admin.users.getGroups({ userId }),
+			});
+		},
+
+		useAddUserToGroup() {
+			const qc = useQueryClient();
+			return useMutation<void, Error, { userId: string; groupId: string }>({
+				mutationFn: (args) => admin.users.addToGroup(args),
+				onSettled: (_d, _e, { userId }) => {
+					void qc.invalidateQueries({ queryKey: ["cms", "users", userId, "groups"] });
+					void qc.invalidateQueries({ queryKey: ["cms", "users"] });
+				},
+			});
+		},
+
+		useRemoveUserFromGroup() {
+			const qc = useQueryClient();
+			return useMutation<void, Error, { userId: string; groupId: string }>({
+				mutationFn: (args) => admin.users.removeFromGroup(args),
+				onSettled: (_d, _e, { userId }) => {
+					void qc.invalidateQueries({ queryKey: ["cms", "users", userId, "groups"] });
+					void qc.invalidateQueries({ queryKey: ["cms", "users"] });
+				},
+			});
+		},
+
+		useGroups() {
+			return useQuery<CMSGroup[]>({
+				queryKey: ["cms", "groups"],
+				queryFn: () => admin.groups.list(),
+			});
+		},
+
+		useCreateGroup() {
+			const qc = useQueryClient();
+			return useMutation<CMSGroup, Error, { name: string; permissions: string[] }>({
+				mutationFn: (args) => admin.groups.create(args),
+				onSettled: () => void qc.invalidateQueries({ queryKey: ["cms", "groups"] }),
+			});
+		},
+
+		useUpdateGroup() {
+			const qc = useQueryClient();
+			return useMutation<CMSGroup, Error, { id: string; name?: string; permissions?: string[] }>({
+				mutationFn: (args) => admin.groups.update(args),
+				onSettled: () => void qc.invalidateQueries({ queryKey: ["cms", "groups"] }),
+			});
+		},
+
+		useDeleteGroup() {
+			const qc = useQueryClient();
+			return useMutation<void, Error, { id: string }>({
+				mutationFn: (args) => admin.groups.delete(args),
+				onSettled: () => {
+					void qc.invalidateQueries({ queryKey: ["cms", "groups"] });
+					void qc.invalidateQueries({ queryKey: ["cms", "users"] });
+				},
 			});
 		},
 	};
