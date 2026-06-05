@@ -64,8 +64,9 @@ The following features are prioritized by architectural dependency and implement
 |      | Feature                           | Category    | Description                                                                     |
 | :--- | :-------------------------------- | :---------- | :------------------------------------------------------------------------------ |
 | ✅    | **Client Lifecycle**              | Framework   | Integrated hooks for custom error handling, loading states, and client events.  |
-| 🏗️    | **User Management X better-auth** | Framework   | Replace read/write token authentication with real user auth                     |
+| ✅    | **User Management X better-auth** | Framework   | Replace read/write token authentication with real user auth                     |
 | 🔘    | **Core Media System**             | Media       | Fundamental system for images/media in content pages and file distribution.     |
+| 🔘    | **Built-in Admin Panel**          | Media       | Fundamental system for images/media in content pages and file distribution.     |
 | 🔘    | **Drizzle Adapter**               | Framework   | Official database adapter for Drizzle ORM to expand database support.           |
 | 🔘    | **Data Interceptors**             | Framework   | Middleware to programmatically validate or transform content before saving.     |
 | 🔘    | **Distributed Fallback**          | Reliability | Prioritize local JSON files if API latency exceeds a specific threshold.        |
