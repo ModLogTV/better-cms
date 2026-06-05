@@ -7,7 +7,7 @@
 		"strict": true,
 		"declaration": true,
 		"declarationMap": true,
-		"types": ["bun-types"],
+		"types": ["bun"],
 		"jsx": "react-jsx",
 		"lib": ["ES2020", "DOM"]
 	}

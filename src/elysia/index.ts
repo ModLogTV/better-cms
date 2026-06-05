@@ -15,6 +15,9 @@ import { userRoutes } from "./routes/users";
  * const app = new Elysia().use(toElysiaPlugin(cms))
  * ```
  */
+export { adminPanelPlugin } from "./admin-panel";
+export type { AdminPanelOptions } from "./admin-panel";
+
 export function toElysiaPlugin(cms: CMSInstance) {
 	return new Elysia({ prefix: "/cms" })
 		.use(translationRoutes(cms))

@@ -81,6 +81,12 @@ interface BetterAuthCMSAdapterOptions {
 	 * Grants read-only permissions (translations, locales, pages, admin-read).
 	 */
 	serviceToken?: string;
+	/**
+	 * Optional admin token for server-to-server admin operations (e.g. TanStack Start
+	 * server functions). Accepted via `x-cms-token` or `x-internal-token` header.
+	 * Grants wildcard (full) permissions — keep this secret and never expose to the browser.
+	 */
+	adminToken?: string;
 }
 
 async function resolvePermissions(
@@ -216,15 +222,19 @@ export function betterAuthCMSAdapter(
 ): CMSAuthAdapter {
 	return {
 		async verifyRequest(headers): Promise<CMSAuthResult> {
-			// 1. Check service token
-			if (opts.serviceToken) {
-				const token = headers["x-cms-token"] ?? headers["x-internal-token"];
-				if (token === opts.serviceToken) {
-					return { authorized: true, permissions: SERVICE_TOKEN_PERMISSIONS };
-				}
+			const token = headers["x-cms-token"] ?? headers["x-internal-token"];
+
+			// 1. Check admin token (full permissions — server-to-server only)
+			if (opts.adminToken && token === opts.adminToken) {
+				return { authorized: true, permissions: [CMS_WILDCARD_PERMISSION] };
 			}
 
-			// 2. Resolve better-auth session
+			// 2. Check service token (read-only — for frontend SSR)
+			if (opts.serviceToken && token === opts.serviceToken) {
+				return { authorized: true, permissions: SERVICE_TOKEN_PERMISSIONS };
+			}
+
+			// 3. Resolve better-auth session
 			const session = await opts.auth.api.getSession({
 				headers: new Headers(headers as Record<string, string>),
 			});
