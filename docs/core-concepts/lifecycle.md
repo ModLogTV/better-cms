@@ -1,5 +1,15 @@
 # Lifecycle & Events
 
+- [Server-Side Lifecycle](#server-side-lifecycle)
+  - [1. Plugin Initialization](#1-plugin-initialization)
+  - [2. Server Events](#2-server-events)
+- [Client-Side Lifecycle](#client-side-lifecycle)
+  - [1. Global Callbacks](#1-global-callbacks)
+  - [2. Client Event Emitter (`cmsEvents`)](#2-client-event-emitter-cmsevents)
+  - [3. React Hook Callbacks](#3-react-hook-callbacks)
+  - [4. Event Hook (`useCMSClientEvents`)](#4-event-hook-usecmsclientevents)
+- [Summary Table](#summary-table)
+
 `better-cms` provides multiple ways to hook into its lifecycle, from server-side initialization to client-side data fetching.
 
 ## Server-Side Lifecycle

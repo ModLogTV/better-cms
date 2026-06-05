@@ -1,5 +1,11 @@
 # Installation
 
+- [Recommended structure](#recommended-structure)
+- [Package](#package)
+- [Peer dependencies](#peer-dependencies)
+- [TypeScript](#typescript)
+- [Node.js](#nodejs)
+
 ## Recommended structure
 
 better-cms is designed for **monorepos**. We recommend splitting your code into three parts to ensure type safety and clean separation of concerns:

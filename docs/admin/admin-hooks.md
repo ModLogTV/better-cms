@@ -1,5 +1,33 @@
 # Admin Hooks (React)
 
+- [Setup](#setup)
+- [AdminQueryProvider](#adminqueryprovider)
+- [Hooks reference](#hooks-reference)
+  - [`useNamespaceTranslations({ namespace, locale })`](#usenamespacetranslations-namespace-locale)
+  - [`useUpdateTranslation()`](#useupdatetranslation)
+  - [`usePages()`](#usepages)
+  - [`usePage({ slug, locale, draft? })`](#usepage-slug-locale-draft)
+  - [`useUpdatePage()`](#useupdatepage)
+  - [`usePublishPage()`](#usepublishpage)
+  - [`useDescribeNamespace({ namespace })`](#usedescribenamespace-namespace)
+  - [`useMediaList()`](#usemedialist)
+  - [`useMediaUpload()`](#usemediaupload)
+  - [`useLocales()`](#uselocales)
+  - [`useUpsertLocale()`](#useupsertlocale)
+  - [`useDeleteLocale()`](#usedeletelocale)
+- [User & Group hooks](#user-group-hooks)
+  - [`useUsers()`](#useusers)
+  - [`useUserPermissions({ userId })`](#useuserpermissions-userid)
+  - [`useSetUserPermissions()`](#usesetuserpermissions)
+  - [`useUserGroups({ userId })`](#useusergroups-userid)
+  - [`useAddUserToGroup()`](#useaddusertogroup)
+  - [`useRemoveUserFromGroup()`](#useremoveuserfromgroup)
+  - [`useGroups()`](#usegroups)
+  - [`useCreateGroup()`](#usecreategroup)
+  - [`useUpdateGroup()`](#useupdategroup)
+  - [`useDeleteGroup()`](#usedeletegroup)
+- [TanStack Query keys](#tanstack-query-keys)
+
 `createAdminHooks` returns TanStack Query-backed React hooks bound to an `AdminClient` instance. All hooks require `AdminQueryProvider` in the component tree.
 
 ## Setup

@@ -1,5 +1,11 @@
 # AWS S3 Adapter
 
+- [Installation](#installation)
+- [Usage](#usage)
+- [Options](#options)
+- [How it works](#how-it-works)
+- [Bucket policy](#bucket-policy)
+
 ## Installation
 
 ```bash

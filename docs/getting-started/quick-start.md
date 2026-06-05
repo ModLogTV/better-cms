@@ -1,5 +1,17 @@
 # Quick Start
 
+- [Overview](#overview)
+- [Step 1: Shared config package](#step-1-shared-config-package)
+- [Step 2: Database schema](#step-2-database-schema)
+- [Step 3: Backend (Elysia)](#step-3-backend-elysia)
+- [Step 4: Frontend (Next.js)](#step-4-frontend-nextjs)
+  - [Initialize the client singleton](#initialize-the-client-singleton)
+  - [Root layout](#root-layout)
+  - [Use translations in a client component](#use-translations-in-a-client-component)
+  - [Use translations in a server component](#use-translations-in-a-server-component)
+- [Environment variables](#environment-variables)
+- [Next steps](#next-steps)
+
 This guide walks through a full monorepo setup: shared config package, Prisma database, Elysia backend, and Next.js frontend.
 
 ## Overview

@@ -1,5 +1,11 @@
 # Cloudflare R2 Adapter
 
+- [Installation](#installation)
+- [Usage](#usage)
+- [Options](#options)
+- [R2 API endpoint](#r2-api-endpoint)
+- [Public access](#public-access)
+
 ## Installation
 
 ```bash

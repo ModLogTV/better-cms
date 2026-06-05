@@ -1,5 +1,16 @@
 # Fallback Sync Plugin
 
+- [When to use](#when-to-use)
+- [Setup](#setup)
+  - [Step 1: Enable instrumentation (Next.js < 15 only)](#step-1-enable-instrumentation-nextjs-15-only)
+  - [Step 2: Create instrumentation.ts](#step-2-create-instrumentationts)
+  - [Step 3: Wire the fallback loader](#step-3-wire-the-fallback-loader)
+- [Options](#options)
+- [What it fetches](#what-it-fetches)
+- [File structure](#file-structure)
+- [Error handling](#error-handling)
+- [Polling vs. event-driven](#polling-vs-event-driven)
+
 Syncs all CMS translations to local JSON files on startup, then polls on a configurable interval. Designed for deployments where the API and frontend run in separate containers (separate disk volumes).
 
 ## When to use

@@ -1,5 +1,16 @@
 # Defining Namespaces
 
+- [The shared config package pattern](#the-shared-config-package-pattern)
+- [defineNamespace](#definenamespace)
+- [Marker reference](#marker-reference)
+  - [`key` — static string](#key-static-string)
+  - [`vars<T>()` — interpolated string](#varst-interpolated-string)
+  - [`plural<T>()` — count-based pluralization](#pluralt-count-based-pluralization)
+  - [`rich<Tags>()` — JSX rich text](#richtags-jsx-rich-text)
+- [Nested keys](#nested-keys)
+- [Registering namespaces](#registering-namespaces)
+- [Describing a namespace](#describing-a-namespace)
+
 ## The shared config package pattern
 
 All namespace definitions must live in a package shared between your API and frontend apps. If you define namespaces in two places, TypeScript cannot guarantee that the keys you use in your UI actually exist in the database.

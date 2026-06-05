@@ -1,5 +1,16 @@
 # Using Translations
 
+- [Client components](#client-components)
+  - [How `useTranslations` works](#how-usetranslations-works)
+  - [Pre-seeding to avoid flash](#pre-seeding-to-avoid-flash)
+- [Server components (RSC)](#server-components-rsc)
+- [Translator functions](#translator-functions)
+  - [`t(key, vars?)` — plain and vars keys](#tkey-vars-plain-and-vars-keys)
+  - [`tRich(key, tags)` — rich text keys](#trichkey-tags-rich-text-keys)
+- [Pluralization detail](#pluralization-detail)
+- [Locale switching](#locale-switching)
+- [Background refresh](#background-refresh)
+
 ## Client components
 
 Use `useTranslations` inside any component wrapped by `CMSProvider`.

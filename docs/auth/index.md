@@ -1,5 +1,12 @@
 # Authentication & Authorization
 
+- [Adapters](#adapters)
+- [Permissions](#permissions)
+  - [Wildcard](#wildcard)
+  - [Groups](#groups)
+- [Initial admin user](#initial-admin-user)
+- [Admin API routes](#admin-api-routes)
+
 better-cms uses a **framework-agnostic auth adapter** pattern. Every protected API route calls `auth.verifyRequest(headers)` and receives a list of permission strings. You choose the adapter; the CMS doesn't care how users are authenticated.
 
 ## Adapters

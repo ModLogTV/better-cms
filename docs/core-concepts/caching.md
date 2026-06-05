@@ -1,5 +1,14 @@
 # Caching
 
+- [Overview](#overview)
+- [Client-side in-memory cache](#client-side-in-memory-cache)
+  - [Manual invalidation](#manual-invalidation)
+- [Request deduplication](#request-deduplication)
+- [SSR pre-seeding (zero-roundtrip initial load)](#ssr-pre-seeding-zero-roundtrip-initial-load)
+- [Background polling](#background-polling)
+- [Edge / CDN caching](#edge-cdn-caching)
+- [Cache interaction between tiers](#cache-interaction-between-tiers)
+
 ## Overview
 
 better-cms uses an **eventually consistent** caching model. The goal is to minimize database load and network latency without requiring an external cache (Redis, etc.).

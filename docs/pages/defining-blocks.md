@@ -1,5 +1,14 @@
 # Defining Page Blocks
 
+- [What is a page block?](#what-is-a-page-block)
+- [Block definition](#block-definition)
+- [Registering blocks](#registering-blocks)
+- [Type inference](#type-inference)
+- [Block design guidelines](#block-design-guidelines)
+  - [Prefer granular blocks](#prefer-granular-blocks)
+  - [Types are permanent](#types-are-permanent)
+- [Block storage](#block-storage)
+
 ## What is a page block?
 
 A page block is a typed unit of page content. Each block has a `type` string and a Zod-validated `data` shape. Pages are stored as an ordered array of blocks — the frontend renders them by type.

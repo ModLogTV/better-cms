@@ -1,5 +1,9 @@
 # Token Auth Adapter
 
+- [Usage](#usage)
+- [Behavior](#behavior)
+- [Limitations](#limitations)
+
 `tokenAuthAdapter` is the simplest auth adapter. It authenticates requests using static bearer tokens — no user accounts, no sessions.
 
 Use it when:

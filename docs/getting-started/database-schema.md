@@ -1,5 +1,14 @@
 # Database Schema
 
+- [Prisma](#prisma)
+  - [Core CMS models](#core-cms-models)
+  - [Media model (required when using `mediaPlugin`)](#media-model-required-when-using-mediaplugin)
+  - [Auth models (required when using `betterAuthCMSAdapter`)](#auth-models-required-when-using-betterauthcmsadapter)
+  - [Model notes](#model-notes)
+- [Running migrations](#running-migrations)
+- [Schema placement in a monorepo](#schema-placement-in-a-monorepo)
+- [Drizzle](#drizzle)
+
 ## Prisma
 
 Copy these models into your `schema.prisma`. The Prisma adapter expects these exact model and field names.

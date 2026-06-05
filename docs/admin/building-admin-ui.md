@@ -1,5 +1,15 @@
 # Building an Admin UI
 
+- [What you need to build](#what-you-need-to-build)
+- [Setup](#setup)
+- [Translation editor](#translation-editor)
+  - [Plural key handling](#plural-key-handling)
+- [Page editor](#page-editor)
+- [Media uploader](#media-uploader)
+- [Locale management](#locale-management)
+- [Security considerations](#security-considerations)
+- [Recommended stack](#recommended-stack)
+
 better-cms provides no pre-built admin dashboard. This page explains what you need to build one using the available primitives.
 
 ## What you need to build

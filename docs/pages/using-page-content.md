@@ -1,5 +1,14 @@
 # Using Page Content
 
+- [Client components](#client-components)
+  - [Lifecycle callbacks](#lifecycle-callbacks)
+  - [How `usePageContent` works](#how-usepagecontent-works)
+- [Server components](#server-components)
+- [Pre-seeding via CMSProvider](#pre-seeding-via-cmsprovider)
+- [Type-safe block rendering](#type-safe-block-rendering)
+- [Draft vs. published](#draft-vs-published)
+- [API routes](#api-routes)
+
 ## Client components
 
 ```tsx

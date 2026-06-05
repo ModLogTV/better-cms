@@ -1,5 +1,14 @@
 # better-auth Integration
 
+- [Installation](#installation)
+- [Setup](#setup)
+  - [1. Add schema models](#1-add-schema-models)
+  - [2. Create the adapter](#2-create-the-adapter)
+  - [3. Mount on Elysia](#3-mount-on-elysia)
+- [How permissions work](#how-permissions-work)
+- [Service token (frontend reads)](#service-token-frontend-reads)
+- [Managing users and groups](#managing-users-and-groups)
+
 `betterAuthCMSAdapter` connects better-auth sessions to the CMS permission system. Users are authenticated via better-auth; their CMS permissions come from `cmsPermissions` on the user record and any `CmsGroup` memberships.
 
 ## Installation

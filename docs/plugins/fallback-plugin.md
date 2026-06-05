@@ -1,5 +1,13 @@
 # Fallback Plugin
 
+- [When to use this plugin](#when-to-use-this-plugin)
+- [Registration](#registration)
+- [Options](#options)
+- [File structure](#file-structure)
+- [How it works](#how-it-works)
+- [Wiring the fallback loader](#wiring-the-fallback-loader)
+- [Limitations](#limitations)
+
 Writes translation snapshots to the local filesystem on every update. Used by the frontend's `fallback` loader to serve content when the CMS API is unreachable.
 
 ## When to use this plugin

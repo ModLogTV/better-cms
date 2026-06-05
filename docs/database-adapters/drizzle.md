@@ -1,5 +1,9 @@
 # Drizzle Adapter
 
+- [Planned API](#planned-api)
+- [Contributing](#contributing)
+- [Workaround](#workaround)
+
 > **Status: Not yet implemented.**
 
 The `@modlog/better-cms/drizzle` export is currently a stub. The import resolves but the adapter is not functional.

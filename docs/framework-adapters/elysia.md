@@ -1,5 +1,11 @@
 # Elysia Adapter
 
+- [Mounting routes](#mounting-routes)
+- [Routes mounted](#routes-mounted)
+- [Authentication](#authentication)
+- [Custom prefix](#custom-prefix)
+- [Combining with other Elysia plugins](#combining-with-other-elysia-plugins)
+
 ## Mounting routes
 
 ```ts

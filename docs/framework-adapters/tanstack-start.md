@@ -1,5 +1,10 @@
 # TanStack Start Adapter
 
+- [Server functions](#server-functions)
+- [Available server fn wrappers](#available-server-fn-wrappers)
+- [Usage in routes](#usage-in-routes)
+- [Notes](#notes)
+
 ## Server functions
 
 `createServerFns` wraps an `AdminClient` instance into plain async functions suitable for use as TanStack Start server function handlers.

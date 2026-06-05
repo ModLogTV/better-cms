@@ -1,5 +1,11 @@
 # Prisma Adapter
 
+- [Setup](#setup)
+- [Required schema](#required-schema)
+- [How the adapter works](#how-the-adapter-works)
+- [Data shape](#data-shape)
+- [Monorepo usage](#monorepo-usage)
+
 ## Setup
 
 ```ts

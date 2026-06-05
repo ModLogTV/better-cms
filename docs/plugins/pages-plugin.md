@@ -1,5 +1,13 @@
 # Pages Plugin
 
+- [Registration](#registration)
+- [Options](#options)
+- [Routes added](#routes-added)
+- [Block validation](#block-validation)
+- [Type inference](#type-inference)
+- [Page lifecycle](#page-lifecycle)
+- [PageBlock type](#pageblock-type)
+
 Adds page block CRUD routes to the CMS and extends `cms.$Infer.PageBlocks` with a typed block union.
 
 ## Registration

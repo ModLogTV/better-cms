@@ -1,5 +1,13 @@
 # Plugin System
 
+- [How plugins work](#how-plugins-work)
+- [CMSContext](#cmscontext)
+- [CMSPlugin interface](#cmsplugin-interface)
+- [Events](#events)
+- [Mounting Elysia routes](#mounting-elysia-routes)
+- [Type inference extension](#type-inference-extension)
+- [Built-in plugins](#built-in-plugins)
+
 ## How plugins work
 
 Plugins extend `createCMS` at initialization time. They receive a `CMSContext` object and use it to mount Elysia routes, attach event listeners, or extend type inference.

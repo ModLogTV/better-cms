@@ -1,5 +1,11 @@
 # Permission Reference
 
+- [Permission strings](#permission-strings)
+- [Wildcard](#wildcard)
+- [All permissions array](#all-permissions-array)
+- [Type](#type)
+- [Utilities](#utilities)
+
 All CMS permission strings are exported from `better-cms/auth` as the `CMS_PERMISSIONS` const object and the `CMSPermission` TypeScript type.
 
 ```ts

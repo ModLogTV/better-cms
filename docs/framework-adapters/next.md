@@ -1,5 +1,17 @@
 # Next.js Adapter
 
+- [1. Choose your Strategy](#1-choose-your-strategy)
+- [Strategy A: Cookie-based (Proxy-free)](#strategy-a-cookie-based-proxy-free)
+  - [Reading the locale in Server Components](#reading-the-locale-in-server-components)
+  - [Switching locales](#switching-locales)
+- [Strategy B: URL-based (Proxy-based)](#strategy-b-url-based-proxy-based)
+  - [Setup the Proxy](#setup-the-proxy)
+  - [Reading the locale in RSCs](#reading-the-locale-in-rscs)
+- [Shared Utilities](#shared-utilities)
+  - [Route Handler (Backend)](#route-handler-backend)
+  - [Client-side configuration](#client-side-configuration)
+  - [Next.js 14 vs 15 instrumentation](#nextjs-14-vs-15-instrumentation)
+
 better-cms provides two strategies for handling locales in Next.js. Choose the one that fits your application's requirements.
 
 ## 1. Choose your Strategy

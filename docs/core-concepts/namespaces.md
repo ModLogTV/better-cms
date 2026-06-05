@@ -1,5 +1,15 @@
 # Namespaces & Markers
 
+- [What is a namespace?](#what-is-a-namespace)
+- [Markers](#markers)
+  - [`key` — plain string](#key-plain-string)
+  - [`vars<T>()` — interpolated string](#varst-interpolated-string)
+  - [`plural<T>()` — pluralization](#pluralt-pluralization)
+  - [`rich<Tags>()` — rich text with JSX](#richtags-rich-text-with-jsx)
+- [Nested namespaces](#nested-namespaces)
+- [Naming conventions](#naming-conventions)
+- [Registration](#registration)
+
 ## What is a namespace?
 
 A namespace is a named group of translation keys. It maps to one database row per locale (e.g., `{ name: "common", locale: "en" }`). All key definitions live in code; all values live in the database.

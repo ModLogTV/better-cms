@@ -1,5 +1,10 @@
 # Custom Auth Adapter
 
+- [Interface](#interface)
+- [Example: Clerk](#example-clerk)
+- [`CMSAuthResult` shape](#cmsauthresult-shape)
+- [Permission utilities](#permission-utilities)
+
 Implement `CMSAuthAdapter` from `better-cms/auth` to integrate any auth system (Auth.js, Clerk, Lucia, Supabase Auth, etc.).
 
 ## Interface

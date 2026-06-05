@@ -1,5 +1,10 @@
 # Hetzner Object Storage Adapter
 
+- [Installation](#installation)
+- [Usage](#usage)
+- [Options](#options)
+- [Endpoint](#endpoint)
+
 ## Installation
 
 ```bash

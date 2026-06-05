@@ -1,5 +1,20 @@
 # Media Plugin
 
+- [Registration](#registration)
+- [Options](#options)
+- [Routes added](#routes-added)
+- [Upload flow](#upload-flow)
+- [Asset registry](#asset-registry)
+- [Private bucket read URLs](#private-bucket-read-urls)
+- [Presign request body](#presign-request-body)
+- [Presign response](#presign-response)
+- [Using from the admin client](#using-from-the-admin-client)
+  - [`admin.media.list()`](#adminmedialist)
+  - [`admin.media.upload({ file, body })`](#adminmediaupload-file-body)
+  - [`admin.media.getReadUrl({ key })`](#adminmediagetreadurl-key)
+  - [`admin.media.delete({ key })`](#adminmediadelete-key)
+- [Using the React hooks](#using-the-react-hooks)
+
 Adds media management routes to the CMS. Enables direct browser-to-storage uploads, a persisted asset registry, and file deletion.
 
 ## Registration

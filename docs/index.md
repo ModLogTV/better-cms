@@ -1,5 +1,10 @@
 # @modlog/better-cms
 
+- [What it is](#what-it-is)
+- [What it is not](#what-it-is-not)
+- [Core ideas](#core-ideas)
+- [Documentation](#documentation)
+
 A headless, type-safe, self-hosted CMS for translations and page content. Designed for **TypeScript monorepos**.
 
 ## What it is

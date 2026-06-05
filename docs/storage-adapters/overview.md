@@ -1,5 +1,11 @@
 # Storage Adapters
 
+- [How it works](#how-it-works)
+- [CMSStorageAdapter interface](#cmsstorageadapter-interface)
+- [Available adapters](#available-adapters)
+- [Registering a storage adapter](#registering-a-storage-adapter)
+- [Custom adapter](#custom-adapter)
+
 Storage adapters handle media operations like uploads and deletions. They are used by `mediaPlugin`.
 
 ## How it works

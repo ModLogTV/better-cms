@@ -1,5 +1,16 @@
 # Locales
 
+- [Dynamic locale management](#dynamic-locale-management)
+- [Locale model](#locale-model)
+- [Automatic seeding](#automatic-seeding)
+- [Managing locales via the admin client](#managing-locales-via-the-admin-client)
+- [Default locale](#default-locale)
+- [Locale detection in Next.js](#locale-detection-in-nextjs)
+  - [1. Proxy-free (Cookie based)](#1-proxy-free-cookie-based)
+  - [2. URL-based (Proxy)](#2-url-based-proxy)
+- [Locale switching in React](#locale-switching-in-react)
+- [Locale in CMSProvider](#locale-in-cmsprovider)
+
 ## Dynamic locale management
 
 Locales are stored in the database (`Locale` model) and managed via the CMS API. There are no hardcoded locale lists — you add, update, and remove locales at runtime.

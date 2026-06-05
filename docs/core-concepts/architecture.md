@@ -1,5 +1,13 @@
 # Architecture
 
+- [System overview](#system-overview)
+- [Package structure](#package-structure)
+- [Data flow: translations](#data-flow-translations)
+- [Data flow: page blocks](#data-flow-page-blocks)
+- [Plugin system](#plugin-system)
+- [Authentication](#authentication)
+- [Zero runtime dependencies](#zero-runtime-dependencies)
+
 ## System overview
 
 ```

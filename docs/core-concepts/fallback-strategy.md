@@ -1,5 +1,15 @@
 # Fallback Strategy
 
+- [Resolution order](#resolution-order)
+- [Tier 1: In-memory cache](#tier-1-in-memory-cache)
+- [Tier 2: CMS API](#tier-2-cms-api)
+- [Tier 3: Local JSON fallback](#tier-3-local-json-fallback)
+- [Tier 4: Raw key string](#tier-4-raw-key-string)
+- [Keeping fallback files up to date](#keeping-fallback-files-up-to-date)
+  - [Same-disk deployment (fallbackPlugin)](#same-disk-deployment-fallbackplugin)
+  - [Separate containers (startFallbackSync)](#separate-containers-startfallbacksync)
+- [Why this matters](#why-this-matters)
+
 Translations are resolved through a 4-tier chain. The goal: your UI never breaks, even if the CMS API is down.
 
 ## Resolution order
