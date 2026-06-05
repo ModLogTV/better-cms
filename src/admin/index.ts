@@ -34,6 +34,9 @@ async function apiFetch<T>(opts: {
 		const text = await res.text().catch(() => res.statusText);
 		throw new CMSError(res.status, text);
 	}
+	if (res.status === 204 || res.headers.get("content-length") === "0") {
+		return undefined as T;
+	}
 	return res.json() as Promise<T>;
 }
 
@@ -129,19 +132,22 @@ export function createAdminClient(opts: AdminClientOptions): AdminClient {
 			publish: (opts) => post(`/cms/pages/${opts.id}/publish`),
 		},
 		media: {
+			/** Lists all recorded media assets. */
+			list: () => get("/cms/media"),
 			/**
 			 * Generates a presigned S3 upload URL for a file.
 			 * Use this to allow the browser to upload directly to storage.
 			 */
 			presign: (body) => post("/cms/media/presign", body),
 			/**
-			 * High-level helper that presigns AND uploads a file in one go.
+			 * High-level helper that presigns, uploads, and confirms the asset in one call.
 			 * Uses the global `fetch` API.
 			 */
 			upload: async ({ file, body }) => {
-				const { uploadUrl, publicUrl } = await post<{
+				const { uploadUrl, publicUrl, assetId } = await post<{
 					uploadUrl: string;
 					publicUrl: string;
+					assetId: string;
 				}>("/cms/media/presign", {
 					filename: file.name,
 					mimeType: file.type,
@@ -155,12 +161,16 @@ export function createAdminClient(opts: AdminClientOptions): AdminClient {
 				if (!res.ok) {
 					throw new CMSError(res.status, `Upload failed: ${res.statusText}`);
 				}
-				return { publicUrl };
+				await post(`/cms/media/${assetId}/confirm`);
+				return { publicUrl, assetId };
 			},
+			/** Returns a short-lived read URL for private-bucket assets. */
+			getReadUrl: ({ key }) =>
+				get<{ url: string }>(`/cms/media/${encodeURIComponent(key)}/url`),
 			/**
-			 * Permanently removes a file from storage by its key.
+			 * Permanently removes a file from storage and the asset registry by its key.
 			 */
-			delete: ({ key }) => del(`/cms/media/${key}`),
+			delete: ({ key }) => del(`/cms/media/${encodeURIComponent(key)}`),
 		},
 		locales: {
 			/** Lists all active locales in the CMS. */
@@ -212,5 +222,6 @@ export type {
 	InputHint,
 	KeyMetadata,
 	KeyType,
+	MediaAsset,
 	NamespaceSummary,
 } from "./types";

@@ -6,7 +6,7 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import { createElement, type ReactNode } from "react";
-import type { AdminClient, CMSGroup, CMSUserSummary, KeyMetadata } from "../admin/types";
+import type { AdminClient, CMSGroup, CMSUserSummary, KeyMetadata, MediaAsset } from "../admin/types";
 import type { PageSummary, RawBlock } from "../core/adapter";
 
 export { QueryClientProvider };
@@ -136,15 +136,24 @@ export function createAdminHooks(admin: AdminClient) {
 			});
 		},
 
+		useMediaList() {
+			return useQuery<MediaAsset[]>({
+				queryKey: ["cms", "media"],
+				queryFn: () => admin.media.list(),
+			});
+		},
+
 		useMediaUpload() {
+			const qc = useQueryClient();
 			const mutation = useMutation<
-				{ publicUrl: string },
+				{ publicUrl: string; assetId: string },
 				Error,
 				{ file: File }
 			>({
 				mutationFn: async ({ file }: { file: File }) => {
 					return admin.media.upload({ file, body: file });
 				},
+				onSettled: () => void qc.invalidateQueries({ queryKey: ["cms", "media"] }),
 			});
 
 			return {
@@ -154,8 +163,10 @@ export function createAdminHooks(admin: AdminClient) {
 		},
 
 		useMediaDelete() {
+			const qc = useQueryClient();
 			return useMutation<void, Error, { key: string }>({
 				mutationFn: (opts: { key: string }) => admin.media.delete(opts),
+				onSettled: () => void qc.invalidateQueries({ queryKey: ["cms", "media"] }),
 			});
 		},
 

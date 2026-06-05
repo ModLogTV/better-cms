@@ -1,3 +1,16 @@
+export interface MediaAsset {
+	id: string;
+	key: string;
+	filename: string;
+	mimeType: string;
+	size: number;
+	publicUrl: string;
+	uploadedBy?: string;
+	/** null until the browser confirms the upload completed */
+	confirmedAt: Date | null;
+	createdAt: Date;
+}
+
 export interface Page {
 	id: string;
 	slug: string;
@@ -53,4 +66,16 @@ export interface CMSAdapter {
 		isDefault?: boolean;
 	}): Promise<void>;
 	deleteLocale(opts: { code: string }): Promise<void>;
+	createMediaAsset(opts: {
+		id: string;
+		key: string;
+		filename: string;
+		mimeType: string;
+		size: number;
+		publicUrl: string;
+		uploadedBy?: string;
+	}): Promise<MediaAsset>;
+	confirmMediaAsset(opts: { id: string }): Promise<void>;
+	listMediaAssets(): Promise<MediaAsset[]>;
+	deleteMediaAsset(opts: { key: string }): Promise<void>;
 }

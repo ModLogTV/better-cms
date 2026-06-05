@@ -13,4 +13,11 @@ export interface CMSStorageAdapter {
 
 	/** Permanently removes a file from storage. */
 	delete(opts: { key: string }): Promise<void>;
+
+	/**
+	 * Generates a short-lived presigned GET URL for private buckets.
+	 * Optional — only needed when the bucket is not publicly readable.
+	 * Falls back to the stored `publicUrl` when not implemented.
+	 */
+	presignRead?(opts: { key: string; ttl?: number }): Promise<{ url: string }>;
 }

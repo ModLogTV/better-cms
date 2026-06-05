@@ -21,6 +21,7 @@ export const {
   useUpdatePage,
   usePublishPage,
   useDescribeNamespace,
+  useMediaList,
   useMediaUpload,
   useLocales,
   useUpsertLocale,
@@ -156,15 +157,26 @@ const { data: keys } = useDescribeNamespace({ namespace: "common" });
 // [{ key: "submit", type: "key", inputHint: "text" }, ...]
 ```
 
+### `useMediaList()`
+
+Lists all recorded media assets.
+
+```tsx
+const { data: assets } = useMediaList();
+// data: MediaAsset[] | undefined
+```
+
+Query key: `["cms", "media"]`
+
 ### `useMediaUpload()`
 
-Handles the full presign + upload flow in one call.
+Handles the full presign → PUT → confirm flow in one call. Invalidates `["cms", "media"]` on settle.
 
 ```tsx
 const { upload, isPending } = useMediaUpload();
 
 const handleFile = async (file: File) => {
-  const { publicUrl } = await upload({ file });
+  const { publicUrl, assetId } = await upload({ file });
   // use publicUrl in block data
 };
 ```

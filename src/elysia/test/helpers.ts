@@ -1,7 +1,7 @@
 import { mock } from "bun:test";
 import { Elysia } from "elysia";
 import { tokenAuthAdapter } from "../../auth/token-adapter";
-import type { CMSAdapter, Page, PageSummary } from "../../core/adapter";
+import type { CMSAdapter, MediaAsset, Page, PageSummary } from "../../core/adapter";
 import { createCMS } from "../../core/index";
 import { key, vars } from "../../i18n/markers";
 import { defineNamespace } from "../../i18n/namespace";
@@ -17,6 +17,20 @@ export const ns = defineNamespace({
 	},
 });
 
+export function makeMediaAsset(overrides: Partial<MediaAsset> = {}): MediaAsset {
+	return {
+		id: "asset-1",
+		key: "123-photo.jpg",
+		filename: "photo.jpg",
+		mimeType: "image/jpeg",
+		size: 12345,
+		publicUrl: "https://cdn.example.com/123-photo.jpg",
+		confirmedAt: null,
+		createdAt: new Date("2024-01-01"),
+		...overrides,
+	};
+}
+
 export function makeAdapter(overrides: Partial<CMSAdapter> = {}): CMSAdapter {
 	return {
 		getTranslations: mock(async () => ({ title: "Home" })),
@@ -28,6 +42,12 @@ export function makeAdapter(overrides: Partial<CMSAdapter> = {}): CMSAdapter {
 		listLocales: mock(async () => []),
 		upsertLocale: mock(async () => {}),
 		deleteLocale: mock(async () => {}),
+		createMediaAsset: mock(async (opts) =>
+			makeMediaAsset({ id: opts.id, key: opts.key, filename: opts.filename, mimeType: opts.mimeType, size: opts.size, publicUrl: opts.publicUrl }),
+		),
+		confirmMediaAsset: mock(async () => {}),
+		listMediaAssets: mock(async () => [] as MediaAsset[]),
+		deleteMediaAsset: mock(async () => {}),
 		...overrides,
 	};
 }

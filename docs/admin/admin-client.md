@@ -115,12 +115,24 @@ await admin.pages.publish({ id: pageId });
 
 ## Media
 
-### `admin.media.upload({ file, body })`
+Requires `mediaPlugin` to be registered. All assets are recorded in the `MediaAsset` table on upload.
 
-The easiest way to upload files. Handles presigning and the actual upload in one call.
+### `admin.media.list()`
+
+Returns all recorded media assets.
 
 ```ts
-const { publicUrl } = await admin.media.upload({
+const assets = await admin.media.list();
+// MediaAsset[]
+// [{ id, key, filename, mimeType, size, publicUrl, confirmedAt, createdAt }]
+```
+
+### `admin.media.upload({ file, body })`
+
+The easiest way to upload files. Handles presigning, the browser PUT, and the confirm step in one call.
+
+```ts
+const { publicUrl, assetId } = await admin.media.upload({
   file: { name: "hero.png", type: "image/png", size: file.size },
   body: file, // the actual binary data
 });
@@ -132,20 +144,29 @@ await admin.pages.update({
 });
 ```
 
-### `admin.media.delete({ key })`
+### `admin.media.getReadUrl({ key })`
 
-Permanently removes a file from storage.
+Returns a short-lived signed GET URL for private-bucket assets. Falls back to the stored `publicUrl` for public buckets.
 
 ```ts
-await admin.media.delete({ key: "1234567-hero.png" });
+const { url } = await admin.media.getReadUrl({ key: "1234567890-report.pdf" });
+// url: "https://bucket.s3.amazonaws.com/...?X-Amz-Signature=..."
+```
+
+### `admin.media.delete({ key })`
+
+Removes the file from storage **and** deletes the `MediaAsset` row.
+
+```ts
+await admin.media.delete({ key: "1234567890-hero.png" });
 ```
 
 ### `admin.media.presign({ filename, mimeType, size })`
 
-Low-level method to only generate a presigned upload URL.
+Low-level method — returns the presigned upload URL and registers an unconfirmed asset. Call `POST /cms/media/:assetId/confirm` after the upload completes.
 
 ```ts
-const { uploadUrl, publicUrl } = await admin.media.presign({
+const { uploadUrl, publicUrl, assetId } = await admin.media.presign({
   filename: "hero.png",
   mimeType: "image/png",
   size: file.size,

@@ -61,27 +61,27 @@ bun add @modlog/better-cms
 
 The following features are prioritized by architectural dependency and implementation order.
 
-|      | Feature                           | Category    | Description                                                                     |
-| :--- | :-------------------------------- | :---------- | :------------------------------------------------------------------------------ |
-| ✅    | **Client Lifecycle**              | Framework   | Integrated hooks for custom error handling, loading states, and client events.  |
-| ✅    | **User Management X better-auth** | Framework   | Replace read/write token authentication with real user auth                     |
-| 🔘    | **Core Media System**             | Media       | Fundamental system for images/media in content pages and file distribution.     |
-| 🔘    | **Built-in Admin Panel**          | Media       | Fundamental system for images/media in content pages and file distribution.     |
-| 🔘    | **Drizzle Adapter**               | Framework   | Official database adapter for Drizzle ORM to expand database support.           |
-| 🔘    | **Data Interceptors**             | Framework   | Middleware to programmatically validate or transform content before saving.     |
-| 🔘    | **Distributed Fallback**          | Reliability | Prioritize local JSON files if API latency exceeds a specific threshold.        |
-| 🔘    | **Smart Preview Logic**           | DX          | Standardized context to toggle between "Published" and "Latest Draft" in hooks. |
-| 🔘    | **Custom Statuses**               | Primitives  | User-defined states (e.g. "Archived") with built-in data fetcher filtering.     |
-| 🔘    | **Multi-Instance Support**        | Enterprise  | Native pattern for isolating data by `siteId` or `tenantId` in shared tables.   |
-| 🔘    | **Audit Event Stream**            | Primitives  | Global lifecycle hooks to pipe CMS actions to user-defined audit tables.        |
-| 🔘    | **Versioning Engine**             | Primitives  | Core logic for tracking and restoring historical states of content.             |
-| 🔘    | **Event Webhooks**                | Framework   | Outbound HTTP triggers for core CMS events (save, delete, publish).             |
-| 🔘    | **Media Hooks**                   | Media       | Interface for connecting image processing libraries (e.g., Sharp).              |
-| 🔘    | **Metadata Extraction**           | Media       | Extensible logic for extracting EXIF/IPTC data during upload.                   |
-| 🔘    | **Temporal Publishing**           | Primitives  | API logic for `validFrom` / `validUntil` time-based content resolution.         |
-| 🔘    | **SEO Schema Primitives**         | Framework   | Typed Zod-based block primitives for standard metadata.                         |
-| 🔘    | **Granular Auth**                 | Enterprise  | Support for custom permission logic beyond the dual-token system.               |
-| 🔘    | **Search Sync Adapters**          | Enterprise  | Background sync logic for external indexes (Algolia, Meilisearch).              |
+|      | Feature                           | Category    | Description                                                                                       |
+| :--- | :-------------------------------- | :---------- | :------------------------------------------------------------------------------------------------ |
+| ✅    | **Client Lifecycle**              | Framework   | Integrated hooks for custom error handling, loading states, and client events.                    |
+| ✅    | **User Management X better-auth** | Framework   | Replace read/write token authentication with real user auth                                       |
+| ✅    | **Core Media System**             | Media       | Fundamental system for images/media in content pages and file distribution (download links etc.). |
+| 🔘    | **Built-in Admin Panel**          | Media       | Fundamental system for images/media in content pages and file distribution.                       |
+| 🔘    | **Drizzle Adapter**               | Framework   | Official database adapter for Drizzle ORM to expand database support.                             |
+| 🔘    | **Data Interceptors**             | Framework   | Middleware to programmatically validate or transform content before saving.                       |
+| 🔘    | **Distributed Fallback**          | Reliability | Prioritize local JSON files if API latency exceeds a specific threshold.                          |
+| 🔘    | **Smart Preview Logic**           | DX          | Standardized context to toggle between "Published" and "Latest Draft" in hooks.                   |
+| 🔘    | **Custom Statuses**               | Primitives  | User-defined states (e.g. "Archived") with built-in data fetcher filtering.                       |
+| 🔘    | **Multi-Instance Support**        | Enterprise  | Native pattern for isolating data by `siteId` or `tenantId` in shared tables.                     |
+| 🔘    | **Audit Event Stream**            | Primitives  | Global lifecycle hooks to pipe CMS actions to user-defined audit tables.                          |
+| 🔘    | **Versioning Engine**             | Primitives  | Core logic for tracking and restoring historical states of content.                               |
+| 🔘    | **Event Webhooks**                | Framework   | Outbound HTTP triggers for core CMS events (save, delete, publish).                               |
+| 🔘    | **Media Hooks**                   | Media       | Interface for connecting image processing libraries (e.g., Sharp).                                |
+| 🔘    | **Metadata Extraction**           | Media       | Extensible logic for extracting EXIF/IPTC data during upload.                                     |
+| 🔘    | **Temporal Publishing**           | Primitives  | API logic for `validFrom` / `validUntil` time-based content resolution.                           |
+| 🔘    | **SEO Schema Primitives**         | Framework   | Typed Zod-based block primitives for standard metadata.                                           |
+| 🔘    | **Granular Auth**                 | Enterprise  | Support for custom permission logic beyond the dual-token system.                                 |
+| 🔘    | **Search Sync Adapters**          | Enterprise  | Background sync logic for external indexes (Algolia, Meilisearch).                                |
 
 > 🔘 Todo &nbsp;&nbsp; 🏗️ In Progress &nbsp;&nbsp; ✅ Done
 

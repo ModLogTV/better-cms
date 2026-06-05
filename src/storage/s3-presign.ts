@@ -1,5 +1,6 @@
 import {
 	DeleteObjectCommand,
+	GetObjectCommand,
 	PutObjectCommand,
 	type S3Client,
 } from "@aws-sdk/client-s3";
@@ -32,6 +33,12 @@ export function createS3Presigner(opts: {
 				Key: key,
 			});
 			await client.send(command);
+		},
+
+		async presignRead({ key, ttl = 3600 }) {
+			const command = new GetObjectCommand({ Bucket: bucket, Key: key });
+			const url = await getSignedUrl(client, command, { expiresIn: ttl });
+			return { url };
 		},
 	};
 }

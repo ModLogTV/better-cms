@@ -33,5 +33,9 @@ export function localStorageAdapter(
 			const filePath = join(opts.dir, key);
 			await unlink(filePath).catch(() => {}); // Ignore if file doesn't exist
 		},
+
+		async presignRead({ key }) {
+			return { url: `${opts.baseUrl}/${key}` };
+		},
 	};
 }

@@ -5,10 +5,35 @@ import { requirePermission } from "../../elysia/auth";
 
 export function mediaRoutes(ctx: CMSContext) {
 	return new Elysia()
+		.use(requirePermission({ cms: ctx, permissions: [CMS_PERMISSIONS.ADMIN_READ] }))
+		.get("/media", async ({ cmsUserId: _u }) => {
+			return ctx.adapter.listMediaAssets();
+		})
+		.get(
+			"/media/:key/url",
+			async ({ params, set }) => {
+				if (!ctx.storage) {
+					set.status = 503;
+					return { error: "No storage adapter configured" };
+				}
+				const assets = await ctx.adapter.listMediaAssets();
+				const asset = assets.find((a) => a.key === params.key);
+				if (!asset) {
+					set.status = 404;
+					return { error: "Asset not found" };
+				}
+				if (ctx.storage.presignRead) {
+					const { url } = await ctx.storage.presignRead({ key: params.key });
+					return { url };
+				}
+				return { url: asset.publicUrl };
+			},
+			{ params: t.Object({ key: t.String() }) },
+		)
 		.use(requirePermission({ cms: ctx, permissions: [CMS_PERMISSIONS.MEDIA_UPLOAD] }))
 		.post(
 			"/media/presign",
-			async ({ body }) => {
+			async ({ body, cmsUserId }) => {
 				if (!ctx.storage) {
 					return { ok: false, error: "No storage adapter configured" };
 				}
@@ -18,7 +43,17 @@ export function mediaRoutes(ctx: CMSContext) {
 					mimeType: body.mimeType,
 					size: body.size,
 				});
-				return { uploadUrl, publicUrl };
+				const id = crypto.randomUUID();
+				const asset = await ctx.adapter.createMediaAsset({
+					id,
+					key,
+					filename: body.filename,
+					mimeType: body.mimeType,
+					size: body.size,
+					publicUrl,
+					uploadedBy: cmsUserId,
+				});
+				return { uploadUrl, publicUrl, assetId: asset.id };
 			},
 			{
 				body: t.Object({
@@ -28,18 +63,28 @@ export function mediaRoutes(ctx: CMSContext) {
 				}),
 			},
 		)
+		.post(
+			"/media/:assetId/confirm",
+			async ({ params, set }) => {
+				await ctx.adapter.confirmMediaAsset({ id: params.assetId });
+				set.status = 204;
+			},
+			{ params: t.Object({ assetId: t.String() }) },
+		)
 		.use(requirePermission({ cms: ctx, permissions: [CMS_PERMISSIONS.MEDIA_DELETE] }))
 		.delete(
 			"/media/:key",
-			async ({ params }) => {
+			async ({ params, set }) => {
 				if (!ctx.storage) {
-					return { ok: false, error: "No storage adapter configured" };
+					set.status = 503;
+					return { error: "No storage adapter configured" };
 				}
-				await ctx.storage.delete({ key: params.key });
+				await Promise.all([
+					ctx.storage.delete({ key: params.key }),
+					ctx.adapter.deleteMediaAsset({ key: params.key }),
+				]);
 				return { ok: true };
 			},
-			{
-				params: t.Object({ key: t.String() }),
-			},
+			{ params: t.Object({ key: t.String() }) },
 		);
 }

@@ -1,6 +1,7 @@
 import type {
 	CMSAdapter,
 	Locale,
+	MediaAsset,
 	Page,
 	PageSummary,
 	RawBlock,
@@ -58,6 +59,48 @@ interface PrismaClient {
 			update: { name?: string; isDefault?: boolean };
 		}): Promise<unknown>;
 		delete(args: { where: { code: string } }): Promise<unknown>;
+	};
+	mediaAsset: {
+		create(args: {
+			data: {
+				id: string;
+				key: string;
+				filename: string;
+				mimeType: string;
+				size: number;
+				publicUrl: string;
+				uploadedBy?: string;
+				confirmedAt: Date | null;
+			};
+		}): Promise<{
+			id: string;
+			key: string;
+			filename: string;
+			mimeType: string;
+			size: number;
+			publicUrl: string;
+			uploadedBy: string | null;
+			confirmedAt: Date | null;
+			createdAt: Date;
+		}>;
+		update(args: {
+			where: { id: string };
+			data: { confirmedAt: Date };
+		}): Promise<unknown>;
+		findMany(): Promise<
+			{
+				id: string;
+				key: string;
+				filename: string;
+				mimeType: string;
+				size: number;
+				publicUrl: string;
+				uploadedBy: string | null;
+				confirmedAt: Date | null;
+				createdAt: Date;
+			}[]
+		>;
+		deleteMany(args: { where: { key: string } }): Promise<unknown>;
 	};
 }
 
@@ -151,6 +194,51 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 			await prisma.locale.delete({
 				where: { code },
 			});
+		},
+
+		async createMediaAsset({ id, key, filename, mimeType, size, publicUrl, uploadedBy }) {
+			const row = await prisma.mediaAsset.create({
+				data: { id, key, filename, mimeType, size, publicUrl, uploadedBy, confirmedAt: null },
+			});
+			return {
+				id: row.id,
+				key: row.key,
+				filename: row.filename,
+				mimeType: row.mimeType,
+				size: row.size,
+				publicUrl: row.publicUrl,
+				uploadedBy: row.uploadedBy ?? undefined,
+				confirmedAt: row.confirmedAt,
+				createdAt: row.createdAt,
+			};
+		},
+
+		async confirmMediaAsset({ id }) {
+			await prisma.mediaAsset.update({
+				where: { id },
+				data: { confirmedAt: new Date() },
+			});
+		},
+
+		async listMediaAssets() {
+			const rows = await prisma.mediaAsset.findMany();
+			return rows.map(
+				(r): MediaAsset => ({
+					id: r.id,
+					key: r.key,
+					filename: r.filename,
+					mimeType: r.mimeType,
+					size: r.size,
+					publicUrl: r.publicUrl,
+					uploadedBy: r.uploadedBy ?? undefined,
+					confirmedAt: r.confirmedAt,
+					createdAt: r.createdAt,
+				}),
+			);
+		},
+
+		async deleteMediaAsset({ key }) {
+			await prisma.mediaAsset.deleteMany({ where: { key } });
 		},
 	};
 }

@@ -1,5 +1,7 @@
-import type { Page, PageSummary, RawBlock } from "../core/adapter";
+import type { MediaAsset, Page, PageSummary, RawBlock } from "../core/adapter";
 import type { CMSGroup, CMSUserSummary } from "../auth/adapter";
+
+export type { MediaAsset };
 
 export type { CMSGroup, CMSUserSummary };
 
@@ -65,6 +67,8 @@ export interface AdminClient {
 		publish(opts: { id: string }): Promise<void>;
 	};
 	media: {
+		/** Lists all recorded media assets. */
+		list(): Promise<MediaAsset[]>;
 		/**
 		 * Generates a presigned S3 upload URL for a file.
 		 * Use this to allow the browser to upload directly to storage.
@@ -73,17 +77,22 @@ export interface AdminClient {
 			filename: string;
 			mimeType: string;
 			size: number;
-		}): Promise<{ uploadUrl: string; publicUrl: string }>;
+		}): Promise<{ uploadUrl: string; publicUrl: string; assetId: string }>;
 		/**
-		 * High-level helper that presigns AND uploads a file in one go.
+		 * High-level helper that presigns, uploads, and confirms the asset in one call.
 		 * Uses the global `fetch` API.
 		 */
 		upload(opts: {
 			file: { name: string; type: string; size: number } | File;
 			body: BodyInit;
-		}): Promise<{ publicUrl: string }>;
+		}): Promise<{ publicUrl: string; assetId: string }>;
 		/**
-		 * Permanently removes a file from storage by its key.
+		 * Returns a short-lived read URL for private-bucket assets.
+		 * Falls back to the stored publicUrl when the storage adapter does not support presigned reads.
+		 */
+		getReadUrl(opts: { key: string }): Promise<{ url: string }>;
+		/**
+		 * Permanently removes a file from storage and the asset registry by its key.
 		 */
 		delete(opts: { key: string }): Promise<void>;
 	};

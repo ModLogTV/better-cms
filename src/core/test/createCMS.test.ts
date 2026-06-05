@@ -16,6 +16,13 @@ const mockAdapter: CMSAdapter = {
 	listLocales: mock(async () => []),
 	upsertLocale: mock(async () => {}),
 	deleteLocale: mock(async () => {}),
+	createMediaAsset: mock(async () => ({
+		id: "1", key: "k", filename: "f", mimeType: "image/jpeg",
+		size: 0, publicUrl: "", confirmedAt: null, createdAt: new Date(),
+	})),
+	confirmMediaAsset: mock(async () => {}),
+	listMediaAssets: mock(async () => []),
+	deleteMediaAsset: mock(async () => {}),
 };
 
 const ns = defineNamespace({

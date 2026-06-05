@@ -35,6 +35,22 @@ model Locale {
 }
 ```
 
+### Media model (required when using `mediaPlugin`)
+
+```prisma
+model MediaAsset {
+  id          String    @id @default(cuid())
+  key         String    @unique
+  filename    String
+  mimeType    String
+  size        Int
+  publicUrl   String
+  uploadedBy  String?
+  confirmedAt DateTime?
+  createdAt   DateTime  @default(now())
+}
+```
+
 ### Auth models (required when using `betterAuthCMSAdapter`)
 
 Add these models **and extend the better-auth `user` model** with CMS permission fields:
