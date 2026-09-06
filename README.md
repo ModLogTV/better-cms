@@ -66,6 +66,7 @@ The following features are prioritized by architectural dependency and implement
 | ✅    | **Client Lifecycle**              | Framework   | Integrated hooks for custom error handling, loading states, and client events.                    |
 | ✅    | **User Management X better-auth** | Framework   | Replace read/write token authentication with real user auth                                       |
 | ✅    | **Core Media System**             | Media       | Fundamental system for images/media in content pages and file distribution (download links etc.). |
+| 🔘    | **Fall-through translations**     | Framework   | Take in random strings and returning translations if available, the string otherwise              |
 | 🔘    | **Built-in Admin Panel**          | Media       | Ready to go pre-configured admin panel                                                            |
 | 🔘    | **Drizzle Adapter**               | Framework   | Official database adapter for Drizzle ORM to expand database support.                             |
 | 🔘    | **Data Interceptors**             | Framework   | Middleware to programmatically validate or transform content before saving.                       |
@@ -90,6 +91,7 @@ The following features are prioritized by architectural dependency and implement
 - **Shared Types:** All definitions are shared via a package (e.g., `@repo/cms-config`) for end-to-end type safety.
 - **Dual-Token Auth:** Split access into `readToken` (frontend) and `adminToken` (administrative writes).
 - **Subpath Exports:** Domain-specific imports like `@modlog/better-cms/next` or `@modlog/better-cms/react`.
+- **Modularity**: Highly modular architecture (like better-auth) that uses centralized plugin imports and a framework singleton instance
 
 ### Fallback Strategy
 
