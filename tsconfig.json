@@ -10,5 +10,6 @@
 		"types": ["bun"],
 		"jsx": "react-jsx",
 		"lib": ["ES2020", "DOM"]
-	}
+	},
+	"exclude": ["admin-ui", "dist", "node_modules"]
 }
