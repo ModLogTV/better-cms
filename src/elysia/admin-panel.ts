@@ -61,10 +61,20 @@ export function adminPanelPlugin(opts: AdminPanelOptions = {}) {
   const runtimeConfig = JSON.stringify({ apiBasePath, authBasePath, basePath });
 
   function injectConfig(html: string): string {
-    return html.replace(
-      "</head>",
-      `<script>window.__CMS_ADMIN_CONFIG__=${runtimeConfig};</script></head>`,
-    );
+    // Vite builds this SPA with a relative base ("./assets/...") so it can be
+    // mounted at any basePath. Without an explicit <base>, a request to
+    // "/admin" (no trailing slash) makes the browser resolve those relative
+    // paths one directory too high (e.g. "/assets/x.js" instead of
+    // "/admin/assets/x.js"), 404ing every asset. <base> must be inserted right
+    // after the opening <head> tag, not before </head> — per spec it only
+    // affects elements parsed after it, and Vite's own <script src="./assets/...">
+    // and <link href="./assets/..."> tags are earlier in <head> than that.
+    return html
+      .replace("<head>", `<head><base href="${basePath}/">`)
+      .replace(
+        "</head>",
+        `<script>window.__CMS_ADMIN_CONFIG__=${runtimeConfig};</script></head>`,
+      );
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: Elysia's set type varies across versions

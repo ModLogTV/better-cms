@@ -58,6 +58,10 @@ interface PrismaClient {
 			create: { code: string; name: string; isDefault: boolean };
 			update: { name?: string; isDefault?: boolean };
 		}): Promise<unknown>;
+		updateMany(args: {
+			where: { code: { not: string } };
+			data: { isDefault: boolean };
+		}): Promise<unknown>;
 		delete(args: { where: { code: string } }): Promise<unknown>;
 	};
 	mediaAsset: {
@@ -183,6 +187,15 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 		},
 
 		async upsertLocale({ code, name, isDefault = false }) {
+			// Only one locale may be default — docs/getting-started/database-schema.md
+			// already documented this as unenforced; enforce it here instead of
+			// leaving it as a silent data-integrity trap for admin UI callers.
+			if (isDefault) {
+				await prisma.locale.updateMany({
+					where: { code: { not: code } },
+					data: { isDefault: false },
+				});
+			}
 			await prisma.locale.upsert({
 				where: { code },
 				create: { code, name, isDefault },
