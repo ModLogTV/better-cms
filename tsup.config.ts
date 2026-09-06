@@ -1,5 +1,11 @@
 import { defineConfig } from "tsup";
 
+// NOTE: production usage right now intentionally pins Prisma + Elysia + React/Next
+// as the supported adapter/framework set. Drizzle, TanStack Start, and the storage
+// adapters build alongside them but are not the active target — see the roadmap
+// audit's build-isolation finding (all "node platform" entries below share one
+// tsup build config; a broken/missing entry currently fails the whole group).
+
 const ALL_PEER_DEPS = [
 	"elysia",
 	"next",
