@@ -1,15 +1,36 @@
-import { Elysia } from "elysia";
 import type { CMSAuthAdapter } from "../auth/adapter";
 import type { CMSConfig } from "./config";
 import { CMSEventEmitter } from "./events";
-import type { CMSContext, CMSInfer } from "./plugin";
+import type { CMSContext, CMSInfer, ElysiaLike } from "./plugin";
+
+/**
+ * Route-mount queue satisfying `ElysiaLike`. Core has no dependency on the
+ * `elysia` package — plugins (pagesPlugin, mediaPlugin) queue their Elysia
+ * route plugins here via `ctx.elysiaApp.use()`, and `toElysiaPlugin`
+ * (`@modlog/better-cms/elysia`) is the only place that ever imports the real
+ * `elysia` package and applies these queued mounts to a real instance.
+ */
+export interface ElysiaMountQueue extends ElysiaLike {
+	readonly mounts: readonly unknown[];
+}
+
+function createElysiaMountQueue(): ElysiaMountQueue {
+	const mounts: unknown[] = [];
+	return {
+		mounts,
+		use(plugin) {
+			mounts.push(plugin);
+			return this;
+		},
+	};
+}
 
 export interface CMSInstance {
 	adapter: CMSConfig["database"];
 	namespaces: CMSConfig["namespaces"];
 	auth: CMSAuthAdapter;
 	events: CMSEventEmitter;
-	elysiaApp: Elysia;
+	elysiaApp: ElysiaMountQueue;
 	$Infer: CMSInfer;
 }
 
@@ -54,7 +75,7 @@ export function createCMS(config: CMSConfig): CMSInstance {
 	}
 
 	const events = new CMSEventEmitter();
-	const elysiaApp = new Elysia();
+	const elysiaApp = createElysiaMountQueue();
 
 	const ctx: CMSContext = {
 		namespaces: config.namespaces,
@@ -91,5 +112,5 @@ export function createCMS(config: CMSConfig): CMSInstance {
 export type { CMSAdapter, Page, PageSummary, RawBlock } from "./adapter";
 export type { CMSConfig } from "./config";
 export { CMSEventEmitter } from "./events";
-export type { CMSContext, CMSInfer, CMSPlugin } from "./plugin";
+export type { CMSContext, CMSInfer, CMSPlugin, ElysiaLike } from "./plugin";
 export type { CMSStorageAdapter } from "./storage";

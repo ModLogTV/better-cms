@@ -19,9 +19,17 @@ export { adminPanelPlugin } from "./admin-panel";
 export type { AdminPanelOptions } from "./admin-panel";
 
 export function toElysiaPlugin(cms: CMSInstance) {
-	return new Elysia({ prefix: "/cms" })
+	const app = new Elysia({ prefix: "/cms" })
 		.use(translationRoutes(cms))
 		.use(adminRoutes(cms))
-		.use(userRoutes(cms))
-		.use(cms.elysiaApp);
+		.use(userRoutes(cms));
+
+	// Apply plugin-queued route mounts (pagesPlugin, mediaPlugin) — these were
+	// recorded by core's dependency-free ElysiaMountQueue, not a real Elysia
+	// instance. This is the one place they're materialized against a real app.
+	for (const mount of cms.elysiaApp.mounts) {
+		app.use(mount as Parameters<typeof app.use>[0]);
+	}
+
+	return app;
 }

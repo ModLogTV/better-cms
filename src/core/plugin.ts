@@ -23,7 +23,7 @@ export interface CMSContext {
 	storage?: CMSStorageAdapter;
 	auth: CMSAuthAdapter;
 	events: CMSEventEmitter;
-	/** The Elysia app instance — plugins mount routes here via init() */
+	/** Route-mount queue — plugins mount routes here via init(). No real Elysia instance exists until `toElysiaPlugin()` (`@modlog/better-cms/elysia`) applies these mounts. */
 	elysiaApp: ElysiaLike;
 }
 
