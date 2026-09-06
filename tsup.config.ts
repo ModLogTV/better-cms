@@ -82,7 +82,23 @@ export default defineConfig([
 		format: ["esm"],
 		platform: "browser",
 		external: ["react", "@tanstack/react-query"],
-		banner: { js: '"use client";' },
+		// NOT using tsup's `banner` option here — verified it silently produces no
+		// output at all for this entry (esbuild logs "use client" was ignored" for
+		// the source file's own directive when bundling, and tsup's banner never
+		// gets injected either; confirmed via `grep -n "use client" dist/next-client/index.mjs`
+		// finding nothing after a build with `banner` set). Without it Next.js's RSC
+		// compiler rejects this entire module the moment anything imports it, which
+		// breaks Next.js — the flagship, documented integration — for every consumer.
+		// Patching the built file directly after the fact is the only thing that
+		// reliably survives esbuild's bundling here.
+		async onSuccess() {
+			const { readFile, writeFile } = await import("node:fs/promises");
+			const path = "dist/next-client/index.mjs";
+			const content = await readFile(path, "utf-8");
+			if (!content.startsWith('"use client"')) {
+				await writeFile(path, `"use client";\n${content}`);
+			}
+		},
 		entry: {
 			"next-client/index": "src/next-client/index.ts",
 		},
