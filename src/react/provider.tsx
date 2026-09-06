@@ -47,13 +47,18 @@ export function CMSProvider({
 
 	const setTranslations = useCallback(
 		({ namespace, values }: { namespace: string; values: Record<string, string> }) => {
-			setAllTranslations((prev) => ({ ...prev, [namespace]: values }));
+			// loadTranslations() resolves the same cached object reference on a
+			// TTL cache hit — skip the update so revalidation on every hook mount
+			// doesn't churn context identity when nothing actually changed.
+			setAllTranslations((prev) =>
+				prev[namespace] === values ? prev : { ...prev, [namespace]: values },
+			);
 		},
 		[],
 	);
 
 	const setContent = useCallback(({ slug, blocks }: { slug: string; blocks: RawBlock[] }) => {
-		setAllContent((prev) => ({ ...prev, [slug]: blocks }));
+		setAllContent((prev) => (prev[slug] === blocks ? prev : { ...prev, [slug]: blocks }));
 	}, []);
 
 	const translationsRef = useRef(translations);

@@ -68,30 +68,40 @@ export function useTranslations<T extends NamespaceDefinition>(
 	const [error, setError] = useState<Error | null>(null);
 
 	useEffect(() => {
-		if (existing) {
-			setLocalTranslations(existing);
-			setIsLoading(false);
-			setError(null);
-			return;
-		}
+		let cancelled = false;
+		if (!existing) setIsLoading(true);
 
-		setIsLoading(true);
+		// Always revalidate against the module-level TTL cache (client/cache.ts),
+		// even when a value was already seeded into context — otherwise a
+		// namespace seeded once (e.g. via initialTranslations) would never be
+		// refetched again for the lifetime of the provider, silently defeating
+		// the documented 60s cache TTL. loadTranslations() resolves instantly
+		// from cache when still fresh, so this is cheap in the common case.
 		loadTranslations({ namespace: ns.name, locale: ctx.locale })
 			.then((data) => {
+				if (cancelled) return;
 				ctx.setTranslations({ namespace: ns.name, values: data });
 				setLocalTranslations(data);
 				setError(null);
 				options?.onSuccess?.(data);
 			})
 			.catch((err) => {
+				if (cancelled) return;
 				const error = err instanceof Error ? err : new Error(String(err));
 				setError(error);
 				options?.onError?.(error);
 			})
 			.finally(() => {
-				setIsLoading(false);
+				if (!cancelled) setIsLoading(false);
 			});
-	}, [ns.name, ctx.locale, existing, ctx.setTranslations, options?.onSuccess, options?.onError]);
+
+		return () => {
+			cancelled = true;
+		};
+		// existing is intentionally excluded — it changes every time ctx.setTranslations
+		// fires above, and depending on it here would re-trigger this effect in a loop.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [ns.name, ctx.locale, ctx.setTranslations, options?.onSuccess, options?.onError]);
 
 	const t = createTranslator({ ns, translations, locale: ctx.locale });
 	const tRich = createRichTranslator({ ns, translations, locale: ctx.locale });
@@ -121,30 +131,35 @@ export function usePageContent(opts: {
 	const [error, setError] = useState<Error | null>(null);
 
 	useEffect(() => {
-		if (existing) {
-			setBlocks(existing);
-			setIsLoading(false);
-			setError(null);
-			return;
-		}
+		let cancelled = false;
+		if (!existing) setIsLoading(true);
 
-		setIsLoading(true);
+		// See useTranslations above: always revalidate against the TTL cache
+		// instead of trusting a seeded context value forever.
 		loadPageContent({ slug, locale: ctx.locale })
 			.then((data) => {
+				if (cancelled) return;
 				ctx.setContent({ slug, blocks: data });
 				setBlocks(data);
 				setError(null);
 				onSuccess?.(data);
 			})
 			.catch((err) => {
+				if (cancelled) return;
 				const error = err instanceof Error ? err : new Error(String(err));
 				setError(error);
 				onError?.(error);
 			})
 			.finally(() => {
-				setIsLoading(false);
+				if (!cancelled) setIsLoading(false);
 			});
-	}, [slug, ctx.locale, existing, ctx.setContent, onSuccess, onError]);
+
+		return () => {
+			cancelled = true;
+		};
+		// existing intentionally excluded — see useTranslations above.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [slug, ctx.locale, ctx.setContent, onSuccess, onError]);
 
 	return { data: blocks, isLoading, error };
 }
