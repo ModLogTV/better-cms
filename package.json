@@ -1,5 +1,5 @@
 {
-	"name": "better-cms",
+	"name": "@modlog/better-cms",
 	"version": "0.1.0",
 	"description": "Framework-agnostic type-safe, self-hosted full-stack TypeScript CMS for translations, asset management and page content.",
 	"type": "commonjs",
@@ -20,7 +20,7 @@
 		"format": "biome check --write .",
 		"check": "biome check --write ."
 	},
-	"workspaces": ["admin-ui"],
+	"workspaces": ["admin-ui", "demo/*"],
 	"keywords": [
 		"cms",
 		"i18n",
