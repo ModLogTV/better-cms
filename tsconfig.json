@@ -11,5 +11,5 @@
 		"jsx": "react-jsx",
 		"lib": ["ES2020", "DOM"]
 	},
-	"exclude": ["admin-ui", "dist", "node_modules"]
+	"exclude": ["admin-ui", "demo", "dist", "node_modules"]
 }

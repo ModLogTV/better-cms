@@ -3,3 +3,4 @@ dist
 build
 graphify-out/
 .DS_Store
+/demo
