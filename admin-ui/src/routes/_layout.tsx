@@ -1,42 +1,55 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	Outlet,
+	redirect,
+	useRouterState,
+} from "@tanstack/react-router";
+import { AppSidebar } from "@/components/layout/AppSidebar";
+import { Separator } from "@/components/ui/separator";
+import {
+	SidebarInset,
+	SidebarProvider,
+	SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { getSession } from "@/lib/auth";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { Header } from "@/components/layout/Header";
 
 export const Route = createFileRoute("/_layout")({
-  beforeLoad: async ({ location }) => {
-    const session = await getSession();
-    if (!session) {
-      throw redirect({ to: "/login", search: { redirect: location.href } });
-    }
-    return { session };
-  },
-  component: AuthenticatedLayout,
+	beforeLoad: async ({ location }) => {
+		const session = await getSession();
+		if (!session) {
+			throw redirect({ to: "/login", search: { redirect: location.href } });
+		}
+		return { session };
+	},
+	component: AuthenticatedLayout,
 });
 
 function AuthenticatedLayout() {
-  const { session } = Route.useRouteContext();
+	const { session } = Route.useRouteContext();
 
-  return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <Header
-          title={getPageTitle()}
-          userEmail={session.user.email}
-          userName={session.user.name}
-        />
-        <main className="flex-1 overflow-y-auto p-6">
-          <Outlet />
-        </main>
-      </div>
-    </div>
-  );
+	return (
+		<SidebarProvider>
+			<AppSidebar userEmail={session.user.email} userName={session.user.name} />
+			<SidebarInset>
+				<header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+					<SidebarTrigger className="-ml-1" />
+					<Separator orientation="vertical" className="mr-2 h-4" />
+					<h1 className="text-sm font-semibold text-foreground">
+						<PageTitle />
+					</h1>
+				</header>
+				<main className="flex-1 overflow-y-auto p-6">
+					<Outlet />
+				</main>
+			</SidebarInset>
+		</SidebarProvider>
+	);
 }
 
-function getPageTitle() {
-  const path = window.location.pathname.split("/").filter(Boolean);
-  if (path.length === 0) return "Dashboard";
-  const last = path[path.length - 1];
-  return last.charAt(0).toUpperCase() + last.slice(1);
+function PageTitle() {
+	const pathname = useRouterState({ select: (s) => s.location.pathname });
+	const segments = pathname.split("/").filter(Boolean);
+	if (segments.length === 0) return "Dashboard";
+	const last = segments[segments.length - 1];
+	return last.charAt(0).toUpperCase() + last.slice(1);
 }
