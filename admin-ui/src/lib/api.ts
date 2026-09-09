@@ -95,16 +95,6 @@ export interface RawBlock {
 	data: unknown;
 }
 
-export interface Page {
-	id: string;
-	slug: string;
-	locale: string;
-	blocks: RawBlock[];
-	status: "draft" | "published";
-	publishedAt: string | null;
-	updatedAt: string;
-}
-
 export interface MediaAsset {
 	id: string;
 	key: string;
@@ -157,7 +147,7 @@ export const api = {
 	pages: {
 		list: () => get<PageSummary[]>("/pages"),
 		get: (slug: string, locale: string, draft = false) =>
-			get<Page>(
+			get<RawBlock[]>(
 				`/pages/${encodeURIComponent(slug)}?locale=${locale}&draft=${draft}`,
 			),
 		update: (id: string, blocks: RawBlock[]) => put(`/pages/${id}`, blocks),

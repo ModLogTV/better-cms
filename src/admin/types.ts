@@ -1,5 +1,5 @@
 import type { CMSGroup, CMSUserSummary } from "../auth/adapter";
-import type { MediaAsset, Page, PageSummary, RawBlock } from "../core/adapter";
+import type { MediaAsset, PageSummary, RawBlock } from "../core/adapter";
 
 export type { CMSGroup, CMSUserSummary, MediaAsset };
 
@@ -75,10 +75,12 @@ export interface AdminClient {
 		/** Lists all pages available in the CMS with their basic status and metadata. */
 		list(): Promise<PageSummary[]>;
 		/**
-		 * Fetches a single page by its slug.
+		 * Fetches a single page's blocks by slug. Returns just the block array
+		 * (matching the underlying GET /pages/:slug route) — use `list()` for
+		 * status/id/updatedAt metadata.
 		 * @param draft If true, fetches the latest saved draft instead of the published version.
 		 */
-		get(opts: { slug: string; locale: string; draft?: boolean }): Promise<Page>;
+		get(opts: { slug: string; locale: string; draft?: boolean }): Promise<RawBlock[]>;
 		/** Updates the blocks of a page. Validates blocks against the registered schema. */
 		update(opts: { id: string; blocks: RawBlock[] }): Promise<void>;
 		/** Promotes the current draft of a page to the published status. */
