@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { api, type NamespaceSummary, type PageSummary } from "@/lib/api";
 
 export const Route = createFileRoute("/_layout/")({
@@ -185,7 +185,11 @@ function NamespaceQuickEditRow({
 					<Table>
 						<TableBody>
 							{metadata.isLoading || translations.isLoading ? (
-								<Skeleton className="h-16 w-full" />
+								<TableRow>
+									<TableCell colSpan={2}>
+										<Skeleton className="h-16 w-full" />
+									</TableCell>
+								</TableRow>
 							) : (
 								metadata.data
 									?.slice(0, 5)
