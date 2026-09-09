@@ -77,7 +77,6 @@ export function adminPanelPlugin(opts: AdminPanelOptions = {}) {
       );
   }
 
-  // biome-ignore lint/suspicious/noExplicitAny: Elysia's set type varies across versions
   function serveIndex(set: { headers: Record<string, unknown>; status?: unknown }) {
     const indexPath = join(distDir, "index.html");
     if (!existsSync(indexPath)) {

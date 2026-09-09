@@ -20,18 +20,42 @@
 	},
 	"overrides": [
 		{
-			"includes": ["graphify-out/**", "dist/**", "bun.lock"],
+			"includes": [
+				"graphify-out/**",
+				"dist/**",
+				"bun.lock",
+				"**/routeTree.gen.ts"
+			],
 			"linter": {
 				"enabled": false
 			},
 			"formatter": {
 				"enabled": false
+			},
+			"assist": {
+				"enabled": false
+			}
+		},
+		{
+			"includes": ["**/*.test.ts", "**/*.test.tsx"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noExplicitAny": "off"
+					}
+				}
 			}
 		}
 	],
 	"javascript": {
 		"formatter": {
 			"quoteStyle": "double"
+		}
+	},
+	"css": {
+		"parser": {
+			"cssModules": true,
+			"tailwindDirectives": true
 		}
 	},
 	"assist": {
