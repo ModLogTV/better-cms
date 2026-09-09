@@ -1,103 +1,349 @@
+import {
+	IconChevronDown,
+	IconChevronRight,
+	IconFileText,
+	IconLanguage,
+	IconPhoto,
+	IconRocket,
+	IconShield,
+	IconUsers,
+	IconWorld,
+} from "@tabler/icons-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { Languages, FileText, Image, Globe } from "lucide-react";
-import { api } from "@/lib/api";
+import { useState } from "react";
+import { toast } from "sonner";
+import { TranslationRow } from "@/components/shared/TranslationRow";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody } from "@/components/ui/table";
+import { api, type NamespaceSummary, type PageSummary } from "@/lib/api";
 
 export const Route = createFileRoute("/_layout/")({
-  component: DashboardPage,
+	component: DashboardPage,
 });
 
 function StatCard({
-  title,
-  value,
-  icon: Icon,
-  to,
-  loading,
+	title,
+	value,
+	icon: Icon,
+	to,
+	loading,
 }: {
-  title: string;
-  value: number | undefined;
-  icon: React.ElementType;
-  to: string;
-  loading: boolean;
+	title: string;
+	value: number | undefined;
+	icon: React.ElementType;
+	to: string;
+	loading: boolean;
 }) {
-  return (
-    <Link to={to}>
-      <Card className="cursor-pointer transition-shadow hover:shadow-md">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            {title}
-          </CardTitle>
-          <Icon className="size-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <Skeleton className="h-8 w-16" />
-          ) : (
-            <div className="text-3xl font-bold">{value ?? 0}</div>
-          )}
-        </CardContent>
-      </Card>
-    </Link>
-  );
+	return (
+		<Link to={to}>
+			<Card className="cursor-pointer transition-shadow hover:shadow-md">
+				<CardHeader className="flex flex-row items-center justify-between pb-2">
+					<CardTitle className="text-sm font-medium text-muted-foreground">
+						{title}
+					</CardTitle>
+					<Icon className="size-4 text-muted-foreground" />
+				</CardHeader>
+				<CardContent>
+					{loading ? (
+						<Skeleton className="h-8 w-16" />
+					) : (
+						<div className="text-3xl font-bold">{value ?? 0}</div>
+					)}
+				</CardContent>
+			</Card>
+		</Link>
+	);
+}
+
+function RecentPagesCard({
+	pages,
+	isLoading,
+}: {
+	pages?: PageSummary[];
+	isLoading: boolean;
+}) {
+	const qc = useQueryClient();
+	const publish = useMutation({
+		mutationFn: (id: string) => api.pages.publish(id),
+		onSuccess: () => {
+			toast.success("Page published");
+			qc.invalidateQueries({ queryKey: ["cms", "pages"] });
+		},
+		onError: () => toast.error("Publish failed"),
+	});
+
+	const recent = [...(pages ?? [])]
+		.sort(
+			(a, b) =>
+				new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+		)
+		.slice(0, 5);
+
+	return (
+		<Card>
+			<CardHeader>
+				<CardTitle className="text-base">Recent pages</CardTitle>
+			</CardHeader>
+			<CardContent className="space-y-1">
+				{isLoading ? (
+					Array.from({ length: 3 }).map((_, i) => (
+						// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton row count, never reordered
+						<Skeleton key={i} className="h-10 w-full" />
+					))
+				) : recent.length === 0 ? (
+					<p className="py-6 text-center text-sm text-muted-foreground">
+						No pages yet.
+					</p>
+				) : (
+					recent.map((page) => (
+						<div
+							key={page.id}
+							className="flex items-center justify-between rounded-md px-2 py-2 hover:bg-muted/50"
+						>
+							<Link
+								to="/pages/$pageId"
+								params={{ pageId: page.id }}
+								search={{ slug: page.slug, locale: page.locale }}
+								className="flex items-center gap-2 truncate"
+							>
+								<span className="truncate font-mono text-sm">{page.slug}</span>
+								<Badge variant="outline" className="shrink-0">
+									{page.locale}
+								</Badge>
+							</Link>
+							{page.status === "draft" ? (
+								<Button
+									size="sm"
+									variant="outline"
+									className="h-7 shrink-0 gap-1 text-xs"
+									onClick={() => publish.mutate(page.id)}
+									disabled={publish.isPending}
+								>
+									<IconRocket className="size-3" />
+									Publish
+								</Button>
+							) : (
+								<Badge variant="success" className="shrink-0">
+									published
+								</Badge>
+							)}
+						</div>
+					))
+				)}
+			</CardContent>
+		</Card>
+	);
+}
+
+function NamespaceQuickEditRow({
+	ns,
+	defaultLocale,
+}: {
+	ns: NamespaceSummary;
+	defaultLocale: string;
+}) {
+	const [expanded, setExpanded] = useState(false);
+
+	const metadata = useQuery({
+		queryKey: ["cms", "namespace", ns.name, "describe"],
+		queryFn: () => api.namespaces.describe(ns.name),
+		enabled: expanded,
+	});
+	const translations = useQuery({
+		queryKey: ["cms", "translations", ns.name, defaultLocale],
+		queryFn: () => api.namespaces.getTranslations(ns.name, defaultLocale),
+		enabled: expanded,
+	});
+
+	return (
+		<div className="rounded-md">
+			<button
+				type="button"
+				onClick={() => setExpanded((e) => !e)}
+				className="flex w-full items-center justify-between rounded-md px-2 py-2 text-left hover:bg-muted/50"
+			>
+				<span className="flex items-center gap-2">
+					{expanded ? (
+						<IconChevronDown className="size-3.5 text-muted-foreground" />
+					) : (
+						<IconChevronRight className="size-3.5 text-muted-foreground" />
+					)}
+					<span className="font-mono text-sm">{ns.name}</span>
+				</span>
+				<span className="text-xs text-muted-foreground">
+					{ns.updatedAt
+						? new Date(ns.updatedAt).toLocaleDateString()
+						: "never edited"}
+				</span>
+			</button>
+			{expanded && (
+				<div className="rounded-lg border ml-6 mb-2">
+					<Table>
+						<TableBody>
+							{metadata.isLoading || translations.isLoading ? (
+								<Skeleton className="h-16 w-full" />
+							) : (
+								metadata.data
+									?.slice(0, 5)
+									.map((meta) => (
+										<TranslationRow
+											key={meta.key}
+											meta={meta}
+											value={translations.data?.[meta.key] ?? ""}
+											namespace={ns.name}
+											locale={defaultLocale}
+										/>
+									))
+							)}
+						</TableBody>
+					</Table>
+				</div>
+			)}
+		</div>
+	);
+}
+
+function RecentNamespacesCard({
+	namespaces,
+	isLoading,
+	defaultLocale,
+}: {
+	namespaces?: NamespaceSummary[];
+	isLoading: boolean;
+	defaultLocale: string;
+}) {
+	const recent = [...(namespaces ?? [])]
+		.sort((a, b) => {
+			if (!a.updatedAt) return 1;
+			if (!b.updatedAt) return -1;
+			return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+		})
+		.slice(0, 5);
+
+	return (
+		<Card>
+			<CardHeader>
+				<CardTitle className="text-base">Recently updated namespaces</CardTitle>
+			</CardHeader>
+			<CardContent className="space-y-1">
+				{isLoading ? (
+					Array.from({ length: 3 }).map((_, i) => (
+						// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton row count, never reordered
+						<Skeleton key={i} className="h-10 w-full" />
+					))
+				) : recent.length === 0 ? (
+					<p className="py-6 text-center text-sm text-muted-foreground">
+						No namespaces configured.
+					</p>
+				) : (
+					recent.map((ns) => (
+						<NamespaceQuickEditRow
+							key={ns.name}
+							ns={ns}
+							defaultLocale={defaultLocale}
+						/>
+					))
+				)}
+			</CardContent>
+		</Card>
+	);
 }
 
 function DashboardPage() {
-  const namespaces = useQuery({
-    queryKey: ["cms", "namespaces"],
-    queryFn: () => api.namespaces.list(),
-  });
-  const pages = useQuery({
-    queryKey: ["cms", "pages"],
-    queryFn: () => api.pages.list(),
-  });
-  const media = useQuery({
-    queryKey: ["cms", "media"],
-    queryFn: () => api.media.list(),
-  });
-  const locales = useQuery({
-    queryKey: ["cms", "locales"],
-    queryFn: () => api.locales.list(),
-  });
+	const namespaces = useQuery({
+		queryKey: ["cms", "namespaces"],
+		queryFn: () => api.namespaces.list(),
+	});
+	const pages = useQuery({
+		queryKey: ["cms", "pages"],
+		queryFn: () => api.pages.list(),
+	});
+	const media = useQuery({
+		queryKey: ["cms", "media"],
+		queryFn: () => api.media.list(),
+	});
+	const locales = useQuery({
+		queryKey: ["cms", "locales"],
+		queryFn: () => api.locales.list(),
+	});
+	const users = useQuery({
+		queryKey: ["cms", "users"],
+		queryFn: () => api.users.list(),
+	});
+	const groups = useQuery({
+		queryKey: ["cms", "groups"],
+		queryFn: () => api.groups.list(),
+	});
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
-        <p className="text-muted-foreground">Overview of your CMS content.</p>
-      </div>
+	const defaultLocale =
+		locales.data?.find((l) => l.isDefault)?.code ??
+		locales.data?.[0]?.code ??
+		"en";
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Translation Namespaces"
-          value={namespaces.data?.length}
-          icon={Languages}
-          to="/translations"
-          loading={namespaces.isLoading}
-        />
-        <StatCard
-          title="Pages"
-          value={pages.data?.length}
-          icon={FileText}
-          to="/pages"
-          loading={pages.isLoading}
-        />
-        <StatCard
-          title="Media Assets"
-          value={media.data?.length}
-          icon={Image}
-          to="/media"
-          loading={media.isLoading}
-        />
-        <StatCard
-          title="Locales"
-          value={locales.data?.length}
-          icon={Globe}
-          to="/locales"
-          loading={locales.isLoading}
-        />
-      </div>
-    </div>
-  );
+	return (
+		<div className="space-y-6">
+			<div>
+				<h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
+				<p className="text-muted-foreground">Overview of your CMS content.</p>
+			</div>
+
+			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+				<StatCard
+					title="Namespaces"
+					value={namespaces.data?.length}
+					icon={IconLanguage}
+					to="/translations"
+					loading={namespaces.isLoading}
+				/>
+				<StatCard
+					title="Pages"
+					value={pages.data?.length}
+					icon={IconFileText}
+					to="/pages"
+					loading={pages.isLoading}
+				/>
+				<StatCard
+					title="Media"
+					value={media.data?.length}
+					icon={IconPhoto}
+					to="/media"
+					loading={media.isLoading}
+				/>
+				<StatCard
+					title="Locales"
+					value={locales.data?.length}
+					icon={IconWorld}
+					to="/locales"
+					loading={locales.isLoading}
+				/>
+				<StatCard
+					title="Users"
+					value={users.data?.length}
+					icon={IconUsers}
+					to="/users"
+					loading={users.isLoading}
+				/>
+				<StatCard
+					title="Groups"
+					value={groups.data?.length}
+					icon={IconShield}
+					to="/groups"
+					loading={groups.isLoading}
+				/>
+			</div>
+
+			<div className="grid gap-4 lg:grid-cols-2">
+				<RecentPagesCard pages={pages.data} isLoading={pages.isLoading} />
+				<RecentNamespacesCard
+					namespaces={namespaces.data}
+					isLoading={namespaces.isLoading}
+					defaultLocale={defaultLocale}
+				/>
+			</div>
+		</div>
+	);
 }
