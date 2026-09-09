@@ -80,7 +80,11 @@ export interface AdminClient {
 		 * status/id/updatedAt metadata.
 		 * @param draft If true, fetches the latest saved draft instead of the published version.
 		 */
-		get(opts: { slug: string; locale: string; draft?: boolean }): Promise<RawBlock[]>;
+		get(opts: {
+			slug: string;
+			locale: string;
+			draft?: boolean;
+		}): Promise<RawBlock[]>;
 		/** Updates the blocks of a page. Validates blocks against the registered schema. */
 		update(opts: { id: string; blocks: RawBlock[] }): Promise<void>;
 		/** Promotes the current draft of a page to the published status. */
