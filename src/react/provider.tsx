@@ -46,7 +46,13 @@ export function CMSProvider({
 	}, [initialLocale]);
 
 	const setTranslations = useCallback(
-		({ namespace, values }: { namespace: string; values: Record<string, string> }) => {
+		({
+			namespace,
+			values,
+		}: {
+			namespace: string;
+			values: Record<string, string>;
+		}) => {
 			// loadTranslations() resolves the same cached object reference on a
 			// TTL cache hit — skip the update so revalidation on every hook mount
 			// doesn't churn context identity when nothing actually changed.
@@ -57,9 +63,14 @@ export function CMSProvider({
 		[],
 	);
 
-	const setContent = useCallback(({ slug, blocks }: { slug: string; blocks: RawBlock[] }) => {
-		setAllContent((prev) => (prev[slug] === blocks ? prev : { ...prev, [slug]: blocks }));
-	}, []);
+	const setContent = useCallback(
+		({ slug, blocks }: { slug: string; blocks: RawBlock[] }) => {
+			setAllContent((prev) =>
+				prev[slug] === blocks ? prev : { ...prev, [slug]: blocks },
+			);
+		},
+		[],
+	);
 
 	const translationsRef = useRef(translations);
 	const contentRef = useRef(content);
@@ -73,7 +84,10 @@ export function CMSProvider({
 			const slugs = Object.keys(contentRef.current);
 			await Promise.all([
 				...namespaces.map(async (ns) => {
-					const data = await loadTranslations({ namespace: ns, locale: currentLocale });
+					const data = await loadTranslations({
+						namespace: ns,
+						locale: currentLocale,
+					});
 					setTranslations({ namespace: ns, values: data });
 				}),
 				...slugs.map(async (slug) => {

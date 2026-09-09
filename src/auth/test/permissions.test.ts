@@ -64,8 +64,14 @@ describe("hasAllPermissions", () => {
 	test("returns true when all required permissions present", () => {
 		expect(
 			hasAllPermissions({
-				userPerms: [CMS_PERMISSIONS.TRANSLATIONS_READ, CMS_PERMISSIONS.LOCALES_READ],
-				required: [CMS_PERMISSIONS.TRANSLATIONS_READ, CMS_PERMISSIONS.LOCALES_READ],
+				userPerms: [
+					CMS_PERMISSIONS.TRANSLATIONS_READ,
+					CMS_PERMISSIONS.LOCALES_READ,
+				],
+				required: [
+					CMS_PERMISSIONS.TRANSLATIONS_READ,
+					CMS_PERMISSIONS.LOCALES_READ,
+				],
 			}),
 		).toBe(true);
 	});
@@ -74,7 +80,10 @@ describe("hasAllPermissions", () => {
 		expect(
 			hasAllPermissions({
 				userPerms: [CMS_PERMISSIONS.TRANSLATIONS_READ],
-				required: [CMS_PERMISSIONS.TRANSLATIONS_READ, CMS_PERMISSIONS.LOCALES_WRITE],
+				required: [
+					CMS_PERMISSIONS.TRANSLATIONS_READ,
+					CMS_PERMISSIONS.LOCALES_WRITE,
+				],
 			}),
 		).toBe(false);
 	});
@@ -98,7 +107,10 @@ describe("hasAnyPermission", () => {
 		expect(
 			hasAnyPermission({
 				userPerms: [CMS_PERMISSIONS.LOCALES_READ],
-				required: [CMS_PERMISSIONS.TRANSLATIONS_WRITE, CMS_PERMISSIONS.LOCALES_READ],
+				required: [
+					CMS_PERMISSIONS.TRANSLATIONS_WRITE,
+					CMS_PERMISSIONS.LOCALES_READ,
+				],
 			}),
 		).toBe(true);
 	});
@@ -107,14 +119,20 @@ describe("hasAnyPermission", () => {
 		expect(
 			hasAnyPermission({
 				userPerms: [CMS_PERMISSIONS.LOCALES_READ],
-				required: [CMS_PERMISSIONS.TRANSLATIONS_WRITE, CMS_PERMISSIONS.PAGES_PUBLISH],
+				required: [
+					CMS_PERMISSIONS.TRANSLATIONS_WRITE,
+					CMS_PERMISSIONS.PAGES_PUBLISH,
+				],
 			}),
 		).toBe(false);
 	});
 
 	test("returns false for empty required", () => {
 		expect(
-			hasAnyPermission({ userPerms: [CMS_PERMISSIONS.ADMIN_READ], required: [] }),
+			hasAnyPermission({
+				userPerms: [CMS_PERMISSIONS.ADMIN_READ],
+				required: [],
+			}),
 		).toBe(false);
 	});
 

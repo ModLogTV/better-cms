@@ -25,9 +25,16 @@ const BANNED_REASONS = [
 	"na",
 ];
 
-const IGNORE_LINE = /biome-ignore(?:-all)?\s+lint\/[\w./-]+(?:\s+lint\/[\w./-]+)*\s*:\s*(.*)$/;
+const IGNORE_LINE =
+	/biome-ignore(?:-all)?\s+lint\/[\w./-]+(?:\s+lint\/[\w./-]+)*\s*:\s*(.*)$/;
 
-const IGNORED_DIRS = new Set(["node_modules", "dist", "build", "graphify-out", ".git"]);
+const IGNORED_DIRS = new Set([
+	"node_modules",
+	"dist",
+	"build",
+	"graphify-out",
+	".git",
+]);
 
 interface Violation {
 	file: string;
@@ -40,14 +47,18 @@ async function collectFiles(): Promise<string[]> {
 	const glob = new Bun.Glob("**/*.{ts,tsx,js,jsx,mjs,cjs}");
 	const files: string[] = [];
 	for await (const file of glob.scan({ cwd: process.cwd(), dot: false })) {
-		if ([...IGNORED_DIRS].some((dir) => file.split("/").includes(dir))) continue;
+		if ([...IGNORED_DIRS].some((dir) => file.split("/").includes(dir)))
+			continue;
 		files.push(file);
 	}
 	return files;
 }
 
 function checkReason(reason: string): string | null {
-	const trimmed = reason.trim().replace(/\*\/\s*$/, "").trim();
+	const trimmed = reason
+		.trim()
+		.replace(/\*\/\s*$/, "")
+		.trim();
 	if (trimmed.length === 0) return "no reason given after the colon";
 	if (trimmed.length < MIN_REASON_LENGTH) {
 		return `reason too short to be a real explanation ("${trimmed}")`;
@@ -81,7 +92,9 @@ async function main() {
 		return;
 	}
 
-	console.error(`✗ ${violations.length} biome-ignore comment(s) missing a real justification:\n`);
+	console.error(
+		`✗ ${violations.length} biome-ignore comment(s) missing a real justification:\n`,
+	);
 	for (const v of violations) {
 		console.error(`  ${v.file}:${v.line}`);
 		console.error(`    ${v.text}`);

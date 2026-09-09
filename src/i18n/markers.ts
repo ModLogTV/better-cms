@@ -50,7 +50,9 @@ export const plural = <T>(): PluralMarker<T> => ({
  * // tRich("terms", { b: chunks => <b>{chunks}</b>, link: chunks => <a href="/terms">{chunks}</a> })
  * ```
  */
-export const rich = <Tags extends string>(...tags: Tags[]): RichMarker<Tags> => ({
+export const rich = <Tags extends string>(
+	...tags: Tags[]
+): RichMarker<Tags> => ({
 	_type: "rich",
 	// Cast: type says Tags (string union), runtime stores Tags[] so describe() can read names.
 	_tags: tags as unknown as Tags,

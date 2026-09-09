@@ -34,10 +34,9 @@ async function runSync(opts: FallbackSyncOptions): Promise<void> {
 	await Promise.all(
 		namespaces.flatMap(({ name }) =>
 			locales.map(async ({ code }) => {
-				const res = await fetch(
-					`${base}/cms/translations/${name}/${code}`,
-					{ headers },
-				);
+				const res = await fetch(`${base}/cms/translations/${name}/${code}`, {
+					headers,
+				});
 				if (!res.ok) return;
 				const data = (await res.json()) as Record<string, string>;
 				const dir = join(opts.outputDir, code);
@@ -81,7 +80,9 @@ export async function startFallbackSync(
 	const intervalMs = opts.interval ?? 3_600_000;
 	if (intervalMs > 0) {
 		setInterval(() => {
-			runSync(opts).catch((err) => console.error("[better-cms] fallback sync error:", err));
+			runSync(opts).catch((err) =>
+				console.error("[better-cms] fallback sync error:", err),
+			);
 		}, intervalMs);
 	}
 }

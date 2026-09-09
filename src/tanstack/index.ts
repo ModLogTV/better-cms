@@ -43,11 +43,8 @@ export function createServerFns(admin: AdminClient) {
 		}) => admin.media.presign(opts),
 
 		listLocales: () => admin.locales.list(),
-		upsertLocale: (opts: {
-			code: string;
-			name: string;
-			isDefault?: boolean;
-		}) => admin.locales.upsert(opts),
+		upsertLocale: (opts: { code: string; name: string; isDefault?: boolean }) =>
+			admin.locales.upsert(opts),
 		deleteLocale: (code: string) => admin.locales.delete({ code }),
 	};
 }

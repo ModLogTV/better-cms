@@ -1,8 +1,11 @@
 import { describe, expect, mock, test } from "bun:test";
 import { Elysia } from "elysia";
+import type {
+	CMSAuthManagement,
+	CMSGroup,
+	CMSUserSummary,
+} from "../../auth/adapter";
 import { tokenAuthAdapter } from "../../auth/token-adapter";
-import type { CMSAuthManagement, CMSGroup, CMSUserSummary } from "../../auth/adapter";
-import { CMS_WILDCARD_PERMISSION } from "../../auth/permissions";
 import { createCMS } from "../../core/index";
 import { toElysiaPlugin } from "../index";
 import { makeAdapter, ns, req } from "./helpers";
@@ -13,9 +16,21 @@ import { makeAdapter, ns, req } from "./helpers";
 
 const ADMIN_TOKEN = "admin-token";
 
-function makeManagement(overrides: Partial<CMSAuthManagement> = {}): CMSAuthManagement {
-	const group: CMSGroup = { id: "g1", name: "Editors", permissions: ["cms:translations:write"] };
-	const user: CMSUserSummary = { id: "u1", email: "alice@example.com", name: "Alice", permissions: [], groupIds: ["g1"] };
+function makeManagement(
+	overrides: Partial<CMSAuthManagement> = {},
+): CMSAuthManagement {
+	const group: CMSGroup = {
+		id: "g1",
+		name: "Editors",
+		permissions: ["cms:translations:write"],
+	};
+	const user: CMSUserSummary = {
+		id: "u1",
+		email: "alice@example.com",
+		name: "Alice",
+		permissions: [],
+		groupIds: ["g1"],
+	};
 	return {
 		listUsers: mock(async () => [user]),
 		getUserPermissions: mock(async () => ["cms:translations:read"]),
@@ -24,8 +39,16 @@ function makeManagement(overrides: Partial<CMSAuthManagement> = {}): CMSAuthMana
 		addUserToGroup: mock(async () => {}),
 		removeUserFromGroup: mock(async () => {}),
 		listGroups: mock(async () => [group]),
-		createGroup: mock(async ({ name, permissions }) => ({ id: "g-new", name, permissions })),
-		updateGroup: mock(async ({ id, ...rest }) => ({ id, name: rest.name ?? "G", permissions: rest.permissions ?? [] })),
+		createGroup: mock(async ({ name, permissions }) => ({
+			id: "g-new",
+			name,
+			permissions,
+		})),
+		updateGroup: mock(async ({ id, ...rest }) => ({
+			id,
+			name: rest.name ?? "G",
+			permissions: rest.permissions ?? [],
+		})),
 		deleteGroup: mock(async () => {}),
 		...overrides,
 	};
@@ -133,7 +156,8 @@ describe("PUT /cms/admin/users/:userId/permissions", () => {
 		expect(res.status).toBe(200);
 		expect(await res.json()).toMatchObject({ ok: true });
 		expect(mgmt.setUserPermissions).toHaveBeenCalledTimes(1);
-		const call = (mgmt.setUserPermissions as ReturnType<typeof mock>).mock.calls[0][0] as { userId: string; permissions: string[] };
+		const call = (mgmt.setUserPermissions as ReturnType<typeof mock>).mock
+			.calls[0][0] as { userId: string; permissions: string[] };
 		expect(call.userId).toBe("u1");
 		expect(call.permissions).toContain("cms:translations:write");
 	});
@@ -163,7 +187,8 @@ describe("POST /cms/admin/users/:userId/groups", () => {
 		);
 		expect(res.status).toBe(200);
 		expect(await res.json()).toMatchObject({ ok: true });
-		const call = (mgmt.addUserToGroup as ReturnType<typeof mock>).mock.calls[0][0] as { userId: string; groupId: string };
+		const call = (mgmt.addUserToGroup as ReturnType<typeof mock>).mock
+			.calls[0][0] as { userId: string; groupId: string };
 		expect(call).toEqual({ userId: "u1", groupId: "g1" });
 	});
 });
@@ -177,7 +202,8 @@ describe("DELETE /cms/admin/users/:userId/groups/:groupId", () => {
 		);
 		expect(res.status).toBe(200);
 		expect(await res.json()).toMatchObject({ ok: true });
-		const call = (mgmt.removeUserFromGroup as ReturnType<typeof mock>).mock.calls[0][0] as { userId: string; groupId: string };
+		const call = (mgmt.removeUserFromGroup as ReturnType<typeof mock>).mock
+			.calls[0][0] as { userId: string; groupId: string };
 		expect(call).toEqual({ userId: "u1", groupId: "g1" });
 	});
 });
@@ -205,7 +231,10 @@ describe("POST /cms/admin/groups", () => {
 		const res = await app.handle(
 			adminReq("/cms/admin/groups", {
 				method: "POST",
-				body: JSON.stringify({ name: "Writers", permissions: ["cms:translations:write"] }),
+				body: JSON.stringify({
+					name: "Writers",
+					permissions: ["cms:translations:write"],
+				}),
 			}),
 		);
 		expect(res.status).toBe(200);
@@ -226,7 +255,8 @@ describe("PUT /cms/admin/groups/:groupId", () => {
 			}),
 		);
 		expect(res.status).toBe(200);
-		const call = (mgmt.updateGroup as ReturnType<typeof mock>).mock.calls[0][0] as { id: string; name?: string };
+		const call = (mgmt.updateGroup as ReturnType<typeof mock>).mock
+			.calls[0][0] as { id: string; name?: string };
 		expect(call.id).toBe("g1");
 		expect(call.name).toBe("Senior Editors");
 	});
@@ -236,10 +266,13 @@ describe("DELETE /cms/admin/groups/:groupId", () => {
 	test("deletes group and returns ok", async () => {
 		const mgmt = makeManagement();
 		const app = makeAppWithManagement(mgmt);
-		const res = await app.handle(adminReq("/cms/admin/groups/g1", { method: "DELETE" }));
+		const res = await app.handle(
+			adminReq("/cms/admin/groups/g1", { method: "DELETE" }),
+		);
 		expect(res.status).toBe(200);
 		expect(await res.json()).toMatchObject({ ok: true });
-		const call = (mgmt.deleteGroup as ReturnType<typeof mock>).mock.calls[0][0] as { id: string };
+		const call = (mgmt.deleteGroup as ReturnType<typeof mock>).mock
+			.calls[0][0] as { id: string };
 		expect(call.id).toBe("g1");
 	});
 });

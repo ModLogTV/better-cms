@@ -31,7 +31,9 @@ describe("tokenAuthAdapter – verifyRequest", () => {
 
 	test("readToken does not grant write permissions", async () => {
 		const result = await adapter.verifyRequest({ "x-cms-token": READ });
-		expect(result.permissions).not.toContain(CMS_PERMISSIONS.TRANSLATIONS_WRITE);
+		expect(result.permissions).not.toContain(
+			CMS_PERMISSIONS.TRANSLATIONS_WRITE,
+		);
 		expect(result.permissions).not.toContain(CMS_PERMISSIONS.LOCALES_WRITE);
 		expect(result.permissions).not.toContain(CMS_PERMISSIONS.PAGES_PUBLISH);
 		expect(result.permissions).not.toContain(CMS_WILDCARD_PERMISSION);

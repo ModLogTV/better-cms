@@ -6,10 +6,13 @@ const TOKEN = "admin-token";
 const admin = createAdminClient({ cmsUrl: CMS_URL, token: TOKEN });
 
 function mockFetch(handler: (url: string, init: RequestInit) => Response) {
-	return spyOn(globalThis, "fetch").mockImplementation(
-		((url: unknown, init: unknown) =>
-			Promise.resolve(handler(url as string, init as RequestInit))) as typeof fetch,
-	);
+	return spyOn(globalThis, "fetch").mockImplementation(((
+		url: unknown,
+		init: unknown,
+	) =>
+		Promise.resolve(
+			handler(url as string, init as RequestInit),
+		)) as typeof fetch);
 }
 
 function jsonOk(body: unknown) {
@@ -29,7 +32,15 @@ afterEach(() => {
 
 describe("admin.users.list", () => {
 	test("GET /cms/admin/users", async () => {
-		const users = [{ id: "u1", email: "a@b.com", name: "Alice", permissions: [], groupIds: [] }];
+		const users = [
+			{
+				id: "u1",
+				email: "a@b.com",
+				name: "Alice",
+				permissions: [],
+				groupIds: [],
+			},
+		];
 		const spy = mockFetch((url, init) => {
 			expect(url).toBe(`${CMS_URL}/cms/admin/users`);
 			expect(init.method).toBeUndefined();
@@ -62,7 +73,10 @@ describe("admin.users.setPermissions", () => {
 			expect(body).toEqual({ permissions: ["cms:pages:write"] });
 			return jsonOk({ ok: true });
 		});
-		await admin.users.setPermissions({ userId: "u1", permissions: ["cms:pages:write"] });
+		await admin.users.setPermissions({
+			userId: "u1",
+			permissions: ["cms:pages:write"],
+		});
 		spy.mockRestore();
 	});
 });
@@ -112,7 +126,9 @@ describe("admin.users.removeFromGroup", () => {
 
 describe("admin.groups.list", () => {
 	test("GET /cms/admin/groups", async () => {
-		const groups = [{ id: "g1", name: "Editors", permissions: ["cms:translations:write"] }];
+		const groups = [
+			{ id: "g1", name: "Editors", permissions: ["cms:translations:write"] },
+		];
 		const spy = mockFetch((url) => {
 			expect(url).toBe(`${CMS_URL}/cms/admin/groups`);
 			return jsonOk(groups);
@@ -131,7 +147,11 @@ describe("admin.groups.create", () => {
 			const body = JSON.parse(init.body as string);
 			expect(body.name).toBe("Writers");
 			expect(body.permissions).toContain("cms:translations:write");
-			return jsonOk({ id: "g-new", name: "Writers", permissions: body.permissions });
+			return jsonOk({
+				id: "g-new",
+				name: "Writers",
+				permissions: body.permissions,
+			});
 		});
 		const result = await admin.groups.create({
 			name: "Writers",
@@ -152,13 +172,16 @@ describe("admin.groups.update", () => {
 			expect(body.id).toBeUndefined(); // id must not be in body
 			return jsonOk({ id: "g1", name: "Senior Editors", permissions: [] });
 		});
-		const result = await admin.groups.update({ id: "g1", name: "Senior Editors" });
+		const result = await admin.groups.update({
+			id: "g1",
+			name: "Senior Editors",
+		});
 		expect(result.name).toBe("Senior Editors");
 		spy.mockRestore();
 	});
 
 	test("PUT /cms/admin/groups/:id with permissions only", async () => {
-		const spy = mockFetch((url, init) => {
+		const spy = mockFetch((_url, init) => {
 			const body = JSON.parse(init.body as string);
 			expect(body.permissions).toContain("cms:pages:publish");
 			expect(body.name).toBeUndefined();

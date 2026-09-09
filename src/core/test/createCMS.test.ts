@@ -53,7 +53,7 @@ describe("createCMS", () => {
 		expect(cms.namespaces).toHaveLength(1);
 		expect(cms.namespaces[0].name).toBe("nav");
 		expect(typeof cms.auth.verifyRequest).toBe("function");
-		expect(cms.$Infer.Namespaces["nav"]).toBeDefined();
+		expect(cms.$Infer.Namespaces.nav).toBeDefined();
 	});
 
 	test("throws if namespaces empty", () => {

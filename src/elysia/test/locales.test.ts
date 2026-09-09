@@ -16,7 +16,10 @@ describe("locale management routes", () => {
 	const cms = createCMS({
 		database: adapter,
 		namespaces: [ns],
-		auth: tokenAuthAdapter({ readToken: "test-token", adminToken: "test-token" }),
+		auth: tokenAuthAdapter({
+			readToken: "test-token",
+			adminToken: "test-token",
+		}),
 	});
 
 	const app = toElysiaPlugin(cms);

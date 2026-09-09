@@ -1,6 +1,6 @@
 import { describe, expect, spyOn, test } from "bun:test";
 import { renderHook, waitFor } from "@testing-library/react";
-import React from "react";
+import type React from "react";
 import { configureCMSClient } from "../../client/config";
 import { cmsEvents } from "../../client/events";
 import { defineNamespace, key } from "../../i18n";
@@ -22,14 +22,17 @@ const ns = defineNamespace({
 
 function wrapper({ children }: { children: React.ReactNode }) {
 	return (
-		<CMSProvider initialLocale="en" initialTranslations={{}} initialContent={{}}>
+		<CMSProvider
+			initialLocale="en"
+			initialTranslations={{}}
+			initialContent={{}}
+		>
 			{children}
 		</CMSProvider>
 	);
 }
 
 function mockFetch(data: any) {
-	// @ts-ignore
 	return spyOn(globalThis, "fetch").mockImplementation((() =>
 		Promise.resolve(
 			new Response(JSON.stringify(data), {
@@ -43,11 +46,15 @@ describe("React Hooks", () => {
 		const spy = mockFetch({ title: "Home" });
 		let successData: any = null;
 
-		const { result } = renderHook(() => useTranslations(ns, {
-			onSuccess: (data) => {
-				successData = data;
-			},
-		}), { wrapper });
+		const { result } = renderHook(
+			() =>
+				useTranslations(ns, {
+					onSuccess: (data) => {
+						successData = data;
+					},
+				}),
+			{ wrapper },
+		);
 
 		expect(result.current.isLoading).toBe(true);
 
@@ -61,34 +68,44 @@ describe("React Hooks", () => {
 		const spy = mockFetch([{ type: "hero", data: { title: "WelcomeHook" } }]);
 		let successData: any = null;
 
-		const { result } = renderHook(() => usePageContent({
-			slug: "home-hook",
-			onSuccess: (data) => {
-				successData = data;
-			},
-		}), { wrapper });
+		const { result } = renderHook(
+			() =>
+				usePageContent({
+					slug: "home-hook",
+					onSuccess: (data) => {
+						successData = data;
+					},
+				}),
+			{ wrapper },
+		);
 
 		expect(result.current.isLoading).toBe(true);
 
 		await waitFor(() => expect(result.current.isLoading).toBe(false));
-		expect(successData).toEqual([{ type: "hero", data: { title: "WelcomeHook" } }]);
-		expect(result.current.data).toEqual([{ type: "hero", data: { title: "WelcomeHook" } }]);
+		expect(successData).toEqual([
+			{ type: "hero", data: { title: "WelcomeHook" } },
+		]);
+		expect(result.current.data).toEqual([
+			{ type: "hero", data: { title: "WelcomeHook" } },
+		]);
 		spy.mockRestore();
 	});
 
 	test("usePageContent calls onError on failure", async () => {
-		// @ts-ignore
-		const spy = spyOn(globalThis, "fetch").mockImplementation(
-			(() => Promise.resolve(new Response("error", { status: 500 }))) as any,
-		);
+		const spy = spyOn(globalThis, "fetch").mockImplementation((() =>
+			Promise.resolve(new Response("error", { status: 500 }))) as any);
 		let error: Error | null = null;
 
-		const { result } = renderHook(() => usePageContent({
-			slug: "fail",
-			onError: (err) => {
-				error = err;
-			},
-		}), { wrapper });
+		const { result } = renderHook(
+			() =>
+				usePageContent({
+					slug: "fail",
+					onError: (err) => {
+						error = err;
+					},
+				}),
+			{ wrapper },
+		);
 
 		await waitFor(() => expect(result.current.isLoading).toBe(false));
 		expect(error).toBeDefined();

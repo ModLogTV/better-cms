@@ -27,8 +27,10 @@ export function tokenAuthAdapter(opts: {
 	readToken: string;
 	adminToken: string;
 }): CMSAuthAdapter {
-	if (!opts.readToken) throw new Error("tokenAuthAdapter: readToken must not be empty");
-	if (!opts.adminToken) throw new Error("tokenAuthAdapter: adminToken must not be empty");
+	if (!opts.readToken)
+		throw new Error("tokenAuthAdapter: readToken must not be empty");
+	if (!opts.adminToken)
+		throw new Error("tokenAuthAdapter: adminToken must not be empty");
 
 	return {
 		async verifyRequest(headers) {

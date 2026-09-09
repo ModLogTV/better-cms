@@ -22,5 +22,9 @@ export function hetznerS3Adapter(opts: HetznerS3Options) {
 		credentials: opts.credentials,
 		forcePathStyle: true,
 	});
-	return createS3Presigner({ client, bucket: opts.bucket, cdnUrl: opts.cdnUrl });
+	return createS3Presigner({
+		client,
+		bucket: opts.bucket,
+		cdnUrl: opts.cdnUrl,
+	});
 }

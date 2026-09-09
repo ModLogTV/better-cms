@@ -44,7 +44,11 @@ export function setCached<T>({
 	key,
 	value,
 	ttlMs,
-}: { key: string; value: T; ttlMs: number }): void {
+}: {
+	key: string;
+	value: T;
+	ttlMs: number;
+}): void {
 	if (!isEnabled()) return;
 	getCache().set(key, { value, expiresAt: Date.now() + ttlMs });
 }

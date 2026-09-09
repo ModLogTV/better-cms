@@ -5,7 +5,12 @@ import { requirePermission } from "../../elysia/auth";
 
 export function mediaRoutes(ctx: CMSContext) {
 	return new Elysia()
-		.use(requirePermission({ cms: ctx, permissions: [CMS_PERMISSIONS.ADMIN_READ] }))
+		.use(
+			requirePermission({
+				cms: ctx,
+				permissions: [CMS_PERMISSIONS.ADMIN_READ],
+			}),
+		)
 		.get("/media", async ({ cmsUserId: _u }) => {
 			return ctx.adapter.listMediaAssets();
 		})
@@ -30,7 +35,12 @@ export function mediaRoutes(ctx: CMSContext) {
 			},
 			{ params: t.Object({ key: t.String() }) },
 		)
-		.use(requirePermission({ cms: ctx, permissions: [CMS_PERMISSIONS.MEDIA_UPLOAD] }))
+		.use(
+			requirePermission({
+				cms: ctx,
+				permissions: [CMS_PERMISSIONS.MEDIA_UPLOAD],
+			}),
+		)
 		.post(
 			"/media/presign",
 			async ({ body, cmsUserId }) => {
@@ -71,7 +81,12 @@ export function mediaRoutes(ctx: CMSContext) {
 			},
 			{ params: t.Object({ assetId: t.String() }) },
 		)
-		.use(requirePermission({ cms: ctx, permissions: [CMS_PERMISSIONS.MEDIA_DELETE] }))
+		.use(
+			requirePermission({
+				cms: ctx,
+				permissions: [CMS_PERMISSIONS.MEDIA_DELETE],
+			}),
+		)
 		.delete(
 			"/media/:key",
 			async ({ params, set }) => {

@@ -33,7 +33,11 @@ describe("media routes – presign", () => {
 			}),
 		);
 		expect(res.status).toBe(200);
-		const body = (await res.json()) as { uploadUrl: string; publicUrl: string; assetId: string };
+		const body = (await res.json()) as {
+			uploadUrl: string;
+			publicUrl: string;
+			assetId: string;
+		};
 		expect(body.uploadUrl).toMatch(/^https:\/\/s3\.example\.com\//);
 		expect(body.publicUrl).toMatch(/^https:\/\/cdn\.example\.com\//);
 		expect(typeof body.assetId).toBe("string");
@@ -44,7 +48,11 @@ describe("media routes – presign", () => {
 		const res = await app.handle(
 			req("/cms/media/presign", {
 				method: "POST",
-				body: JSON.stringify({ filename: "banner.png", mimeType: "image/png", size: 9999 }),
+				body: JSON.stringify({
+					filename: "banner.png",
+					mimeType: "image/png",
+					size: 9999,
+				}),
 			}),
 		);
 		const body = (await res.json()) as { publicUrl: string };
@@ -52,15 +60,27 @@ describe("media routes – presign", () => {
 	});
 
 	test("presign records asset via adapter.createMediaAsset", async () => {
-		const createMediaAsset = mock(async (opts: { id: string; key: string; filename: string; mimeType: string; size: number; publicUrl: string; uploadedBy?: string }) =>
-			makeMediaAsset({ id: "new-id", key: opts.key }),
+		const createMediaAsset = mock(
+			async (opts: {
+				id: string;
+				key: string;
+				filename: string;
+				mimeType: string;
+				size: number;
+				publicUrl: string;
+				uploadedBy?: string;
+			}) => makeMediaAsset({ id: "new-id", key: opts.key }),
 		);
 		const adapter = makeAdapter({ createMediaAsset });
 		const app = makeApp(adapter, [makePlugin()]);
 		await app.handle(
 			req("/cms/media/presign", {
 				method: "POST",
-				body: JSON.stringify({ filename: "img.jpg", mimeType: "image/jpeg", size: 1 }),
+				body: JSON.stringify({
+					filename: "img.jpg",
+					mimeType: "image/jpeg",
+					size: 1,
+				}),
 			}),
 		);
 		expect(createMediaAsset).toHaveBeenCalledTimes(1);
@@ -71,7 +91,11 @@ describe("media routes – presign", () => {
 		const res = await app.handle(
 			req("/cms/media/presign", {
 				method: "POST",
-				body: JSON.stringify({ filename: "x.jpg", mimeType: "image/jpeg", size: 1 }),
+				body: JSON.stringify({
+					filename: "x.jpg",
+					mimeType: "image/jpeg",
+					size: 1,
+				}),
 			}),
 		);
 		expect(res.status).toBe(404);
@@ -83,7 +107,11 @@ describe("media routes – presign", () => {
 			req("/cms/media/presign", {
 				method: "POST",
 				token: "bad",
-				body: JSON.stringify({ filename: "x.jpg", mimeType: "image/jpeg", size: 1 }),
+				body: JSON.stringify({
+					filename: "x.jpg",
+					mimeType: "image/jpeg",
+					size: 1,
+				}),
 			}),
 		);
 		expect(res.status).toBe(401);
@@ -100,7 +128,9 @@ describe("media routes – confirm", () => {
 		);
 		expect(res.status).toBe(204);
 		expect(confirmMediaAsset).toHaveBeenCalledTimes(1);
-		const args = (confirmMediaAsset.mock.calls as unknown[][])[0][0] as { id: string };
+		const args = (confirmMediaAsset.mock.calls as unknown[][])[0][0] as {
+			id: string;
+		};
 		expect(args.id).toBe("asset-42");
 	});
 });
@@ -126,7 +156,10 @@ describe("media routes – list", () => {
 
 describe("media routes – read URL", () => {
 	test("GET /cms/media/:key/url returns publicUrl when presignRead absent", async () => {
-		const asset = makeMediaAsset({ key: "my-file.jpg", publicUrl: "https://cdn.example.com/my-file.jpg" });
+		const asset = makeMediaAsset({
+			key: "my-file.jpg",
+			publicUrl: "https://cdn.example.com/my-file.jpg",
+		});
 		const adapter = makeAdapter({ listMediaAssets: mock(async () => [asset]) });
 		const app = makeApp(adapter, [makePlugin()]);
 		const res = await app.handle(req("/cms/media/my-file.jpg/url"));
@@ -136,10 +169,15 @@ describe("media routes – read URL", () => {
 	});
 
 	test("GET /cms/media/:key/url uses presignRead when available", async () => {
-		const asset = makeMediaAsset({ key: "private.jpg", publicUrl: "https://cdn.example.com/private.jpg" });
+		const asset = makeMediaAsset({
+			key: "private.jpg",
+			publicUrl: "https://cdn.example.com/private.jpg",
+		});
 		const adapter = makeAdapter({ listMediaAssets: mock(async () => [asset]) });
 		const storage = makeStorage({
-			presignRead: async ({ key }) => ({ url: `https://s3.example.com/${key}?signed=true` }),
+			presignRead: async ({ key }) => ({
+				url: `https://s3.example.com/${key}?signed=true`,
+			}),
 		});
 		const app = makeApp(adapter, [mediaPlugin({ storage })]);
 		const res = await app.handle(req("/cms/media/private.jpg/url"));
@@ -162,10 +200,14 @@ describe("media routes – delete", () => {
 		const deleteMediaAsset = mock(async () => {});
 		const adapter = makeAdapter({ deleteMediaAsset });
 		const storage = makeStorage({
-			delete: async ({ key }) => { deletedKey = key; },
+			delete: async ({ key }) => {
+				deletedKey = key;
+			},
 		});
 		const app = makeApp(adapter, [mediaPlugin({ storage })]);
-		const res = await app.handle(req("/cms/media/my-file.png", { method: "DELETE" }));
+		const res = await app.handle(
+			req("/cms/media/my-file.png", { method: "DELETE" }),
+		);
 		expect(res.status).toBe(200);
 		expect(deletedKey).toBe("my-file.png");
 		expect(deleteMediaAsset).toHaveBeenCalledTimes(1);

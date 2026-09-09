@@ -3,7 +3,6 @@ import type {
 	Locale,
 	MediaAsset,
 	NamespaceLocaleMeta,
-	Page,
 	PageSummary,
 	RawBlock,
 } from "../core/adapter";

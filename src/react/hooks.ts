@@ -26,16 +26,12 @@ import { useCMSContext } from "./context";
  */
 export function useCMSClientEvents<
 	K extends keyof Parameters<CMSEventEmitter["on"]>[0] | string,
->(
-	event: K,
-	// @ts-ignore - dynamic event map typing is complex with the emitter
-	handler: Parameters<CMSEventEmitter["on"]>[1],
-) {
+>(event: K, handler: Parameters<CMSEventEmitter["on"]>[1]) {
 	useEffect(() => {
-		// @ts-ignore
+		// @ts-expect-error
 		cmsEvents.on(event, handler);
 		return () => {
-			// @ts-ignore
+			// @ts-expect-error
 			cmsEvents.off(event, handler);
 		};
 	}, [event, handler]);
@@ -67,6 +63,7 @@ export function useTranslations<T extends NamespaceDefinition>(
 	const [isLoading, setIsLoading] = useState(!existing);
 	const [error, setError] = useState<Error | null>(null);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: `existing` is intentionally excluded below — see comment before the dependency array
 	useEffect(() => {
 		let cancelled = false;
 		if (!existing) setIsLoading(true);
@@ -100,8 +97,13 @@ export function useTranslations<T extends NamespaceDefinition>(
 		};
 		// existing is intentionally excluded — it changes every time ctx.setTranslations
 		// fires above, and depending on it here would re-trigger this effect in a loop.
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [ns.name, ctx.locale, ctx.setTranslations, options?.onSuccess, options?.onError]);
+	}, [
+		ns.name,
+		ctx.locale,
+		ctx.setTranslations,
+		options?.onSuccess,
+		options?.onError,
+	]);
 
 	const t = createTranslator({ ns, translations, locale: ctx.locale });
 	const tRich = createRichTranslator({ ns, translations, locale: ctx.locale });
@@ -130,6 +132,7 @@ export function usePageContent(opts: {
 	const [isLoading, setIsLoading] = useState(!existing);
 	const [error, setError] = useState<Error | null>(null);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: `existing` is intentionally excluded below — see comment before the dependency array
 	useEffect(() => {
 		let cancelled = false;
 		if (!existing) setIsLoading(true);
@@ -158,7 +161,6 @@ export function usePageContent(opts: {
 			cancelled = true;
 		};
 		// existing intentionally excluded — see useTranslations above.
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [slug, ctx.locale, ctx.setContent, onSuccess, onError]);
 
 	return { data: blocks, isLoading, error };

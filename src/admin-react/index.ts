@@ -6,7 +6,13 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import { createElement, type ReactNode } from "react";
-import type { AdminClient, CMSGroup, CMSUserSummary, KeyMetadata, MediaAsset } from "../admin/types";
+import type {
+	AdminClient,
+	CMSGroup,
+	CMSUserSummary,
+	KeyMetadata,
+	MediaAsset,
+} from "../admin/types";
 import type { PageSummary, RawBlock } from "../core/adapter";
 
 export { QueryClientProvider };
@@ -153,7 +159,8 @@ export function createAdminHooks(admin: AdminClient) {
 				mutationFn: async ({ file }: { file: File }) => {
 					return admin.media.upload({ file, body: file });
 				},
-				onSettled: () => void qc.invalidateQueries({ queryKey: ["cms", "media"] }),
+				onSettled: () =>
+					void qc.invalidateQueries({ queryKey: ["cms", "media"] }),
 			});
 
 			return {
@@ -166,7 +173,8 @@ export function createAdminHooks(admin: AdminClient) {
 			const qc = useQueryClient();
 			return useMutation<void, Error, { key: string }>({
 				mutationFn: (opts: { key: string }) => admin.media.delete(opts),
-				onSettled: () => void qc.invalidateQueries({ queryKey: ["cms", "media"] }),
+				onSettled: () =>
+					void qc.invalidateQueries({ queryKey: ["cms", "media"] }),
 			});
 		},
 
@@ -216,10 +224,16 @@ export function createAdminHooks(admin: AdminClient) {
 
 		useSetUserPermissions() {
 			const qc = useQueryClient();
-			return useMutation<void, Error, { userId: string; permissions: string[] }>({
+			return useMutation<
+				void,
+				Error,
+				{ userId: string; permissions: string[] }
+			>({
 				mutationFn: (args) => admin.users.setPermissions(args),
 				onSettled: (_d, _e, { userId }) => {
-					void qc.invalidateQueries({ queryKey: ["cms", "users", userId, "permissions"] });
+					void qc.invalidateQueries({
+						queryKey: ["cms", "users", userId, "permissions"],
+					});
 					void qc.invalidateQueries({ queryKey: ["cms", "users"] });
 				},
 			});
@@ -238,7 +252,9 @@ export function createAdminHooks(admin: AdminClient) {
 			return useMutation<void, Error, { userId: string; groupId: string }>({
 				mutationFn: (args) => admin.users.addToGroup(args),
 				onSettled: (_d, _e, { userId }) => {
-					void qc.invalidateQueries({ queryKey: ["cms", "users", userId, "groups"] });
+					void qc.invalidateQueries({
+						queryKey: ["cms", "users", userId, "groups"],
+					});
 					void qc.invalidateQueries({ queryKey: ["cms", "users"] });
 				},
 			});
@@ -249,7 +265,9 @@ export function createAdminHooks(admin: AdminClient) {
 			return useMutation<void, Error, { userId: string; groupId: string }>({
 				mutationFn: (args) => admin.users.removeFromGroup(args),
 				onSettled: (_d, _e, { userId }) => {
-					void qc.invalidateQueries({ queryKey: ["cms", "users", userId, "groups"] });
+					void qc.invalidateQueries({
+						queryKey: ["cms", "users", userId, "groups"],
+					});
 					void qc.invalidateQueries({ queryKey: ["cms", "users"] });
 				},
 			});
@@ -264,17 +282,27 @@ export function createAdminHooks(admin: AdminClient) {
 
 		useCreateGroup() {
 			const qc = useQueryClient();
-			return useMutation<CMSGroup, Error, { name: string; permissions: string[] }>({
+			return useMutation<
+				CMSGroup,
+				Error,
+				{ name: string; permissions: string[] }
+			>({
 				mutationFn: (args) => admin.groups.create(args),
-				onSettled: () => void qc.invalidateQueries({ queryKey: ["cms", "groups"] }),
+				onSettled: () =>
+					void qc.invalidateQueries({ queryKey: ["cms", "groups"] }),
 			});
 		},
 
 		useUpdateGroup() {
 			const qc = useQueryClient();
-			return useMutation<CMSGroup, Error, { id: string; name?: string; permissions?: string[] }>({
+			return useMutation<
+				CMSGroup,
+				Error,
+				{ id: string; name?: string; permissions?: string[] }
+			>({
 				mutationFn: (args) => admin.groups.update(args),
-				onSettled: () => void qc.invalidateQueries({ queryKey: ["cms", "groups"] }),
+				onSettled: () =>
+					void qc.invalidateQueries({ queryKey: ["cms", "groups"] }),
 			});
 		},
 

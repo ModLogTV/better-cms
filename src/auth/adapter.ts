@@ -28,7 +28,10 @@ export interface CMSGroup {
 export interface CMSAuthManagement {
 	listUsers(): Promise<CMSUserSummary[]>;
 	getUserPermissions(opts: { userId: string }): Promise<string[]>;
-	setUserPermissions(opts: { userId: string; permissions: string[] }): Promise<void>;
+	setUserPermissions(opts: {
+		userId: string;
+		permissions: string[];
+	}): Promise<void>;
 	getUserGroups(opts: { userId: string }): Promise<CMSGroup[]>;
 	addUserToGroup(opts: { userId: string; groupId: string }): Promise<void>;
 	removeUserFromGroup(opts: { userId: string; groupId: string }): Promise<void>;

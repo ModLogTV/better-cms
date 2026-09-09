@@ -5,7 +5,10 @@ export interface CMSContextValue {
 	locale: string;
 	translations: Record<string, Record<string, string>>;
 	content: Record<string, RawBlock[]>;
-	setTranslations: (opts: { namespace: string; values: Record<string, string> }) => void;
+	setTranslations: (opts: {
+		namespace: string;
+		values: Record<string, string>;
+	}) => void;
 	setContent: (opts: { slug: string; blocks: RawBlock[] }) => void;
 	setLocale: (locale: string) => void;
 }

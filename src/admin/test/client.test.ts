@@ -17,7 +17,10 @@ describe("AdminClient Media Utilities", () => {
 		let putBody: unknown = null;
 		let confirmCalled = false;
 
-		spyOn(globalThis, "fetch").mockImplementation(((url: unknown, init: unknown) => {
+		spyOn(globalThis, "fetch").mockImplementation(((
+			url: unknown,
+			init: unknown,
+		) => {
 			const urlStr = (url as string).toString();
 			const reqInit = init as RequestInit;
 			const path = urlStr.replace(CMS_URL, "");
@@ -33,13 +36,19 @@ describe("AdminClient Media Utilities", () => {
 					),
 				);
 			}
-			if (urlStr === "http://storage.test/upload" && reqInit?.method === "PUT") {
+			if (
+				urlStr === "http://storage.test/upload" &&
+				reqInit?.method === "PUT"
+			) {
 				putCalled = true;
 				putUrl = urlStr;
 				putBody = reqInit.body;
 				return Promise.resolve(new Response(null, { status: 200 }));
 			}
-			if (path === "/cms/media/asset-123/confirm" && reqInit?.method === "POST") {
+			if (
+				path === "/cms/media/asset-123/confirm" &&
+				reqInit?.method === "POST"
+			) {
 				confirmCalled = true;
 				return Promise.resolve(new Response(null, { status: 204 }));
 			}
