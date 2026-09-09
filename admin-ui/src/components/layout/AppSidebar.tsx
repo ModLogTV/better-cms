@@ -19,7 +19,6 @@ import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
-	SidebarRail,
 } from "@/components/ui/sidebar";
 import { AccountMenu } from "./AccountMenu";
 
@@ -93,7 +92,6 @@ export function AppSidebar({
 			<SidebarFooter>
 				<AccountMenu userEmail={userEmail} userName={userName} />
 			</SidebarFooter>
-			<SidebarRail />
 		</Sidebar>
 	);
 }
