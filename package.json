@@ -18,6 +18,7 @@
 		"test": "tsc --noEmit && bun test",
 		"lint": "biome lint .",
 		"format": "biome check --write .",
+		"format:check": "biome check .",
 		"check": "biome check --write ."
 	},
 	"workspaces": ["admin-ui", "demo/*"],
