@@ -17,6 +17,7 @@
 		"typecheck": "tsc --noEmit",
 		"test": "tsc --noEmit && bun test",
 		"lint": "biome lint .",
+		"lint:biome-ignore": "bun run scripts/check-biome-ignore-reasons.ts",
 		"format": "biome check --write .",
 		"format:check": "biome check .",
 		"check": "biome check --write ."

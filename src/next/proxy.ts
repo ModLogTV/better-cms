@@ -23,7 +23,7 @@ export interface NextProxyOptions {
 export function createNextProxy(opts: NextProxyOptions) {
 	const { locales, defaultLocale, cookieName = "locale" } = opts;
 
-	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: regex + logic
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: locale detection branches on cookie, header, and path in one pass; splitting it up would scatter state across helpers for no clarity gain
 	return async function cmsLocaleProxy(request: {
 		nextUrl: { pathname: string; href: string };
 		headers: { get(name: string): string | null };
