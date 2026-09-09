@@ -17,9 +17,10 @@ Copy these models into your `schema.prisma`. The Prisma adapter expects these ex
 
 ```prisma
 model TranslationNamespace {
-  name   String
-  locale String
-  values Json   @default("{}")
+  name      String
+  locale    String
+  values    Json     @default("{}")
+  updatedAt DateTime @updatedAt
 
   @@id([name, locale])
 }
@@ -98,6 +99,7 @@ model CmsUserGroup {
 **`TranslationNamespace`**
 - Composite primary key `[name, locale]` — one row per namespace + locale combination.
 - `values` stores the raw key→value map as JSON. Keys are flat strings (e.g. `"topNav.aboutUs"`).
+- `updatedAt` tracks the last write to this namespace+locale — powers the admin dashboard's "recently updated" list.
 
 **`Page`**
 - `id` is a string you control — typically a UUID generated on create.

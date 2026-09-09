@@ -1,4 +1,9 @@
-import type { AdminClient, KeyMetadata } from "./types";
+import type {
+	AdminClient,
+	BlockInfo,
+	KeyMetadata,
+	PermissionInfo,
+} from "./types";
 
 export class CMSError extends Error {
 	constructor(
@@ -130,6 +135,8 @@ export function createAdminClient(opts: AdminClientOptions): AdminClient {
 			update: (opts) => put(`/cms/pages/${opts.id}`, opts.blocks),
 			/** Promotes the current draft of a page to the published status. */
 			publish: (opts) => post(`/cms/pages/${opts.id}/publish`),
+			/** Lists registered block types with their admin-editable field metadata. */
+			describeBlocks: () => get<BlockInfo[]>("/cms/pages/blocks"),
 		},
 		media: {
 			/** Lists all recorded media assets. */
@@ -190,8 +197,7 @@ export function createAdminClient(opts: AdminClientOptions): AdminClient {
 			setPermissions: ({ userId, permissions }) =>
 				put(`/cms/admin/users/${userId}/permissions`, { permissions }),
 			/** Lists all groups the user belongs to. */
-			getGroups: ({ userId }) =>
-				get(`/cms/admin/users/${userId}/groups`),
+			getGroups: ({ userId }) => get(`/cms/admin/users/${userId}/groups`),
 			/** Adds a user to a group. */
 			addToGroup: ({ userId, groupId }) =>
 				post(`/cms/admin/users/${userId}/groups`, { groupId }),
@@ -206,10 +212,13 @@ export function createAdminClient(opts: AdminClientOptions): AdminClient {
 			create: ({ name, permissions }) =>
 				post("/cms/admin/groups", { name, permissions }),
 			/** Updates the name and/or permissions of an existing group. */
-			update: ({ id, ...rest }) =>
-				put(`/cms/admin/groups/${id}`, rest),
+			update: ({ id, ...rest }) => put(`/cms/admin/groups/${id}`, rest),
 			/** Permanently removes a group. All user memberships are removed via cascade. */
 			delete: ({ id }) => del(`/cms/admin/groups/${id}`),
+		},
+		permissions: {
+			/** Catalog of all valid CMS permission strings, for building a permission picker UI. */
+			list: () => get<PermissionInfo[]>("/cms/admin/permissions"),
 		},
 	};
 }
@@ -217,6 +226,8 @@ export function createAdminClient(opts: AdminClientOptions): AdminClient {
 export { describeNamespace } from "./describe";
 export type {
 	AdminClient,
+	BlockFieldInfo,
+	BlockInfo,
 	CMSGroup,
 	CMSUserSummary,
 	InputHint,
@@ -224,4 +235,5 @@ export type {
 	KeyType,
 	MediaAsset,
 	NamespaceSummary,
+	PermissionInfo,
 } from "./types";

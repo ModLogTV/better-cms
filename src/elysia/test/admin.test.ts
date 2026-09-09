@@ -2,12 +2,48 @@ import { describe, expect, test } from "bun:test";
 import { makeAdapter, makeApp, req } from "./helpers";
 
 describe("admin routes", () => {
-	test("GET /cms/admin/namespaces returns list of namespaces", async () => {
+	test("GET /cms/admin/namespaces returns list of namespaces with stats", async () => {
 		const app = makeApp(makeAdapter());
 		const res = await app.handle(req("/cms/admin/namespaces"));
 		expect(res.status).toBe(200);
 		const body = await res.json();
-		expect(body).toEqual([{ name: "nav" }]);
+		expect(body).toEqual([
+			{ name: "nav", keyCount: 2, updatedAt: null, coverage: {} },
+		]);
+	});
+
+	test("GET /cms/admin/namespaces computes coverage from stored key counts", async () => {
+		const app = makeApp(
+			makeAdapter({
+				listNamespaceLocaleMeta: async () => [
+					{ locale: "en", updatedAt: new Date("2024-01-01"), keyCount: 2 },
+					{ locale: "de", updatedAt: new Date("2024-01-02"), keyCount: 1 },
+				],
+			}),
+		);
+		const res = await app.handle(req("/cms/admin/namespaces"));
+		const body = await res.json();
+		expect(body).toEqual([
+			{
+				name: "nav",
+				keyCount: 2,
+				updatedAt: "2024-01-02T00:00:00.000Z",
+				coverage: { en: 100, de: 50 },
+			},
+		]);
+	});
+
+	test("GET /cms/admin/permissions returns the permission catalog with the wildcard", async () => {
+		const app = makeApp(makeAdapter());
+		const res = await app.handle(req("/cms/admin/permissions"));
+		expect(res.status).toBe(200);
+		const body = await res.json();
+		expect(Array.isArray(body)).toBe(true);
+		expect(body.at(-1)).toEqual({
+			value: "cms:*",
+			description: "Grants every CMS permission",
+		});
+		expect(body.length).toBe(14);
 	});
 
 	test("GET /cms/admin/namespaces/:ns/describe returns key metadata", async () => {

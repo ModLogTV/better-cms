@@ -9,6 +9,7 @@ import type { CMSPlugin } from "../plugin";
 const mockAdapter: CMSAdapter = {
 	getTranslations: mock(async () => ({})),
 	upsertTranslations: mock(async () => {}),
+	listNamespaceLocaleMeta: mock(async () => []),
 	getPage: mock(async () => null),
 	upsertPage: mock(async () => {}),
 	publishPage: mock(async () => {}),
@@ -17,8 +18,14 @@ const mockAdapter: CMSAdapter = {
 	upsertLocale: mock(async () => {}),
 	deleteLocale: mock(async () => {}),
 	createMediaAsset: mock(async () => ({
-		id: "1", key: "k", filename: "f", mimeType: "image/jpeg",
-		size: 0, publicUrl: "", confirmedAt: null, createdAt: new Date(),
+		id: "1",
+		key: "k",
+		filename: "f",
+		mimeType: "image/jpeg",
+		size: 0,
+		publicUrl: "",
+		confirmedAt: null,
+		createdAt: new Date(),
 	})),
 	confirmMediaAsset: mock(async () => {}),
 	listMediaAssets: mock(async () => []),
@@ -82,7 +89,15 @@ describe("createCMS", () => {
 		const upserted: unknown[] = [];
 		const adapter = {
 			...mockAdapter,
-			upsertLocale: async ({ code, name, isDefault }: { code: string; name: string; isDefault?: boolean }) => {
+			upsertLocale: async ({
+				code,
+				name,
+				isDefault,
+			}: {
+				code: string;
+				name: string;
+				isDefault?: boolean;
+			}) => {
 				upserted.push({ code, name, isDefault });
 			},
 		} as unknown as CMSAdapter;
@@ -135,7 +150,11 @@ describe("createCMS", () => {
 				database: mockAdapter,
 				namespaces: [ns],
 				auth: testAuth,
-				initialAdminUser: { email: "admin@example.com", name: "Admin", password: "pw" },
+				initialAdminUser: {
+					email: "admin@example.com",
+					name: "Admin",
+					password: "pw",
+				},
 			});
 			expect(warnSpy).toHaveBeenCalledTimes(1);
 		} finally {
@@ -156,7 +175,11 @@ describe("createCMS", () => {
 			database: mockAdapter,
 			namespaces: [ns],
 			auth: authWithUpsert,
-			initialAdminUser: { email: "admin@example.com", name: "Admin", password: "pw" },
+			initialAdminUser: {
+				email: "admin@example.com",
+				name: "Admin",
+				password: "pw",
+			},
 		});
 
 		await new Promise((resolve) => setTimeout(resolve, 10));

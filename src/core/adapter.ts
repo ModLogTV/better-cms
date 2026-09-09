@@ -41,6 +41,13 @@ export interface Locale {
 	updatedAt: Date;
 }
 
+export interface NamespaceLocaleMeta {
+	locale: string;
+	updatedAt: Date;
+	/** Number of keys present in the stored `values` blob for this locale. */
+	keyCount: number;
+}
+
 export interface CMSAdapter {
 	getTranslations(opts: {
 		namespace: string;
@@ -51,6 +58,10 @@ export interface CMSAdapter {
 		locale: string;
 		values: Record<string, string>;
 	}): Promise<void>;
+	/** Per-locale key count and last-updated timestamp for a namespace — powers the admin dashboard/namespace list. */
+	listNamespaceLocaleMeta(opts: {
+		namespace: string;
+	}): Promise<NamespaceLocaleMeta[]>;
 	getPage(opts: {
 		slug: string;
 		locale: string;

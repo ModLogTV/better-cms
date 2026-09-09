@@ -109,7 +109,13 @@ export function createCMS(config: CMSConfig): CMSInstance {
 	};
 }
 
-export type { CMSAdapter, Page, PageSummary, RawBlock } from "./adapter";
+export type {
+	CMSAdapter,
+	NamespaceLocaleMeta,
+	Page,
+	PageSummary,
+	RawBlock,
+} from "./adapter";
 export type { CMSConfig } from "./config";
 export { CMSEventEmitter } from "./events";
 export type { CMSContext, CMSInfer, CMSPlugin, ElysiaLike } from "./plugin";

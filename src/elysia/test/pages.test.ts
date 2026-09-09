@@ -3,7 +3,12 @@ import { z } from "zod";
 import { pagesPlugin } from "../../plugins/pages/index";
 import { makeAdapter, makeApp, makePage, req } from "./helpers";
 
-const heroBlock = { type: "hero", schema: z.object({ title: z.string() }) };
+const heroBlock = {
+	type: "hero",
+	label: "Hero",
+	schema: z.object({ title: z.string() }),
+	fields: [{ key: "title", label: "Title", type: "text" as const }],
+};
 
 describe("pages routes", () => {
 	test("GET /cms/pages returns list of pages", async () => {
@@ -24,6 +29,28 @@ describe("pages routes", () => {
 		const body = await res.json();
 		expect(body).toHaveLength(1);
 		expect(body[0].slug).toBe("home");
+	});
+
+	test("GET /cms/pages/blocks returns registered block catalog, not treated as a slug", async () => {
+		const app = makeApp(makeAdapter(), [pagesPlugin({ blocks: [heroBlock] })]);
+		const res = await app.handle(req("/cms/pages/blocks"));
+		expect(res.status).toBe(200);
+		const body = await res.json();
+		expect(body).toEqual([
+			{
+				type: "hero",
+				label: "Hero",
+				fields: [{ key: "title", label: "Title", type: "text" }],
+			},
+		]);
+	});
+
+	test("GET /cms/pages/blocks falls back to type as label and empty fields", async () => {
+		const bare = { type: "spacer", schema: z.object({}) };
+		const app = makeApp(makeAdapter(), [pagesPlugin({ blocks: [bare] })]);
+		const res = await app.handle(req("/cms/pages/blocks"));
+		const body = await res.json();
+		expect(body).toEqual([{ type: "spacer", label: "spacer", fields: [] }]);
 	});
 
 	test("GET /cms/pages without token returns 401", async () => {

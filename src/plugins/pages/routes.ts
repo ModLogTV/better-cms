@@ -13,9 +13,21 @@ export function pageRoutes(opts: { ctx: CMSContext; blocks: PageBlock[] }) {
 	);
 
 	return new Elysia()
-		.use(requirePermission({ cms: ctx, permissions: [CMS_PERMISSIONS.PAGES_READ] }))
+		.use(
+			requirePermission({
+				cms: ctx,
+				permissions: [CMS_PERMISSIONS.PAGES_READ],
+			}),
+		)
 		.get("/pages", async () => {
 			return ctx.adapter.listPages();
+		})
+		.get("/pages/blocks", () => {
+			return blocks.map((b) => ({
+				type: b.type,
+				label: b.label ?? b.type,
+				fields: b.fields ?? [],
+			}));
 		})
 		.get(
 			"/pages/:slug",
@@ -27,7 +39,10 @@ export function pageRoutes(opts: { ctx: CMSContext; blocks: PageBlock[] }) {
 					locale,
 					draft,
 				});
-				if (!page) return set.status === 200 ? (set.status = 404) : null;
+				if (!page) {
+					set.status = 404;
+					return null;
+				}
 				set.headers["Cache-Control"] = CACHE_HEADER;
 				return page.blocks;
 			},
@@ -39,7 +54,12 @@ export function pageRoutes(opts: { ctx: CMSContext; blocks: PageBlock[] }) {
 				}),
 			},
 		)
-		.use(requirePermission({ cms: ctx, permissions: [CMS_PERMISSIONS.PAGES_WRITE] }))
+		.use(
+			requirePermission({
+				cms: ctx,
+				permissions: [CMS_PERMISSIONS.PAGES_WRITE],
+			}),
+		)
 		.put(
 			"/pages/:id",
 			async ({ params, body }) => {
@@ -61,7 +81,12 @@ export function pageRoutes(opts: { ctx: CMSContext; blocks: PageBlock[] }) {
 				body: t.Array(t.Object({ type: t.String(), data: t.Unknown() })),
 			},
 		)
-		.use(requirePermission({ cms: ctx, permissions: [CMS_PERMISSIONS.PAGES_PUBLISH] }))
+		.use(
+			requirePermission({
+				cms: ctx,
+				permissions: [CMS_PERMISSIONS.PAGES_PUBLISH],
+			}),
+		)
 		.post(
 			"/pages/:id/publish",
 			async ({ params }) => {

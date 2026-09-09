@@ -1,7 +1,12 @@
 import { mock } from "bun:test";
 import { Elysia } from "elysia";
 import { tokenAuthAdapter } from "../../auth/token-adapter";
-import type { CMSAdapter, MediaAsset, Page, PageSummary } from "../../core/adapter";
+import type {
+	CMSAdapter,
+	MediaAsset,
+	Page,
+	PageSummary,
+} from "../../core/adapter";
 import { createCMS } from "../../core/index";
 import { key, vars } from "../../i18n/markers";
 import { defineNamespace } from "../../i18n/namespace";
@@ -17,7 +22,9 @@ export const ns = defineNamespace({
 	},
 });
 
-export function makeMediaAsset(overrides: Partial<MediaAsset> = {}): MediaAsset {
+export function makeMediaAsset(
+	overrides: Partial<MediaAsset> = {},
+): MediaAsset {
 	return {
 		id: "asset-1",
 		key: "123-photo.jpg",
@@ -35,6 +42,7 @@ export function makeAdapter(overrides: Partial<CMSAdapter> = {}): CMSAdapter {
 	return {
 		getTranslations: mock(async () => ({ title: "Home" })),
 		upsertTranslations: mock(async () => {}),
+		listNamespaceLocaleMeta: mock(async () => []),
 		getPage: mock(async () => null),
 		upsertPage: mock(async () => {}),
 		publishPage: mock(async () => {}),
@@ -43,7 +51,14 @@ export function makeAdapter(overrides: Partial<CMSAdapter> = {}): CMSAdapter {
 		upsertLocale: mock(async () => {}),
 		deleteLocale: mock(async () => {}),
 		createMediaAsset: mock(async (opts) =>
-			makeMediaAsset({ id: opts.id, key: opts.key, filename: opts.filename, mimeType: opts.mimeType, size: opts.size, publicUrl: opts.publicUrl }),
+			makeMediaAsset({
+				id: opts.id,
+				key: opts.key,
+				filename: opts.filename,
+				mimeType: opts.mimeType,
+				size: opts.size,
+				publicUrl: opts.publicUrl,
+			}),
 		),
 		confirmMediaAsset: mock(async () => {}),
 		listMediaAssets: mock(async () => [] as MediaAsset[]),

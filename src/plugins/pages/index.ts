@@ -28,4 +28,10 @@ export function pagesPlugin(opts?: { blocks?: PageBlock[] }): CMSPlugin {
 	};
 }
 
-export type { BlockDefinition, BlockUnion, PageBlock } from "./types";
+export type {
+	BlockDefinition,
+	BlockFieldDefinition,
+	BlockFieldType,
+	BlockUnion,
+	PageBlock,
+} from "./types";

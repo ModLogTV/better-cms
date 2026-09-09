@@ -2,6 +2,7 @@ import type {
 	CMSAdapter,
 	Locale,
 	MediaAsset,
+	NamespaceLocaleMeta,
 	Page,
 	PageSummary,
 	RawBlock,
@@ -17,6 +18,9 @@ interface PrismaClient {
 			create: { name: string; locale: string; values: unknown };
 			update: { values: unknown };
 		}): Promise<unknown>;
+		findMany(args: {
+			where: { name: string };
+		}): Promise<{ locale: string; updatedAt: Date; values: unknown }[]>;
 	};
 	page: {
 		findUnique(args: {
@@ -129,6 +133,20 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 			});
 		},
 
+		async listNamespaceLocaleMeta({ namespace }) {
+			const rows = await prisma.translationNamespace.findMany({
+				where: { name: namespace },
+			});
+			return rows.map(
+				(r): NamespaceLocaleMeta => ({
+					locale: r.locale,
+					updatedAt: r.updatedAt,
+					keyCount: Object.keys((r.values as Record<string, string>) ?? {})
+						.length,
+				}),
+			);
+		},
+
 		async getPage({ slug, locale, draft }) {
 			const row = await prisma.page.findUnique({
 				where: { slug_locale: { slug, locale } },
@@ -209,9 +227,26 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 			});
 		},
 
-		async createMediaAsset({ id, key, filename, mimeType, size, publicUrl, uploadedBy }) {
+		async createMediaAsset({
+			id,
+			key,
+			filename,
+			mimeType,
+			size,
+			publicUrl,
+			uploadedBy,
+		}) {
 			const row = await prisma.mediaAsset.create({
-				data: { id, key, filename, mimeType, size, publicUrl, uploadedBy, confirmedAt: null },
+				data: {
+					id,
+					key,
+					filename,
+					mimeType,
+					size,
+					publicUrl,
+					uploadedBy,
+					confirmedAt: null,
+				},
 			});
 			return {
 				id: row.id,

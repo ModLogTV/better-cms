@@ -1,14 +1,42 @@
 import { Elysia, t } from "elysia";
-import { CMS_PERMISSIONS } from "../../auth/permissions";
 import { describeNamespace } from "../../admin/describe";
+import {
+	ALL_CMS_PERMISSIONS,
+	CMS_PERMISSION_DESCRIPTIONS,
+	CMS_PERMISSIONS,
+	CMS_WILDCARD_PERMISSION,
+} from "../../auth/permissions";
 import type { CMSInstance } from "../../core/index";
 import { requirePermission } from "../auth";
 
 export function adminRoutes(cms: CMSInstance) {
 	return new Elysia({ prefix: "/admin" })
 		.use(requirePermission({ cms, permissions: [CMS_PERMISSIONS.ADMIN_READ] }))
-		.get("/namespaces", () => {
-			return cms.namespaces.map((ns) => ({ name: ns.name }));
+		.get("/namespaces", async () => {
+			return Promise.all(
+				cms.namespaces.map(async (ns) => {
+					const totalKeys = describeNamespace({ ns }).length;
+					const meta = await cms.adapter.listNamespaceLocaleMeta({
+						namespace: ns.name,
+					});
+					const updatedAt = meta.reduce<Date | null>(
+						(latest, m) =>
+							!latest || m.updatedAt > latest ? m.updatedAt : latest,
+						null,
+					);
+					const coverage = Object.fromEntries(
+						meta.map((m) => [
+							m.locale,
+							totalKeys === 0
+								? 100
+								: Math.round(
+										(Math.min(m.keyCount, totalKeys) / totalKeys) * 100,
+									),
+						]),
+					);
+					return { name: ns.name, keyCount: totalKeys, updatedAt, coverage };
+				}),
+			);
 		})
 		.get(
 			"/namespaces/:namespace/describe",
@@ -24,9 +52,25 @@ export function adminRoutes(cms: CMSInstance) {
 				params: t.Object({ namespace: t.String() }),
 			},
 		)
-		.use(requirePermission({ cms, permissions: [CMS_PERMISSIONS.LOCALES_READ] }))
+		.get("/permissions", () => {
+			return [
+				...ALL_CMS_PERMISSIONS.map((value) => ({
+					value,
+					description: CMS_PERMISSION_DESCRIPTIONS[value],
+				})),
+				{
+					value: CMS_WILDCARD_PERMISSION,
+					description: "Grants every CMS permission",
+				},
+			];
+		})
+		.use(
+			requirePermission({ cms, permissions: [CMS_PERMISSIONS.LOCALES_READ] }),
+		)
 		.get("/locales", () => cms.adapter.listLocales())
-		.use(requirePermission({ cms, permissions: [CMS_PERMISSIONS.LOCALES_WRITE] }))
+		.use(
+			requirePermission({ cms, permissions: [CMS_PERMISSIONS.LOCALES_WRITE] }),
+		)
 		.put(
 			"/locales",
 			async ({ body }) => {
@@ -45,7 +89,9 @@ export function adminRoutes(cms: CMSInstance) {
 				}),
 			},
 		)
-		.use(requirePermission({ cms, permissions: [CMS_PERMISSIONS.LOCALES_DELETE] }))
+		.use(
+			requirePermission({ cms, permissions: [CMS_PERMISSIONS.LOCALES_DELETE] }),
+		)
 		.delete(
 			"/locales/:code",
 			async ({ params }) => {

@@ -1,12 +1,34 @@
-import type { MediaAsset, Page, PageSummary, RawBlock } from "../core/adapter";
 import type { CMSGroup, CMSUserSummary } from "../auth/adapter";
+import type { MediaAsset, Page, PageSummary, RawBlock } from "../core/adapter";
 
-export type { MediaAsset };
-
-export type { CMSGroup, CMSUserSummary };
+export type { CMSGroup, CMSUserSummary, MediaAsset };
 
 export interface NamespaceSummary {
 	name: string;
+	/** Total keys defined for this namespace (from its definition, not stored data). */
+	keyCount: number;
+	/** Most recent write across all locales for this namespace, if any exist yet. */
+	updatedAt: string | null;
+	/** Percentage (0-100) of `keyCount` present per locale code. */
+	coverage: Record<string, number>;
+}
+
+export interface PermissionInfo {
+	value: string;
+	description: string;
+}
+
+export interface BlockFieldInfo {
+	key: string;
+	label: string;
+	type: "text" | "textarea" | "number" | "boolean";
+	optional?: boolean;
+}
+
+export interface BlockInfo {
+	type: string;
+	label: string;
+	fields: BlockFieldInfo[];
 }
 
 export type KeyType = "key" | "vars" | "plural" | "rich";
@@ -56,15 +78,13 @@ export interface AdminClient {
 		 * Fetches a single page by its slug.
 		 * @param draft If true, fetches the latest saved draft instead of the published version.
 		 */
-		get(opts: {
-			slug: string;
-			locale: string;
-			draft?: boolean;
-		}): Promise<Page>;
+		get(opts: { slug: string; locale: string; draft?: boolean }): Promise<Page>;
 		/** Updates the blocks of a page. Validates blocks against the registered schema. */
 		update(opts: { id: string; blocks: RawBlock[] }): Promise<void>;
 		/** Promotes the current draft of a page to the published status. */
 		publish(opts: { id: string }): Promise<void>;
+		/** Lists registered block types with their admin-editable field metadata. */
+		describeBlocks(): Promise<BlockInfo[]>;
 	};
 	media: {
 		/** Lists all recorded media assets. */
@@ -114,7 +134,10 @@ export interface AdminClient {
 		/** Returns the resolved permission set for a user (direct + inherited from groups). */
 		getPermissions(opts: { userId: string }): Promise<string[]>;
 		/** Replaces the direct permissions on a user. Does not affect group-inherited permissions. */
-		setPermissions(opts: { userId: string; permissions: string[] }): Promise<void>;
+		setPermissions(opts: {
+			userId: string;
+			permissions: string[];
+		}): Promise<void>;
 		/** Lists all groups the user belongs to. */
 		getGroups(opts: { userId: string }): Promise<CMSGroup[]>;
 		/** Adds a user to a group. */
@@ -128,8 +151,16 @@ export interface AdminClient {
 		/** Creates a new group with the given name and permissions. */
 		create(opts: { name: string; permissions: string[] }): Promise<CMSGroup>;
 		/** Updates the name and/or permissions of an existing group. */
-		update(opts: { id: string; name?: string; permissions?: string[] }): Promise<CMSGroup>;
+		update(opts: {
+			id: string;
+			name?: string;
+			permissions?: string[];
+		}): Promise<CMSGroup>;
 		/** Permanently removes a group. All user memberships are removed via cascade. */
 		delete(opts: { id: string }): Promise<void>;
+	};
+	/** Catalog of all valid CMS permission strings, for building a permission picker UI. */
+	permissions: {
+		list(): Promise<PermissionInfo[]>;
 	};
 }
