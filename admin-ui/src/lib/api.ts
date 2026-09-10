@@ -293,7 +293,7 @@ export const api = {
 				"/media/presign",
 				opts,
 			),
-		upload: async (file: File) => {
+		upload: async (file: File, onProgress?: (percent: number) => void) => {
 			if (file.size === 0) {
 				throw new Error(`"${file.name}" is empty, there is nothing to upload.`);
 			}
@@ -318,25 +318,36 @@ export const api = {
 			}
 			const { uploadUrl, publicUrl, assetId } = presigned;
 
-			let res: Response;
-			try {
-				res = await fetch(uploadUrl, {
-					method: "PUT",
-					body: file,
-					headers: { "Content-Type": mimeType },
-				});
-			} catch {
-				throw new Error(
-					`Couldn't reach the upload server for "${file.name}". Check your connection and try again.`,
-				);
-			}
-			if (!res.ok) {
-				const text = await res.text().catch(() => "");
-				throw new Error(
-					text ||
-						`Upload of "${file.name}" failed (server responded with ${res.status}). The storage adapter may be misconfigured.`,
-				);
-			}
+			// XHR (not fetch) so we get real upload progress events for the
+			// per-file progress bar in the media grid.
+			await new Promise<void>((resolve, reject) => {
+				const xhr = new XMLHttpRequest();
+				xhr.open("PUT", uploadUrl);
+				xhr.setRequestHeader("Content-Type", mimeType);
+				xhr.upload.onprogress = (e) => {
+					if (e.lengthComputable)
+						onProgress?.(Math.round((e.loaded / e.total) * 100));
+				};
+				xhr.onload = () => {
+					if (xhr.status >= 200 && xhr.status < 300) {
+						resolve();
+					} else {
+						reject(
+							new Error(
+								xhr.responseText ||
+									`Upload of "${file.name}" failed (server responded with ${xhr.status}). The storage adapter may be misconfigured.`,
+							),
+						);
+					}
+				};
+				xhr.onerror = () =>
+					reject(
+						new Error(
+							`Couldn't reach the upload server for "${file.name}". Check your connection and try again.`,
+						),
+					);
+				xhr.send(file);
+			});
 			await post(`/media/${assetId}/confirm`);
 			return { publicUrl, assetId };
 		},

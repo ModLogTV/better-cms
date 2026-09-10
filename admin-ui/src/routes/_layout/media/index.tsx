@@ -1,12 +1,15 @@
 import {
+	IconAlertCircle,
 	IconFile,
 	IconPhoto,
+	IconRefresh,
 	IconTrash,
 	IconUpload,
+	IconX,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +30,15 @@ import { formatBytes } from "@/lib/utils";
 export const Route = createFileRoute("/_layout/media/")({
 	component: MediaPage,
 });
+
+interface UploadItem {
+	id: string;
+	file: File;
+	/** Created once at selection time (not per render) to avoid leaking object URLs. */
+	previewUrl: string | null;
+	progress: number;
+	error: string | null;
+}
 
 function MediaCard({ asset }: { asset: MediaAsset }) {
 	const qc = useQueryClient();
@@ -108,41 +120,136 @@ function MediaCard({ asset }: { asset: MediaAsset }) {
 	);
 }
 
+function UploadingCard({
+	item,
+	onRetry,
+	onDismiss,
+}: {
+	item: UploadItem;
+	onRetry: () => void;
+	onDismiss: () => void;
+}) {
+	return (
+		<div className="relative flex flex-col overflow-hidden rounded-lg border bg-card">
+			<div className="flex h-36 items-center justify-center bg-muted">
+				{item.previewUrl ? (
+					<img
+						src={item.previewUrl}
+						alt=""
+						className="h-full w-full object-cover opacity-60"
+					/>
+				) : (
+					<IconFile className="size-10 text-muted-foreground opacity-60" />
+				)}
+			</div>
+			<div className="flex flex-1 flex-col gap-1.5 p-3">
+				<p className="truncate text-sm font-medium" title={item.file.name}>
+					{item.file.name}
+				</p>
+				{item.error ? (
+					<div className="flex items-center gap-1 text-destructive text-xs">
+						<IconAlertCircle className="size-3.5 shrink-0" />
+						<span className="truncate" title={item.error}>
+							{item.error}
+						</span>
+					</div>
+				) : (
+					<div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+						<div
+							className="h-full rounded-full bg-primary transition-all"
+							style={{ width: `${item.progress}%` }}
+						/>
+					</div>
+				)}
+			</div>
+			<div className="absolute right-2 top-2 flex gap-1">
+				{item.error ? (
+					<>
+						<Button
+							size="icon"
+							variant="outline"
+							className="size-7 bg-background"
+							onClick={onRetry}
+							title="Retry"
+						>
+							<IconRefresh className="size-3.5" />
+						</Button>
+						<Button
+							size="icon"
+							variant="outline"
+							className="size-7 bg-background"
+							onClick={onDismiss}
+							title="Dismiss"
+						>
+							<IconX className="size-3.5" />
+						</Button>
+					</>
+				) : (
+					<Badge variant="outline" className="bg-background">
+						{item.progress}%
+					</Badge>
+				)}
+			</div>
+		</div>
+	);
+}
+
 function MediaPage() {
 	const qc = useQueryClient();
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const [uploads, setUploads] = useState<UploadItem[]>([]);
 
 	const { data, isLoading } = useQuery({
 		queryKey: ["cms", "media"],
 		queryFn: () => api.media.list(),
 	});
 
-	const upload = useMutation({
-		mutationFn: (file: File) => api.media.upload(file),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: ["cms", "media"] });
-		},
-	});
+	function updateUpload(id: string, patch: Partial<UploadItem>) {
+		setUploads((prev) =>
+			prev.map((u) => (u.id === id ? { ...u, ...patch } : u)),
+		);
+	}
 
-	async function handleFiles(files: FileList | null) {
+	function removeUpload(id: string) {
+		setUploads((prev) => {
+			const item = prev.find((u) => u.id === id);
+			if (item?.previewUrl) URL.revokeObjectURL(item.previewUrl);
+			return prev.filter((u) => u.id !== id);
+		});
+	}
+
+	function runUpload(item: UploadItem) {
+		updateUpload(item.id, { progress: 0, error: null });
+		api.media
+			.upload(item.file, (progress) => updateUpload(item.id, { progress }))
+			.then(() => {
+				removeUpload(item.id);
+				qc.invalidateQueries({ queryKey: ["cms", "media"] });
+			})
+			.catch((e) => {
+				updateUpload(item.id, {
+					error: e instanceof Error ? e.message : "Upload failed",
+				});
+			});
+	}
+
+	function handleFiles(files: FileList | null) {
 		if (!files || files.length === 0) return;
-		let succeeded = 0;
-		for (const file of Array.from(files)) {
-			try {
-				await upload.mutateAsync(file);
-				succeeded++;
-			} catch (e) {
-				toast.error(
-					e instanceof Error ? e.message : `Couldn't upload "${file.name}".`,
-				);
-			}
-		}
-		if (succeeded > 0) {
-			toast.success(
-				succeeded === 1 ? "Upload complete" : `${succeeded} files uploaded`,
-			);
-		}
-		// Reset so selecting the same file again (e.g. to retry) fires onChange.
+		const items: UploadItem[] = Array.from(files).map((file) => ({
+			id: crypto.randomUUID(),
+			file,
+			previewUrl: file.type.startsWith("image/")
+				? URL.createObjectURL(file)
+				: null,
+			progress: 0,
+			error: null,
+		}));
+		setUploads((prev) => [...items, ...prev]);
+		// Each file uploads independently and concurrently - selecting more
+		// files (or starting a new batch) never waits on these.
+		for (const item of items) runUpload(item);
+		// Reset immediately so a new batch (even of the same files) can start
+		// right away without waiting for these to finish.
 		if (fileInputRef.current) fileInputRef.current.value = "";
 	}
 
@@ -163,12 +270,9 @@ function MediaPage() {
 						className="hidden"
 						onChange={(e) => handleFiles(e.target.files)}
 					/>
-					<Button
-						onClick={() => fileInputRef.current?.click()}
-						disabled={upload.isPending}
-					>
+					<Button onClick={() => fileInputRef.current?.click()}>
 						<IconUpload className="size-4" />
-						{upload.isPending ? "Uploading…" : "Upload"}
+						Upload
 					</Button>
 				</div>
 			</div>
@@ -180,13 +284,21 @@ function MediaPage() {
 						<Skeleton key={i} className="h-52 rounded-lg" />
 					))}
 				</div>
-			) : data?.length === 0 ? (
+			) : data?.length === 0 && uploads.length === 0 ? (
 				<div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-muted-foreground">
 					<IconPhoto className="mb-3 size-12 opacity-30" />
 					<p className="text-sm">No assets yet. Upload your first file.</p>
 				</div>
 			) : (
 				<div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+					{uploads.map((item) => (
+						<UploadingCard
+							key={item.id}
+							item={item}
+							onRetry={() => runUpload(item)}
+							onDismiss={() => removeUpload(item.id)}
+						/>
+					))}
 					{data?.map((asset) => (
 						<MediaCard key={asset.id} asset={asset} />
 					))}
