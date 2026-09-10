@@ -9,14 +9,12 @@ import {
 } from "@dnd-kit/core";
 import {
 	IconChevronRight,
-	IconClock,
 	IconFileText,
 	IconFolder,
 	IconGripVertical,
 	IconPencil,
 	IconPlus,
 	IconRocket,
-	IconWorld,
 } from "@tabler/icons-react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -42,7 +40,13 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { ApiError, api, type PageTreeNode } from "@/lib/api";
+import {
+	ApiError,
+	api,
+	type Locale,
+	type PageNodeLocale,
+	type PageTreeNode,
+} from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_layout/pages/")({
@@ -53,17 +57,18 @@ const ROOT_DROP_ID = "__root__";
 
 interface NewPageValues {
 	slug: string;
+	locale: string;
 }
 
 function NewPageDialog({
 	parentId,
 	parentPath,
-	locale,
+	locales,
 	trigger,
 }: {
 	parentId: string | null;
 	parentPath?: string;
-	locale: string;
+	locales: Locale[];
 	trigger: React.ReactNode;
 }) {
 	const qc = useQueryClient();
@@ -72,7 +77,7 @@ function NewPageDialog({
 
 	const create = useMutation({
 		mutationFn: (values: NewPageValues) =>
-			api.pages.create(values.slug, locale, parentId),
+			api.pages.create(values.slug, values.locale, parentId),
 		onSuccess: (page) => {
 			toast.success("Page created");
 			qc.invalidateQueries({ queryKey: ["cms", "pages"] });
@@ -88,8 +93,9 @@ function NewPageDialog({
 			toast.error(e instanceof Error ? e.message : "Couldn't create page"),
 	});
 
+	const defaultLocale = locales.find((l) => l.isDefault)?.code ?? "";
 	const form = useForm({
-		defaultValues: { slug: "" } as NewPageValues,
+		defaultValues: { slug: "", locale: defaultLocale } as NewPageValues,
 		onSubmit: async ({ value }) => {
 			await create.mutateAsync(value);
 		},
@@ -117,7 +123,7 @@ function NewPageDialog({
 					className="contents"
 				>
 					<div className="space-y-4">
-						<div className="text-muted-foreground text-sm">
+						<p className="text-muted-foreground text-sm">
 							{parentPath ? (
 								<>
 									Creating under{" "}
@@ -128,11 +134,7 @@ function NewPageDialog({
 							) : (
 								"Creating at the root"
 							)}
-							{" · "}
-							<Badge variant="outline" className="align-middle">
-								{locale}
-							</Badge>
-						</div>
+						</p>
 						<form.Field
 							name="slug"
 							validators={{
@@ -163,13 +165,48 @@ function NewPageDialog({
 								</div>
 							)}
 						</form.Field>
+						<form.Field
+							name="locale"
+							validators={{
+								onChange: ({ value }) =>
+									!value.trim() ? "Required" : undefined,
+							}}
+						>
+							{(field) => (
+								<div className="space-y-1.5">
+									<Label htmlFor={field.name}>Starting locale</Label>
+									<Select
+										value={field.state.value}
+										onValueChange={field.handleChange}
+									>
+										<SelectTrigger id={field.name} className="w-full">
+											<SelectValue placeholder="Select locale" />
+										</SelectTrigger>
+										<SelectContent>
+											{locales.map((l) => (
+												<SelectItem key={l.code} value={l.code}>
+													{l.name} ({l.code})
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+									<p className="text-muted-foreground text-xs">
+										Other locales can be added to this page afterwards.
+									</p>
+								</div>
+							)}
+						</form.Field>
 					</div>
 					<DialogFooter>
-						<form.Subscribe selector={(state) => state.values.slug}>
-							{(slug) => (
+						<form.Subscribe
+							selector={(state) =>
+								[state.values.slug, state.values.locale] as const
+							}
+						>
+							{([slug, locale]) => (
 								<Button
 									type="submit"
-									disabled={create.isPending || !slug.trim()}
+									disabled={create.isPending || !slug.trim() || !locale.trim()}
 								>
 									{create.isPending ? "Creating…" : "Create page"}
 								</Button>
@@ -182,11 +219,120 @@ function NewPageDialog({
 	);
 }
 
-function StatusBadge({ status }: { status: PageTreeNode["status"] }) {
+function AddLocaleDialog({
+	nodeId,
+	path,
+	locale,
+	existingLocales,
+	trigger,
+}: {
+	nodeId: string;
+	path: string;
+	locale: string;
+	existingLocales: PageNodeLocale[];
+	trigger: React.ReactNode;
+}) {
+	const qc = useQueryClient();
+	const navigate = useNavigate();
+	const [open, setOpen] = useState(false);
+	const [cloneFrom, setCloneFrom] = useState<string>("__blank__");
+
+	const addLocale = useMutation({
+		mutationFn: () =>
+			api.pages.addLocale(
+				nodeId,
+				locale,
+				cloneFrom === "__blank__" ? undefined : cloneFrom,
+			),
+		onSuccess: (page) => {
+			toast.success(`Added ${locale} to "${path}"`);
+			qc.invalidateQueries({ queryKey: ["cms", "pages"] });
+			setOpen(false);
+			navigate({
+				to: "/pages/$pageId",
+				params: { pageId: page.id },
+				search: { path: page.path, locale: page.locale },
+			});
+		},
+		onError: (e) =>
+			toast.error(e instanceof Error ? e.message : "Couldn't add locale"),
+	});
+
 	return (
-		<Badge variant={status === "published" ? "success" : "warning"}>
-			{status}
-		</Badge>
+		<Dialog open={open} onOpenChange={setOpen}>
+			<DialogTrigger asChild>{trigger}</DialogTrigger>
+			<DialogContent className="sm:max-w-sm">
+				<DialogHeader>
+					<DialogTitle>
+						Add <span className="font-mono">{locale}</span> to{" "}
+						<span className="font-mono">{path}</span>
+					</DialogTitle>
+				</DialogHeader>
+				<div className="space-y-1.5">
+					<Label>Start from</Label>
+					<Select value={cloneFrom} onValueChange={setCloneFrom}>
+						<SelectTrigger className="w-full">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="__blank__">Blank page</SelectItem>
+							{existingLocales.map((l) => (
+								<SelectItem key={l.locale} value={l.locale}>
+									Copy of {l.locale} (draft)
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
+				<DialogFooter>
+					<Button
+						onClick={() => addLocale.mutate()}
+						disabled={addLocale.isPending}
+					>
+						{addLocale.isPending ? "Adding…" : "Add locale"}
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+}
+
+function LocaleBadge({ node, locale }: { node: PageTreeNode; locale: Locale }) {
+	const content = node.locales.find((l) => l.locale === locale.code);
+
+	if (!content) {
+		return (
+			<AddLocaleDialog
+				nodeId={node.id}
+				path={node.path}
+				locale={locale.code}
+				existingLocales={node.locales}
+				trigger={
+					<button
+						type="button"
+						className="rounded-full border border-dashed px-1.5 py-0.5 text-[0.625rem] text-muted-foreground uppercase tracking-wide hover:border-foreground hover:text-foreground"
+						title={`Add ${locale.code}`}
+					>
+						+{locale.code}
+					</button>
+				}
+			/>
+		);
+	}
+
+	return (
+		<Link
+			to="/pages/$pageId"
+			params={{ pageId: content.contentId }}
+			search={{ path: node.path, locale: locale.code }}
+		>
+			<Badge
+				variant={content.status === "published" ? "success" : "warning"}
+				className="uppercase"
+			>
+				{locale.code}
+			</Badge>
+		</Link>
 	);
 }
 
@@ -197,16 +343,19 @@ function TreeRow({
 	onToggle,
 	onPublish,
 	publishingId,
+	locales,
 }: {
 	node: PageTreeNode;
 	depth: number;
 	expanded: Set<string>;
 	onToggle: (id: string) => void;
-	onPublish: (id: string) => void;
+	onPublish: (contentId: string) => void;
 	publishingId: string | undefined;
+	locales: Locale[];
 }) {
 	const hasChildren = node.children.length > 0;
 	const isExpanded = expanded.has(node.id);
+	const draftContent = node.locales.find((l) => l.status === "draft");
 
 	const {
 		attributes,
@@ -259,15 +408,16 @@ function TreeRow({
 					<IconFileText className="size-4 text-muted-foreground" />
 				)}
 				<span className="font-mono text-sm">{node.slug}</span>
-				<StatusBadge status={node.status} />
+				<span className="flex items-center gap-1">
+					{locales.map((l) => (
+						<LocaleBadge key={l.code} node={node} locale={l} />
+					))}
+				</span>
 				<span className="ml-auto flex items-center gap-2">
-					<span className="hidden text-muted-foreground text-xs sm:inline">
-						{new Date(node.updatedAt).toLocaleDateString()}
-					</span>
 					<NewPageDialog
 						parentId={node.id}
 						parentPath={node.path}
-						locale={node.locale}
+						locales={locales}
 						trigger={
 							<Button
 								size="icon"
@@ -279,33 +429,35 @@ function TreeRow({
 							</Button>
 						}
 					/>
-					{node.status === "draft" && (
+					{draftContent && (
 						<Button
 							size="sm"
 							variant="outline"
 							className="h-6 gap-1 text-xs"
-							onClick={() => onPublish(node.id)}
-							disabled={publishingId === node.id}
+							onClick={() => onPublish(draftContent.contentId)}
+							disabled={publishingId === draftContent.contentId}
 						>
 							<IconRocket className="size-3" />
-							Publish
+							Publish {draftContent.locale}
 						</Button>
 					)}
-					<Button
-						size="sm"
-						variant="outline"
-						className="h-6 gap-1 text-xs"
-						asChild
-					>
-						<Link
-							to="/pages/$pageId"
-							params={{ pageId: node.id }}
-							search={{ path: node.path, locale: node.locale }}
+					{node.locales[0] && (
+						<Button
+							size="sm"
+							variant="outline"
+							className="h-6 gap-1 text-xs"
+							asChild
 						>
-							<IconPencil className="size-3" />
-							Edit
-						</Link>
-					</Button>
+							<Link
+								to="/pages/$pageId"
+								params={{ pageId: node.locales[0].contentId }}
+								search={{ path: node.path, locale: node.locales[0].locale }}
+							>
+								<IconPencil className="size-3" />
+								Edit
+							</Link>
+						</Button>
+					)}
 				</span>
 			</div>
 			{hasChildren && isExpanded && (
@@ -319,6 +471,7 @@ function TreeRow({
 							onToggle={onToggle}
 							onPublish={onPublish}
 							publishingId={publishingId}
+							locales={locales}
 						/>
 					))}
 				</div>
@@ -350,14 +503,9 @@ function PagesPage() {
 		queryFn: () => api.locales.list(),
 	});
 
-	const [locale, setLocale] = useState<string | undefined>(undefined);
-	const activeLocale =
-		locale ?? locales.find((l) => l.isDefault)?.code ?? locales[0]?.code;
-
 	const { data: tree, isLoading } = useQuery({
-		queryKey: ["cms", "pages", "tree", activeLocale],
-		queryFn: () => api.pages.tree(activeLocale),
-		enabled: !!activeLocale,
+		queryKey: ["cms", "pages", "tree"],
+		queryFn: () => api.pages.tree(),
 	});
 
 	const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -370,7 +518,7 @@ function PagesPage() {
 		});
 
 	const publish = useMutation({
-		mutationFn: (id: string) => api.pages.publish(id),
+		mutationFn: (contentId: string) => api.pages.publish(contentId),
 		onSuccess: () => {
 			toast.success("Page published");
 			qc.invalidateQueries({ queryKey: ["cms", "pages"] });
@@ -409,33 +557,16 @@ function PagesPage() {
 						Manage page content and publish drafts.
 					</p>
 				</div>
-				<div className="flex items-center gap-2">
-					<Select value={activeLocale} onValueChange={setLocale}>
-						<SelectTrigger className="w-40">
-							<IconWorld className="size-4 text-muted-foreground" />
-							<SelectValue placeholder="Locale" />
-						</SelectTrigger>
-						<SelectContent>
-							{locales.map((l) => (
-								<SelectItem key={l.code} value={l.code}>
-									{l.name} ({l.code})
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-					{activeLocale && (
-						<NewPageDialog
-							parentId={null}
-							locale={activeLocale}
-							trigger={
-								<Button size="lg">
-									<IconPlus className="size-4" />
-									New page
-								</Button>
-							}
-						/>
-					)}
-				</div>
+				<NewPageDialog
+					parentId={null}
+					locales={locales}
+					trigger={
+						<Button size="lg" disabled={locales.length === 0}>
+							<IconPlus className="size-4" />
+							New page
+						</Button>
+					}
+				/>
 			</div>
 
 			{isLoading ? (
@@ -448,7 +579,7 @@ function PagesPage() {
 			) : !tree || tree.length === 0 ? (
 				<div className="rounded-lg border py-10 text-center text-muted-foreground">
 					<IconFileText className="mx-auto mb-2 size-8 opacity-40" />
-					No pages yet for this locale.
+					No pages yet.
 				</div>
 			) : (
 				<DndContext sensors={sensors} onDragEnd={handleDragEnd}>
@@ -462,13 +593,14 @@ function PagesPage() {
 								onToggle={toggle}
 								onPublish={(id) => publish.mutate(id)}
 								publishingId={publish.isPending ? publish.variables : undefined}
+								locales={locales}
 							/>
 						))}
 					</RootDropZone>
-					<p className="flex items-center gap-1.5 text-muted-foreground text-xs">
-						<IconClock className="size-3.5" />
+					<p className="text-muted-foreground text-xs">
 						Drag the handle to reparent a page - drop on a folder to nest it, or
-						anywhere empty to move it to the root.
+						anywhere empty to move it to the root. Click a dashed locale badge
+						to add that locale to a page.
 					</p>
 				</DndContext>
 			)}

@@ -47,12 +47,13 @@ export function makeAdapter(overrides: Partial<CMSAdapter> = {}): CMSAdapter {
 		getPage: mock(async () => null),
 		upsertPage: mock(async () => {}),
 		createPage: mock(async (opts) => makePage(opts)),
+		addPageLocale: mock(async (opts) =>
+			makePage({ id: opts.id, nodeId: opts.nodeId, locale: opts.locale }),
+		),
 		publishPage: mock(async () => {}),
 		listPages: mock(async () => ({ items: [] as PageSummary[], total: 0 })),
 		listPageTree: mock(async () => [] as PageTreeNode[]),
-		movePage: mock(async (opts) =>
-			makePage({ id: opts.id, parentId: opts.parentId }),
-		),
+		movePage: mock(async () => {}),
 		listLocales: mock(async () => []),
 		upsertLocale: mock(async () => {}),
 		deleteLocale: mock(async () => {}),
@@ -76,6 +77,7 @@ export function makeAdapter(overrides: Partial<CMSAdapter> = {}): CMSAdapter {
 export function makePage(overrides: Partial<Page> = {}): Page {
 	return {
 		id: "page-1",
+		nodeId: "node-1",
 		parentId: null,
 		slug: "home",
 		path: "home",

@@ -113,6 +113,7 @@ export type {
 	CMSAdapter,
 	NamespaceLocaleMeta,
 	Page,
+	PageNodeLocale,
 	PageSummary,
 	PageTreeNode,
 	RawBlock,

@@ -23,8 +23,10 @@ export interface MediaAsset {
 	createdAt: Date;
 }
 
+/** A page's content for one locale - `id` identifies this content row (what editor routes operate on). */
 export interface Page {
 	id: string;
+	nodeId: string;
 	parentId: string | null;
 	slug: string;
 	/** Materialized full path (ancestor slugs joined by "/"). Root pages: path === slug. */
@@ -38,6 +40,7 @@ export interface Page {
 
 export interface PageSummary {
 	id: string;
+	nodeId: string;
 	parentId: string | null;
 	slug: string;
 	path: string;
@@ -46,14 +49,21 @@ export interface PageSummary {
 	updatedAt: Date;
 }
 
+/** Per-locale content summary shown on a tree node - which locales exist and their status. */
+export interface PageNodeLocale {
+	locale: string;
+	contentId: string;
+	status: "draft" | "published";
+	updatedAt: Date;
+}
+
+/** A tree node is locale-independent - `locales` says which locales have content, and their status. */
 export interface PageTreeNode {
 	id: string;
 	parentId: string | null;
 	slug: string;
 	path: string;
-	locale: string;
-	status: "draft" | "published";
-	updatedAt: Date;
+	locales: PageNodeLocale[];
 	children: PageTreeNode[];
 }
 
@@ -103,18 +113,29 @@ export interface CMSAdapter {
 		draft: boolean;
 	}): Promise<Page | null>;
 	upsertPage(opts: { id: string; blocks: RawBlock[] }): Promise<void>;
+	/** Creates a new page node with exactly one starting locale's content - no other locale rows are created implicitly. */
 	createPage(opts: {
 		id: string;
 		slug: string;
 		locale: string;
 		parentId?: string | null;
 	}): Promise<Page>;
+	/**
+	 * Adds content for a locale to an existing node. Defaults to cloning
+	 * `cloneFromLocale`'s current draft when given, otherwise starts blank.
+	 */
+	addPageLocale(opts: {
+		id: string;
+		nodeId: string;
+		locale: string;
+		cloneFromLocale?: string;
+	}): Promise<Page>;
 	publishPage(opts: { id: string }): Promise<void>;
 	listPages(params: ListPagesParams): Promise<PaginatedResult<PageSummary>>;
-	/** Full page tree (nested by parentId), optionally scoped to one locale - powers the admin folder view. */
-	listPageTree(opts?: { locale?: string }): Promise<PageTreeNode[]>;
-	/** Reparents a page node, revalidating slug uniqueness at the destination and recomputing path for it and all descendants. */
-	movePage(opts: { id: string; parentId: string | null }): Promise<Page>;
+	/** Full page tree (nested by parentId) - each node lists which locales have content and their status. */
+	listPageTree(): Promise<PageTreeNode[]>;
+	/** Reparents a page node (locale-independent), revalidating slug uniqueness at the destination and recomputing path for its whole subtree. */
+	movePage(opts: { nodeId: string; parentId: string | null }): Promise<void>;
 	listLocales(): Promise<Locale[]>;
 	upsertLocale(opts: {
 		code: string;

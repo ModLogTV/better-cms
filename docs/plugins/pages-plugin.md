@@ -37,8 +37,9 @@ const cms = createCMS({
 | `GET` | `/cms/pages` | List all pages |
 | `GET` | `/cms/pages/tree` | Full page tree, nested by `parentId` (`?locale=en`) |
 | `GET` | `/cms/pages/:path` | Get page by full path (`?locale=en&draft=false`) - `:path` may contain `/` for nested pages |
-| `POST` | `/cms/pages` | Create a page (`{ slug, locale, parentId? }`) |
-| `POST` | `/cms/pages/:id/move` | Reparent a page (`{ parentId }`) |
+| `POST` | `/cms/pages` | Create a page node with its first locale's content (`{ slug, locale, parentId? }`) |
+| `POST` | `/cms/pages/:id/move` | Reparent a page node (`{ parentId }`) - `:id` is a node id |
+| `POST` | `/cms/pages/:id/locales` | Add a locale to an existing node (`{ locale, cloneFromLocale? }`) - `:id` is a node id |
 | `PUT` | `/cms/pages/:id` | Update page blocks |
 | `POST` | `/cms/pages/:id/publish` | Publish page |
 

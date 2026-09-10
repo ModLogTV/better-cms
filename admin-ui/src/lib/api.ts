@@ -120,10 +120,18 @@ export interface KeyMetadata {
 
 export interface PageSummary {
 	id: string;
+	nodeId: string;
 	parentId: string | null;
 	slug: string;
 	path: string;
 	locale: string;
+	status: "draft" | "published";
+	updatedAt: string;
+}
+
+export interface PageNodeLocale {
+	locale: string;
+	contentId: string;
 	status: "draft" | "published";
 	updatedAt: string;
 }
@@ -133,9 +141,7 @@ export interface PageTreeNode {
 	parentId: string | null;
 	slug: string;
 	path: string;
-	locale: string;
-	status: "draft" | "published";
-	updatedAt: string;
+	locales: PageNodeLocale[];
 	children: PageTreeNode[];
 }
 
@@ -206,10 +212,7 @@ export const api = {
 	pages: {
 		list: (params: ListPagesParams) =>
 			get<PaginatedResult<PageSummary>>(`/pages?${buildQuery(params)}`),
-		tree: (locale?: string) =>
-			get<PageTreeNode[]>(
-				`/pages/tree${locale ? `?locale=${encodeURIComponent(locale)}` : ""}`,
-			),
+		tree: () => get<PageTreeNode[]>("/pages/tree"),
 		// `slug` here is a full path (e.g. "company/about") - encode each segment,
 		// not the "/" separators, so the server's wildcard route still resolves it.
 		get: (slug: string, locale: string, draft = false) =>
@@ -218,8 +221,14 @@ export const api = {
 			),
 		create: (slug: string, locale: string, parentId?: string | null) =>
 			post<PageSummary>("/pages", { slug, locale, parentId }),
-		move: (id: string, parentId: string | null) =>
-			post<PageSummary>(`/pages/${id}/move`, { parentId }),
+		// `nodeId` - move is a tree-node operation, independent of locale.
+		move: (nodeId: string, parentId: string | null) =>
+			post(`/pages/${nodeId}/move`, { parentId }),
+		addLocale: (nodeId: string, locale: string, cloneFromLocale?: string) =>
+			post<PageSummary>(`/pages/${nodeId}/locales`, {
+				locale,
+				cloneFromLocale,
+			}),
 		update: (id: string, blocks: RawBlock[]) => put(`/pages/${id}`, blocks),
 		publish: (id: string) => post(`/pages/${id}/publish`),
 		describeBlocks: () => get<BlockInfo[]>("/pages/blocks"),

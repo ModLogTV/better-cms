@@ -5,21 +5,31 @@ import type {
 	MediaAsset,
 	NamespaceLocaleMeta,
 	Page,
+	PageNodeLocale,
 	PageSummary,
 	PageTreeNode,
 	RawBlock,
 } from "../core/adapter";
 
-interface PrismaPageRow {
+interface PrismaPageNodeRow {
 	id: string;
 	parentId: string | null;
 	slug: string;
 	path: string;
+}
+
+interface PrismaPageContentRow {
+	id: string;
+	nodeId: string;
 	locale: string;
 	blocks: unknown;
 	status: string;
 	publishedAt: Date | null;
 	updatedAt: Date;
+}
+
+interface PrismaPageContentWithNodeRow extends PrismaPageContentRow {
+	node: PrismaPageNodeRow;
 }
 
 interface PrismaClient {
@@ -36,52 +46,46 @@ interface PrismaClient {
 			where: { name: string };
 		}): Promise<{ locale: string; updatedAt: Date; values: unknown }[]>;
 	};
-	page: {
+	pageNode: {
 		findUnique(args: {
 			where: {
 				id?: string;
-				path_locale?: { path: string; locale: string };
-				parentId_slug_locale?: {
-					parentId: string | null;
-					slug: string;
-					locale: string;
-				};
+				path?: string;
+				parentId_slug?: { parentId: string | null; slug: string };
 			};
-		}): Promise<PrismaPageRow | null>;
-		upsert(args: {
-			where: { id: string };
-			create: { id: string; slug: string; locale: string; blocks: unknown };
-			update: { blocks: unknown };
-		}): Promise<unknown>;
+		}): Promise<PrismaPageNodeRow | null>;
 		create(args: {
-			data: {
-				id: string;
-				parentId: string | null;
-				slug: string;
-				path: string;
-				locale: string;
-				blocks: unknown;
-			};
-		}): Promise<PrismaPageRow>;
+			data: { id: string; parentId: string | null; slug: string; path: string };
+		}): Promise<PrismaPageNodeRow>;
 		update(args: {
 			where: { id: string };
-			data: Partial<{
-				status: string;
-				publishedAt: Date;
-				parentId: string | null;
-				path: string;
-			}>;
-		}): Promise<PrismaPageRow>;
-		findMany(args: {
-			where?: {
-				status?: string;
-				locale?: string;
-				parentId?: string | null;
+			data: Partial<{ parentId: string | null; path: string }>;
+		}): Promise<PrismaPageNodeRow>;
+		findMany(args?: {
+			where?: { parentId?: string | null };
+		}): Promise<PrismaPageNodeRow[]>;
+	};
+	pageContent: {
+		findUnique(args: {
+			where: {
+				id?: string;
+				nodeId_locale?: { nodeId: string; locale: string };
 			};
+		}): Promise<PrismaPageContentRow | null>;
+		create(args: {
+			data: { id: string; nodeId: string; locale: string; blocks: unknown };
+		}): Promise<PrismaPageContentRow>;
+		update(args: {
+			where: { id: string };
+			data: Partial<{ blocks: unknown; status: string; publishedAt: Date }>;
+		}): Promise<PrismaPageContentRow>;
+		findMany(args: {
+			where?: { status?: string; locale?: string };
+			include?: { node: true };
 			orderBy?: Record<string, "asc" | "desc">[];
 			skip?: number;
 			take?: number;
-		}): Promise<PrismaPageRow[]>;
+		}): Promise<PrismaPageContentWithNodeRow[]>;
 		count(args: {
 			where?: { status?: string; locale?: string };
 		}): Promise<number>;
@@ -145,12 +149,13 @@ interface PrismaClient {
 	};
 }
 
-function toPage(row: PrismaPageRow): Page {
+function toPage(row: PrismaPageContentWithNodeRow): Page {
 	return {
 		id: row.id,
-		parentId: row.parentId,
-		slug: row.slug,
-		path: row.path,
+		nodeId: row.node.id,
+		parentId: row.node.parentId,
+		slug: row.node.slug,
+		path: row.node.path,
 		locale: row.locale,
 		blocks: row.blocks as RawBlock[],
 		status: row.status as "draft" | "published",
@@ -164,7 +169,7 @@ async function computePath(
 	opts: { parentId: string | null; slug: string },
 ): Promise<string> {
 	if (!opts.parentId) return opts.slug;
-	const parent = await prisma.page.findUnique({
+	const parent = await prisma.pageNode.findUnique({
 		where: { id: opts.parentId },
 	});
 	if (!parent) throw new Error(`No page found with id "${opts.parentId}"`);
@@ -176,10 +181,12 @@ async function reparentDescendantPaths(
 	prisma: PrismaClient,
 	opts: { id: string; path: string },
 ): Promise<void> {
-	const children = await prisma.page.findMany({ where: { parentId: opts.id } });
+	const children = await prisma.pageNode.findMany({
+		where: { parentId: opts.id },
+	});
 	for (const child of children) {
 		const path = `${opts.path}/${child.slug}`;
-		await prisma.page.update({ where: { id: child.id }, data: { path } });
+		await prisma.pageNode.update({ where: { id: child.id }, data: { path } });
 		await reparentDescendantPaths(prisma, { id: child.id, path });
 	}
 }
@@ -220,32 +227,51 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 		},
 
 		async getPage({ slug, locale, draft }) {
-			const row = await prisma.page.findUnique({
-				where: { path_locale: { path: slug, locale } },
+			const node = await prisma.pageNode.findUnique({ where: { path: slug } });
+			if (!node) return null;
+			const content = await prisma.pageContent.findUnique({
+				where: { nodeId_locale: { nodeId: node.id, locale } },
 			});
-			if (!row) return null;
-			if (!draft && row.status !== "published") return null;
-			return toPage(row);
+			if (!content) return null;
+			if (!draft && content.status !== "published") return null;
+			return toPage({ ...content, node });
 		},
 
 		async upsertPage({ id, blocks }) {
-			await prisma.page.upsert({
-				where: { id },
-				create: { id, slug: id, locale: "en", blocks },
-				update: { blocks },
-			});
+			await prisma.pageContent.update({ where: { id }, data: { blocks } });
 		},
 
 		async createPage({ id, slug, locale, parentId = null }) {
 			const path = await computePath(prisma, { parentId, slug });
-			const row = await prisma.page.create({
-				data: { id, parentId, slug, path, locale, blocks: [] },
+			const node = await prisma.pageNode.create({
+				data: { id: crypto.randomUUID(), parentId, slug, path },
 			});
-			return toPage(row);
+			const content = await prisma.pageContent.create({
+				data: { id, nodeId: node.id, locale, blocks: [] },
+			});
+			return toPage({ ...content, node });
+		},
+
+		async addPageLocale({ id, nodeId, locale, cloneFromLocale }) {
+			const node = await prisma.pageNode.findUnique({ where: { id: nodeId } });
+			if (!node) throw new Error(`No page found with id "${nodeId}"`);
+
+			let blocks: unknown = [];
+			if (cloneFromLocale) {
+				const source = await prisma.pageContent.findUnique({
+					where: { nodeId_locale: { nodeId, locale: cloneFromLocale } },
+				});
+				if (source) blocks = source.blocks;
+			}
+
+			const content = await prisma.pageContent.create({
+				data: { id, nodeId, locale, blocks },
+			});
+			return toPage({ ...content, node });
 		},
 
 		async publishPage({ id }) {
-			await prisma.page.update({
+			await prisma.pageContent.update({
 				where: { id },
 				data: { status: "published", publishedAt: new Date() },
 			});
@@ -261,22 +287,24 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 			}));
 
 			const [rows, total] = await Promise.all([
-				prisma.page.findMany({
+				prisma.pageContent.findMany({
 					where,
+					include: { node: true },
 					orderBy: orderBy.length > 0 ? orderBy : [{ updatedAt: "desc" }],
 					skip: (params.page - 1) * params.pageSize,
 					take: params.pageSize,
 				}),
-				prisma.page.count({ where }),
+				prisma.pageContent.count({ where }),
 			]);
 
 			return {
 				items: rows.map(
 					(r): PageSummary => ({
 						id: r.id,
-						parentId: r.parentId,
-						slug: r.slug,
-						path: r.path,
+						nodeId: r.node.id,
+						parentId: r.node.parentId,
+						slug: r.node.slug,
+						path: r.node.path,
 						locale: r.locale,
 						status: r.status as "draft" | "published",
 						updatedAt: r.updatedAt,
@@ -286,65 +314,73 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 			};
 		},
 
-		async listPageTree({ locale } = {}) {
-			const rows = await prisma.page.findMany({
-				where: locale ? { locale } : undefined,
-			});
-			const byParent = new Map<string | null, PrismaPageRow[]>();
-			for (const row of rows) {
-				const siblings = byParent.get(row.parentId) ?? [];
-				siblings.push(row);
-				byParent.set(row.parentId, siblings);
+		async listPageTree() {
+			const [nodes, contents] = await Promise.all([
+				prisma.pageNode.findMany(),
+				prisma.pageContent.findMany({ where: {} }),
+			]);
+
+			const localesByNode = new Map<string, PageNodeLocale[]>();
+			for (const c of contents) {
+				const locales = localesByNode.get(c.nodeId) ?? [];
+				locales.push({
+					locale: c.locale,
+					contentId: c.id,
+					status: c.status as "draft" | "published",
+					updatedAt: c.updatedAt,
+				});
+				localesByNode.set(c.nodeId, locales);
+			}
+
+			const byParent = new Map<string | null, PrismaPageNodeRow[]>();
+			for (const node of nodes) {
+				const siblings = byParent.get(node.parentId) ?? [];
+				siblings.push(node);
+				byParent.set(node.parentId, siblings);
 			}
 			const build = (parentId: string | null): PageTreeNode[] =>
 				(byParent.get(parentId) ?? [])
 					.map(
-						(r): PageTreeNode => ({
-							id: r.id,
-							parentId: r.parentId,
-							slug: r.slug,
-							path: r.path,
-							locale: r.locale,
-							status: r.status as "draft" | "published",
-							updatedAt: r.updatedAt,
-							children: build(r.id),
+						(n): PageTreeNode => ({
+							id: n.id,
+							parentId: n.parentId,
+							slug: n.slug,
+							path: n.path,
+							locales: (localesByNode.get(n.id) ?? []).sort((a, b) =>
+								a.locale.localeCompare(b.locale),
+							),
+							children: build(n.id),
 						}),
 					)
 					.sort((a, b) => a.slug.localeCompare(b.slug));
 			return build(null);
 		},
 
-		async movePage({ id, parentId }) {
-			const node = await prisma.page.findUnique({ where: { id } });
-			if (!node) throw new Error(`No page found with id "${id}"`);
-			if (parentId === id) {
+		async movePage({ nodeId, parentId }) {
+			const node = await prisma.pageNode.findUnique({ where: { id: nodeId } });
+			if (!node) throw new Error(`No page found with id "${nodeId}"`);
+			if (parentId === nodeId) {
 				throw new Error("A page cannot be moved into itself.");
 			}
 
 			// Reject moving a node into its own subtree (would orphan the loop).
 			let cursor = parentId;
 			while (cursor) {
-				if (cursor === id) {
+				if (cursor === nodeId) {
 					throw new Error(
 						"Cannot move a page into one of its own descendants.",
 					);
 				}
-				const ancestor = await prisma.page.findUnique({
+				const ancestor = await prisma.pageNode.findUnique({
 					where: { id: cursor },
 				});
 				cursor = ancestor?.parentId ?? null;
 			}
 
-			const existing = await prisma.page.findUnique({
-				where: {
-					parentId_slug_locale: {
-						parentId,
-						slug: node.slug,
-						locale: node.locale,
-					},
-				},
+			const existing = await prisma.pageNode.findUnique({
+				where: { parentId_slug: { parentId, slug: node.slug } },
 			});
-			if (existing && existing.id !== id) {
+			if (existing && existing.id !== nodeId) {
 				throw new Error(
 					`A page with slug "${node.slug}" already exists under the destination parent.`,
 				);
@@ -354,12 +390,11 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 				parentId,
 				slug: node.slug,
 			});
-			const updated = await prisma.page.update({
-				where: { id },
+			await prisma.pageNode.update({
+				where: { id: nodeId },
 				data: { parentId, path: newPath },
 			});
-			await reparentDescendantPaths(prisma, { id, path: newPath });
-			return toPage(updated);
+			await reparentDescendantPaths(prisma, { id: nodeId, path: newPath });
 		},
 
 		async listLocales() {

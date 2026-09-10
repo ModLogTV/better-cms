@@ -17,6 +17,7 @@ describe("pages routes", () => {
 				items: [
 					{
 						id: "1",
+						nodeId: "node-1",
 						parentId: null,
 						slug: "home",
 						path: "home",
@@ -207,20 +208,26 @@ describe("pages routes", () => {
 					parentId: null,
 					slug: "company",
 					path: "company",
-					locale: "en",
-					status: "published" as const,
-					updatedAt: new Date(),
+					locales: [
+						{
+							locale: "en",
+							contentId: "c1",
+							status: "published" as const,
+							updatedAt: new Date(),
+						},
+					],
 					children: [],
 				},
 			]),
 		});
 		const app = makeApp(adapter, [pagesPlugin()]);
-		const res = await app.handle(req("/cms/pages/tree?locale=en"));
+		const res = await app.handle(req("/cms/pages/tree"));
 		expect(res.status).toBe(200);
 		const body = await res.json();
 		expect(body).toHaveLength(1);
 		expect(body[0].slug).toBe("company");
-		expect(adapter.listPageTree).toHaveBeenCalledWith({ locale: "en" });
+		expect(body[0].locales[0].locale).toBe("en");
+		expect(adapter.listPageTree).toHaveBeenCalledTimes(1);
 	});
 
 	test("POST /cms/pages passes parentId through to the adapter", async () => {
@@ -237,23 +244,23 @@ describe("pages routes", () => {
 		);
 	});
 
-	test("POST /cms/pages/:id/move calls adapter.movePage", async () => {
+	test("POST /cms/pages/:nodeId/move calls adapter.movePage", async () => {
 		const adapter = makeAdapter();
 		const app = makeApp(adapter, [pagesPlugin()]);
 		const res = await app.handle(
-			req("/cms/pages/page-1/move", {
+			req("/cms/pages/node-1/move", {
 				method: "POST",
 				body: JSON.stringify({ parentId: "p2" }),
 			}),
 		);
 		expect(res.status).toBe(200);
 		expect(adapter.movePage).toHaveBeenCalledWith({
-			id: "page-1",
+			nodeId: "node-1",
 			parentId: "p2",
 		});
 	});
 
-	test("POST /cms/pages/:id/move returns 409 when the adapter rejects the move", async () => {
+	test("POST /cms/pages/:nodeId/move returns 409 when the adapter rejects the move", async () => {
 		const adapter = makeAdapter({
 			movePage: async () => {
 				throw new Error("slug already exists under the destination parent");
@@ -261,9 +268,44 @@ describe("pages routes", () => {
 		});
 		const app = makeApp(adapter, [pagesPlugin()]);
 		const res = await app.handle(
-			req("/cms/pages/page-1/move", {
+			req("/cms/pages/node-1/move", {
 				method: "POST",
 				body: JSON.stringify({ parentId: "p2" }),
+			}),
+		);
+		expect(res.status).toBe(409);
+	});
+
+	test("POST /cms/pages/:nodeId/locales adds a locale to an existing node", async () => {
+		const adapter = makeAdapter();
+		const app = makeApp(adapter, [pagesPlugin()]);
+		const res = await app.handle(
+			req("/cms/pages/node-1/locales", {
+				method: "POST",
+				body: JSON.stringify({ locale: "de", cloneFromLocale: "en" }),
+			}),
+		);
+		expect(res.status).toBe(200);
+		expect(adapter.addPageLocale).toHaveBeenCalledWith(
+			expect.objectContaining({
+				nodeId: "node-1",
+				locale: "de",
+				cloneFromLocale: "en",
+			}),
+		);
+	});
+
+	test("POST /cms/pages/:nodeId/locales returns 409 when the locale already has content", async () => {
+		const adapter = makeAdapter({
+			addPageLocale: async () => {
+				throw new Error("unique constraint");
+			},
+		});
+		const app = makeApp(adapter, [pagesPlugin()]);
+		const res = await app.handle(
+			req("/cms/pages/node-1/locales", {
+				method: "POST",
+				body: JSON.stringify({ locale: "en" }),
 			}),
 		);
 		expect(res.status).toBe(409);

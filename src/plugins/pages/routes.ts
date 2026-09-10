@@ -48,15 +48,9 @@ export function pageRoutes(opts: { ctx: CMSContext; blocks: PageBlock[] }) {
 				fields: b.fields ?? [],
 			}));
 		})
-		.get(
-			"/pages/tree",
-			async ({ query }) => {
-				return ctx.adapter.listPageTree({ locale: query.locale });
-			},
-			{
-				query: t.Object({ locale: t.Optional(t.String()) }),
-			},
-		)
+		.get("/pages/tree", async () => {
+			return ctx.adapter.listPageTree();
+		})
 		.get(
 			"/pages/*",
 			async ({ params, query, set }) => {
@@ -116,12 +110,14 @@ export function pageRoutes(opts: { ctx: CMSContext; blocks: PageBlock[] }) {
 		)
 		.post(
 			"/pages/:id/move",
+			// `:id` is a node id here - move is a tree-node operation, not a per-locale one.
 			async ({ params, body, set }) => {
 				try {
-					return await ctx.adapter.movePage({
-						id: params.id,
+					await ctx.adapter.movePage({
+						nodeId: params.id,
 						parentId: body.parentId,
 					});
+					return { ok: true };
 				} catch (err) {
 					set.status = 409;
 					return {
@@ -132,6 +128,33 @@ export function pageRoutes(opts: { ctx: CMSContext; blocks: PageBlock[] }) {
 			{
 				params: t.Object({ id: t.String() }),
 				body: t.Object({ parentId: t.Union([t.String(), t.Null()]) }),
+			},
+		)
+		.post(
+			"/pages/:id/locales",
+			// `:id` is a node id here.
+			async ({ params, body, set }) => {
+				const contentId = crypto.randomUUID();
+				try {
+					return await ctx.adapter.addPageLocale({
+						id: contentId,
+						nodeId: params.id,
+						locale: body.locale,
+						cloneFromLocale: body.cloneFromLocale,
+					});
+				} catch {
+					set.status = 409;
+					return {
+						error: `That page already has content for locale "${body.locale}".`,
+					};
+				}
+			},
+			{
+				params: t.Object({ id: t.String() }),
+				body: t.Object({
+					locale: t.String(),
+					cloneFromLocale: t.Optional(t.String()),
+				}),
 			},
 		)
 		.put(

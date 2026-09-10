@@ -25,25 +25,40 @@ model TranslationNamespace {
   @@id([name, locale])
 }
 
-model Page {
+// Locale-independent tree identity: slug/path/parentId live here, not per-locale.
+model PageNode {
+  id       String  @id @default(cuid())
+  parentId String?
+  slug     String
+  // Materialized full path (ancestor slugs joined by "/"). Root nodes: path == slug.
+  path     String
+
+  parent   PageNode?     @relation("PageTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children PageNode[]    @relation("PageTree")
+  contents PageContent[]
+
+  // Slug uniqueness is scoped to the parent, not global.
+  @@unique([parentId, slug])
+  @@unique([path])
+  @@index([parentId])
+}
+
+// One row per (node, locale) - a page can exist for a single locale without
+// any of the other locales existing yet. Each locale has its own independent
+// draft/published lifecycle.
+model PageContent {
   id          String    @id
-  parentId    String?
-  slug        String
-  // Materialized full path (ancestor slugs joined by "/"). Root pages: path == slug.
-  path        String
+  nodeId      String
   locale      String
   blocks      Json      @default("[]")
   status      String    @default("draft")
   publishedAt DateTime?
   updatedAt   DateTime  @updatedAt
 
-  parent   Page?  @relation("PageTree", fields: [parentId], references: [id], onDelete: Cascade)
-  children Page[] @relation("PageTree")
+  node PageNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
 
-  // Slug uniqueness is scoped to the parent, not global.
-  @@unique([parentId, slug, locale])
-  @@unique([path, locale])
-  @@index([parentId])
+  @@unique([nodeId, locale])
+  @@index([nodeId])
 }
 
 model Locale {
