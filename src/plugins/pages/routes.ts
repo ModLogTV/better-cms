@@ -60,6 +60,27 @@ export function pageRoutes(opts: { ctx: CMSContext; blocks: PageBlock[] }) {
 				permissions: [CMS_PERMISSIONS.PAGES_WRITE],
 			}),
 		)
+		.post(
+			"/pages",
+			async ({ body, set }) => {
+				const id = crypto.randomUUID();
+				try {
+					return await ctx.adapter.createPage({
+						id,
+						slug: body.slug,
+						locale: body.locale,
+					});
+				} catch {
+					set.status = 409;
+					return {
+						error: `A page already exists for slug "${body.slug}" and locale "${body.locale}".`,
+					};
+				}
+			},
+			{
+				body: t.Object({ slug: t.String(), locale: t.String() }),
+			},
+		)
 		.put(
 			"/pages/:id",
 			async ({ params, body }) => {

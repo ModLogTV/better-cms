@@ -38,6 +38,17 @@ interface PrismaClient {
 			create: { id: string; slug: string; locale: string; blocks: unknown };
 			update: { blocks: unknown };
 		}): Promise<unknown>;
+		create(args: {
+			data: { id: string; slug: string; locale: string; blocks: unknown };
+		}): Promise<{
+			id: string;
+			slug: string;
+			locale: string;
+			blocks: unknown;
+			status: string;
+			publishedAt: Date | null;
+			updatedAt: Date;
+		}>;
 		update(args: {
 			where: { id: string };
 			data: { status: string; publishedAt: Date };
@@ -169,6 +180,21 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 				create: { id, slug: id, locale: "en", blocks },
 				update: { blocks },
 			});
+		},
+
+		async createPage({ id, slug, locale }) {
+			const row = await prisma.page.create({
+				data: { id, slug, locale, blocks: [] },
+			});
+			return {
+				id: row.id,
+				slug: row.slug,
+				locale: row.locale,
+				blocks: row.blocks as RawBlock[],
+				status: row.status as "draft" | "published",
+				publishedAt: row.publishedAt,
+				updatedAt: row.updatedAt,
+			};
 		},
 
 		async publishPage({ id }) {

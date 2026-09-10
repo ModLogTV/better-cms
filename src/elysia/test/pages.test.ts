@@ -87,6 +87,39 @@ describe("pages routes", () => {
 		);
 	});
 
+	test("POST /cms/pages creates a page for the given slug and locale", async () => {
+		const adapter = makeAdapter();
+		const app = makeApp(adapter, [pagesPlugin({ blocks: [heroBlock] })]);
+		const res = await app.handle(
+			req("/cms/pages", {
+				method: "POST",
+				body: JSON.stringify({ slug: "about", locale: "de" }),
+			}),
+		);
+		expect(res.status).toBe(200);
+		const body = await res.json();
+		expect(body).toMatchObject({ slug: "about", locale: "de" });
+		expect(adapter.createPage).toHaveBeenCalledWith(
+			expect.objectContaining({ slug: "about", locale: "de" }),
+		);
+	});
+
+	test("POST /cms/pages returns 409 when the adapter rejects a duplicate slug/locale", async () => {
+		const adapter = makeAdapter({
+			createPage: async () => {
+				throw new Error("unique constraint");
+			},
+		});
+		const app = makeApp(adapter, [pagesPlugin()]);
+		const res = await app.handle(
+			req("/cms/pages", {
+				method: "POST",
+				body: JSON.stringify({ slug: "home", locale: "en" }),
+			}),
+		);
+		expect(res.status).toBe(409);
+	});
+
 	test("PUT /cms/pages/:id validates block schema", async () => {
 		const app = makeApp(makeAdapter(), [pagesPlugin({ blocks: [heroBlock] })]);
 		const res = await app.handle(

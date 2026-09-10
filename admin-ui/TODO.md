@@ -3,7 +3,7 @@
 - [x] Users: clicking a user row and revoking "all permissions" on your own account should not be possible (self-lockout protection)
 - [x] Users table: add an Actions column with quick actions
 - [x] Permission picker overflows dialogs heavily (New group dialog, View user dialog)
-- [ ] Pages table: add a way to create a new page
+- [x] Pages table: add a way to create a new page
 - [ ] Dashboard shows very little information - add more
 - [ ] Overhaul translations views (namespaces + translations) - switching namespaces/languages is clunky
 - [x] Change password dialog: add confirm-new-password field + password strength indicator

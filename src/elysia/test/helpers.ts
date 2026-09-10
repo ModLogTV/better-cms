@@ -45,6 +45,7 @@ export function makeAdapter(overrides: Partial<CMSAdapter> = {}): CMSAdapter {
 		listNamespaceLocaleMeta: mock(async () => []),
 		getPage: mock(async () => null),
 		upsertPage: mock(async () => {}),
+		createPage: mock(async (opts) => makePage(opts)),
 		publishPage: mock(async () => {}),
 		listPages: mock(async () => [] as PageSummary[]),
 		listLocales: mock(async () => []),

@@ -22,6 +22,14 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 	});
 	if (!res.ok) {
 		const text = await res.text().catch(() => res.statusText);
+		try {
+			const parsed = JSON.parse(text);
+			if (typeof parsed?.error === "string") {
+				throw new ApiError(res.status, parsed.error);
+			}
+		} catch (e) {
+			if (e instanceof ApiError) throw e;
+		}
 		throw new ApiError(res.status, text);
 	}
 	if (res.status === 204 || res.headers.get("content-length") === "0") {
@@ -150,6 +158,8 @@ export const api = {
 			get<RawBlock[]>(
 				`/pages/${encodeURIComponent(slug)}?locale=${locale}&draft=${draft}`,
 			),
+		create: (slug: string, locale: string) =>
+			post<PageSummary>("/pages", { slug, locale }),
 		update: (id: string, blocks: RawBlock[]) => put(`/pages/${id}`, blocks),
 		publish: (id: string) => post(`/pages/${id}/publish`),
 		describeBlocks: () => get<BlockInfo[]>("/pages/blocks"),

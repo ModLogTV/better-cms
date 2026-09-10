@@ -68,6 +68,7 @@ export interface CMSAdapter {
 		draft: boolean;
 	}): Promise<Page | null>;
 	upsertPage(opts: { id: string; blocks: RawBlock[] }): Promise<void>;
+	createPage(opts: { id: string; slug: string; locale: string }): Promise<Page>;
 	publishPage(opts: { id: string }): Promise<void>;
 	listPages(): Promise<PageSummary[]>;
 	listLocales(): Promise<Locale[]>;
