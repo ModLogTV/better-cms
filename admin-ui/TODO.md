@@ -4,7 +4,7 @@
 - [x] Users table: add an Actions column with quick actions
 - [x] Permission picker overflows dialogs heavily (New group dialog, View user dialog)
 - [x] Pages table: add a way to create a new page
-- [ ] Dashboard shows very little information - add more
+- [x] Dashboard shows very little information - add more
 - [ ] Overhaul translations views (namespaces + translations) - switching namespaces/languages is clunky
 - [x] Change password dialog: add confirm-new-password field + password strength indicator
 - [x] "+ Add locale" button needs to be a size larger

@@ -19,7 +19,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { api, type NamespaceSummary, type PageSummary } from "@/lib/api";
+import {
+	api,
+	type MediaAsset,
+	type NamespaceSummary,
+	type PageSummary,
+} from "@/lib/api";
+import { cn, formatBytes } from "@/lib/utils";
 
 export const Route = createFileRoute("/_layout/")({
 	component: DashboardPage,
@@ -257,6 +263,121 @@ function RecentNamespacesCard({
 	);
 }
 
+function MediaOverviewCard({
+	media,
+	isLoading,
+}: {
+	media?: MediaAsset[];
+	isLoading: boolean;
+}) {
+	const totalSize = (media ?? []).reduce((sum, asset) => sum + asset.size, 0);
+	const pending = (media ?? []).filter((asset) => !asset.confirmedAt).length;
+
+	return (
+		<Card>
+			<CardHeader>
+				<CardTitle className="text-base">Media storage</CardTitle>
+			</CardHeader>
+			<CardContent>
+				{isLoading ? (
+					<Skeleton className="h-14 w-full" />
+				) : (media?.length ?? 0) === 0 ? (
+					<p className="py-6 text-center text-sm text-muted-foreground">
+						No media uploaded yet.
+					</p>
+				) : (
+					<div className="grid grid-cols-2 gap-4">
+						<div>
+							<p className="text-2xl font-bold">{formatBytes(totalSize)}</p>
+							<p className="text-xs text-muted-foreground">
+								across {media?.length ?? 0} assets
+							</p>
+						</div>
+						<div>
+							<p className="text-2xl font-bold">{pending}</p>
+							<p className="text-xs text-muted-foreground">
+								pending confirmation
+							</p>
+						</div>
+					</div>
+				)}
+			</CardContent>
+		</Card>
+	);
+}
+
+function localeCoverageAverages(namespaces: NamespaceSummary[]) {
+	const sums = new Map<string, { total: number; count: number }>();
+	for (const ns of namespaces) {
+		for (const [locale, pct] of Object.entries(ns.coverage)) {
+			const entry = sums.get(locale) ?? { total: 0, count: 0 };
+			entry.total += pct;
+			entry.count += 1;
+			sums.set(locale, entry);
+		}
+	}
+	return Array.from(sums.entries())
+		.map(([locale, { total, count }]) => ({
+			locale,
+			avg: Math.round(total / count),
+		}))
+		.sort((a, b) => b.avg - a.avg);
+}
+
+function CoverageOverviewCard({
+	namespaces,
+	isLoading,
+}: {
+	namespaces?: NamespaceSummary[];
+	isLoading: boolean;
+}) {
+	const coverage = localeCoverageAverages(namespaces ?? []);
+
+	return (
+		<Card>
+			<CardHeader>
+				<CardTitle className="text-base">
+					Translation coverage by locale
+				</CardTitle>
+			</CardHeader>
+			<CardContent className="space-y-3">
+				{isLoading ? (
+					Array.from({ length: 2 }).map((_, i) => (
+						// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton row count, never reordered
+						<Skeleton key={i} className="h-6 w-full" />
+					))
+				) : coverage.length === 0 ? (
+					<p className="py-6 text-center text-sm text-muted-foreground">
+						No translation data yet.
+					</p>
+				) : (
+					coverage.map(({ locale, avg }) => (
+						<div key={locale} className="space-y-1">
+							<div className="flex items-center justify-between text-xs">
+								<span className="font-mono">{locale}</span>
+								<span className="text-muted-foreground">{avg}%</span>
+							</div>
+							<div className="h-1.5 overflow-hidden rounded-full bg-muted">
+								<div
+									className={cn(
+										"h-full rounded-full",
+										avg >= 100
+											? "bg-emerald-500"
+											: avg >= 50
+												? "bg-amber-500"
+												: "bg-destructive",
+									)}
+									style={{ width: `${avg}%` }}
+								/>
+							</div>
+						</div>
+					))
+				)}
+			</CardContent>
+		</Card>
+	);
+}
+
 function DashboardPage() {
 	const namespaces = useQuery({
 		queryKey: ["cms", "namespaces"],
@@ -346,6 +467,14 @@ function DashboardPage() {
 					namespaces={namespaces.data}
 					isLoading={namespaces.isLoading}
 					defaultLocale={defaultLocale}
+				/>
+			</div>
+
+			<div className="grid gap-4 lg:grid-cols-2">
+				<MediaOverviewCard media={media.data} isLoading={media.isLoading} />
+				<CoverageOverviewCard
+					namespaces={namespaces.data}
+					isLoading={namespaces.isLoading}
 				/>
 			</div>
 		</div>

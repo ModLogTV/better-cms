@@ -22,16 +22,11 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api, type MediaAsset } from "@/lib/api";
+import { formatBytes } from "@/lib/utils";
 
 export const Route = createFileRoute("/_layout/media/")({
 	component: MediaPage,
 });
-
-function formatSize(bytes: number) {
-	if (bytes < 1024) return `${bytes} B`;
-	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-	return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 function MediaCard({ asset }: { asset: MediaAsset }) {
 	const qc = useQueryClient();
@@ -68,7 +63,7 @@ function MediaCard({ asset }: { asset: MediaAsset }) {
 						{asset.mimeType}
 					</Badge>
 					<span className="text-xs text-muted-foreground">
-						{formatSize(asset.size)}
+						{formatBytes(asset.size)}
 					</span>
 				</div>
 				{!asset.confirmedAt && (
