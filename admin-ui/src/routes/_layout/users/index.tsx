@@ -1,4 +1,12 @@
-import { IconPlus, IconShield, IconUsers, IconX } from "@tabler/icons-react";
+import {
+	IconCopy,
+	IconDotsVertical,
+	IconPlus,
+	IconShield,
+	IconShieldLock,
+	IconUsers,
+	IconX,
+} from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
@@ -13,6 +21,12 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -24,6 +38,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { api, type CMSGroup, type CMSUserSummary } from "@/lib/api";
+import { getSession } from "@/lib/auth";
 
 export const Route = createFileRoute("/_layout/users/")({
 	component: UsersPage,
@@ -32,11 +47,13 @@ export const Route = createFileRoute("/_layout/users/")({
 function UserDetailDialog({
 	user,
 	allGroups,
+	isSelf,
 	open,
 	onClose,
 }: {
 	user: CMSUserSummary;
 	allGroups: CMSGroup[];
+	isSelf: boolean;
 	open: boolean;
 	onClose: () => void;
 }) {
@@ -99,6 +116,7 @@ function UserDetailDialog({
 						<PermissionPicker
 							value={perms ?? []}
 							onChange={(next) => setPerms.mutate(next)}
+							preventWildcardRevoke={isSelf}
 						/>
 					</div>
 
@@ -161,6 +179,17 @@ function UsersPage() {
 		queryKey: ["cms", "groups"],
 		queryFn: () => api.groups.list(),
 	});
+	const { data: session } = useQuery({
+		queryKey: ["cms", "session"],
+		queryFn: () => getSession(),
+	});
+
+	function copyUserId(id: string) {
+		navigator.clipboard.writeText(id).then(
+			() => toast.success("User ID copied"),
+			() => toast.error("Couldn't copy user ID"),
+		);
+	}
 
 	return (
 		<div className="space-y-4">
@@ -178,7 +207,7 @@ function UsersPage() {
 							<TableHead>User</TableHead>
 							<TableHead>Groups</TableHead>
 							<TableHead>Permissions</TableHead>
-							<TableHead className="w-10" />
+							<TableHead className="text-right">Actions</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
@@ -205,61 +234,100 @@ function UsersPage() {
 								</TableCell>
 							</TableRow>
 						) : (
-							users?.map((user) => (
-								<TableRow
-									key={user.id}
-									className="cursor-pointer"
-									onClick={() => setSelectedUser(user)}
-								>
-									<TableCell>
-										<div className="flex items-center gap-2">
-											<Avatar className="size-7">
-												<AvatarFallback className="text-xs">
-													{user.name?.[0]?.toUpperCase() ??
-														user.email[0].toUpperCase()}
-												</AvatarFallback>
-											</Avatar>
-											<div>
-												{user.name && (
-													<p className="text-sm font-medium">{user.name}</p>
-												)}
-												<p className="text-xs text-muted-foreground">
-													{user.email}
-												</p>
+							users?.map((user) => {
+								const isSelf = session?.user.id === user.id;
+								return (
+									<TableRow
+										key={user.id}
+										className="cursor-pointer"
+										onClick={() => setSelectedUser(user)}
+									>
+										<TableCell>
+											<div className="flex items-center gap-2">
+												<Avatar className="size-7">
+													<AvatarFallback className="text-xs">
+														{user.name?.[0]?.toUpperCase() ??
+															user.email[0].toUpperCase()}
+													</AvatarFallback>
+												</Avatar>
+												<div>
+													<p className="flex items-center gap-1.5 text-sm font-medium">
+														{user.name || user.email}
+														{isSelf && (
+															<Badge variant="outline" className="text-[10px]">
+																you
+															</Badge>
+														)}
+													</p>
+													{user.name && (
+														<p className="text-xs text-muted-foreground">
+															{user.email}
+														</p>
+													)}
+												</div>
 											</div>
-										</div>
-									</TableCell>
-									<TableCell>
-										<div className="flex flex-wrap gap-1">
-											{user.groupIds.slice(0, 3).map((gid) => {
-												const g = groups.find((g) => g.id === gid);
-												return g ? (
-													<Badge
-														key={gid}
-														variant="secondary"
-														className="text-xs"
-													>
-														{g.name}
+										</TableCell>
+										<TableCell>
+											<div className="flex flex-wrap gap-1">
+												{user.groupIds.slice(0, 3).map((gid) => {
+													const g = groups.find((g) => g.id === gid);
+													return g ? (
+														<Badge
+															key={gid}
+															variant="secondary"
+															className="text-xs"
+														>
+															{g.name}
+														</Badge>
+													) : null;
+												})}
+												{user.groupIds.length > 3 && (
+													<Badge variant="outline" className="text-xs">
+														+{user.groupIds.length - 3}
 													</Badge>
-												) : null;
-											})}
-											{user.groupIds.length > 3 && (
-												<Badge variant="outline" className="text-xs">
-													+{user.groupIds.length - 3}
-												</Badge>
-											)}
-										</div>
-									</TableCell>
-									<TableCell>
-										<span className="text-sm text-muted-foreground">
-											{user.permissions.length} direct
-										</span>
-									</TableCell>
-									<TableCell>
-										<IconShield className="size-4 text-muted-foreground" />
-									</TableCell>
-								</TableRow>
-							))
+												)}
+											</div>
+										</TableCell>
+										<TableCell>
+											<span className="flex items-center gap-1 text-sm text-muted-foreground">
+												{user.permissions.includes("cms:*") && (
+													<IconShieldLock className="size-3.5 text-primary" />
+												)}
+												{user.permissions.length} direct
+											</span>
+										</TableCell>
+										<TableCell className="text-right">
+											<DropdownMenu>
+												<DropdownMenuTrigger asChild>
+													<Button
+														size="icon-sm"
+														variant="ghost"
+														onClick={(e) => e.stopPropagation()}
+													>
+														<IconDotsVertical className="size-4" />
+														<span className="sr-only">Actions</span>
+													</Button>
+												</DropdownMenuTrigger>
+												<DropdownMenuContent
+													align="end"
+													onClick={(e) => e.stopPropagation()}
+												>
+													<DropdownMenuItem
+														onClick={() => setSelectedUser(user)}
+													>
+														<IconShield className="size-4" />
+														Manage access
+													</DropdownMenuItem>
+													<DropdownMenuItem onClick={() => copyUserId(user.id)}>
+														<IconCopy className="size-4" />
+														Copy user ID
+													</DropdownMenuItem>
+												</DropdownMenuContent>
+											</DropdownMenu>
+										</TableCell>
+									</TableRow>
+								);
+							})
 						)}
 					</TableBody>
 				</Table>
@@ -269,6 +337,7 @@ function UsersPage() {
 				<UserDetailDialog
 					user={selectedUser}
 					allGroups={groups}
+					isSelf={session?.user.id === selectedUser.id}
 					open
 					onClose={() => setSelectedUser(null)}
 				/>

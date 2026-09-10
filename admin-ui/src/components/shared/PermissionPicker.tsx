@@ -1,6 +1,7 @@
-import { IconPlus, IconX } from "@tabler/icons-react";
+import { IconLock, IconPlus, IconX } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -10,7 +11,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 
-const WILDCARD = "cms:*";
+export const WILDCARD_PERMISSION = "cms:*";
+const WILDCARD = WILDCARD_PERMISSION;
 
 function resourceLabel(permission: string) {
 	const resource = permission.split(":")[1] ?? permission;
@@ -32,9 +34,12 @@ function groupByResource(catalog: { value: string; description: string }[]) {
 export function PermissionPicker({
 	value,
 	onChange,
+	preventWildcardRevoke = false,
 }: {
 	value: string[];
 	onChange: (next: string[]) => void;
+	/** When true, the "grant all permissions" toggle cannot be turned off once granted (used to stop admins from locking themselves out). */
+	preventWildcardRevoke?: boolean;
 }) {
 	const [customPerm, setCustomPerm] = useState("");
 	const { data: catalog, isLoading } = useQuery({
@@ -54,10 +59,16 @@ export function PermissionPicker({
 	function toggle(permission: string, checked: boolean) {
 		if (checked) {
 			if (!value.includes(permission)) onChange([...value, permission]);
-		} else {
-			onChange(value.filter((v) => v !== permission));
+			return;
 		}
+		if (permission === WILDCARD && preventWildcardRevoke) {
+			toast.error("You can't revoke your own admin access.");
+			return;
+		}
+		onChange(value.filter((v) => v !== permission));
 	}
+
+	const wildcardLocked = hasWildcard && preventWildcardRevoke;
 
 	function addCustom() {
 		const trimmed = customPerm.trim();
@@ -85,15 +96,23 @@ export function PermissionPicker({
 				<Checkbox
 					id="permission-wildcard"
 					checked={hasWildcard}
+					disabled={wildcardLocked}
 					onCheckedChange={(checked) => toggle(WILDCARD, checked === true)}
 				/>
 				<Label
 					htmlFor="permission-wildcard"
 					className="grid gap-0.5 font-normal leading-none"
 				>
-					<span className="text-sm font-medium">Grant all permissions</span>
+					<span className="flex items-center gap-1.5 text-sm font-medium">
+						Grant all permissions
+						{wildcardLocked && (
+							<IconLock className="size-3 text-muted-foreground" />
+						)}
+					</span>
 					<span className="text-xs text-muted-foreground">
-						{catalog?.find((p) => p.value === WILDCARD)?.description}
+						{wildcardLocked
+							? "This is your own account — you can't revoke your own admin access."
+							: catalog?.find((p) => p.value === WILDCARD)?.description}
 					</span>
 				</Label>
 			</div>
