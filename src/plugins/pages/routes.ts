@@ -78,6 +78,7 @@ export function pageRoutes(opts: { ctx: CMSContext; blocks: PageBlock[] }) {
 				type: b.type,
 				label: b.label ?? b.type,
 				fields: b.fields ?? [],
+				preview: b.preview,
 			}));
 		});
 

@@ -104,10 +104,16 @@ export interface BlockFieldInfo {
 	optional?: boolean;
 }
 
+export interface BlockPreview {
+	icon?: string;
+	image?: string;
+}
+
 export interface BlockInfo {
 	type: string;
 	label: string;
 	fields: BlockFieldInfo[];
+	preview?: BlockPreview;
 }
 
 export interface KeyMetadata {

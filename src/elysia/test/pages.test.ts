@@ -60,6 +60,20 @@ describe("pages routes", () => {
 		expect(body).toEqual([{ type: "spacer", label: "spacer", fields: [] }]);
 	});
 
+	test("GET /cms/pages/blocks includes preview metadata when registered", async () => {
+		const withPreview = {
+			type: "hero",
+			schema: z.object({}),
+			preview: { icon: "🦸" },
+		};
+		const app = makeApp(makeAdapter(), [
+			pagesPlugin({ blocks: [withPreview] }),
+		]);
+		const res = await app.handle(req("/cms/pages/blocks"));
+		const body = await res.json();
+		expect(body[0].preview).toEqual({ icon: "🦸" });
+	});
+
 	test("GET /cms/pages without token returns 401", async () => {
 		const app = makeApp(makeAdapter(), [pagesPlugin()]);
 		const res = await app.handle(req("/cms/pages", { token: "wrong" }));

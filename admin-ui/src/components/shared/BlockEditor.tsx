@@ -4,6 +4,8 @@ import {
 	type DragEndEvent,
 	KeyboardSensor,
 	PointerSensor,
+	useDraggable,
+	useDroppable,
 	useSensor,
 	useSensors,
 } from "@dnd-kit/core";
@@ -28,12 +30,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -42,6 +42,7 @@ import {
 	type BlockInfo,
 	type RawBlock,
 } from "@/lib/api";
+import { cn } from "@/lib/utils";
 
 function defaultValueFor(field: BlockFieldInfo) {
 	if (field.optional) return undefined;
@@ -136,6 +137,118 @@ function withIds(blocks: RawBlock[]): EditableBlock[] {
 }
 function stripIds(blocks: EditableBlock[]): RawBlock[] {
 	return blocks.map(({ __id, ...rest }) => rest);
+}
+
+function BlockPreviewGlyph({ info }: { info: BlockInfo }) {
+	if (info.preview?.image) {
+		return (
+			<img
+				src={info.preview.image}
+				alt=""
+				className="size-8 rounded object-cover"
+			/>
+		);
+	}
+	const glyph = info.preview?.icon ?? info.label.slice(0, 2);
+	return (
+		<span className="flex size-8 items-center justify-center rounded bg-muted text-sm">
+			{glyph}
+		</span>
+	);
+}
+
+function BlockLibraryCard({
+	info,
+	onPick,
+}: {
+	info: BlockInfo;
+	onPick: (type: string) => void;
+}) {
+	const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+		id: `lib:${info.type}`,
+	});
+	return (
+		<button
+			ref={setNodeRef}
+			type="button"
+			{...listeners}
+			{...attributes}
+			onClick={() => onPick(info.type)}
+			className={cn(
+				"flex w-28 shrink-0 cursor-grab flex-col items-center gap-1.5 rounded-lg border bg-card p-3 text-center hover:border-primary active:cursor-grabbing",
+				isDragging && "opacity-40",
+			)}
+		>
+			<BlockPreviewGlyph info={info} />
+			<span className="text-xs font-medium">{info.label}</span>
+		</button>
+	);
+}
+
+function BlockLibraryGrid({
+	catalog,
+	onPick,
+}: {
+	catalog: BlockInfo[];
+	onPick: (type: string) => void;
+}) {
+	return (
+		<div className="flex flex-wrap gap-2">
+			{catalog.map((info) => (
+				<BlockLibraryCard key={info.type} info={info} onPick={onPick} />
+			))}
+		</div>
+	);
+}
+
+/** Thin drop target between blocks (and at the start/end) with a "+" that opens the same library. */
+function InsertGap({
+	index,
+	catalog,
+	onInsert,
+}: {
+	index: number;
+	catalog: BlockInfo[];
+	onInsert: (type: string, index: number) => void;
+}) {
+	const { setNodeRef, isOver } = useDroppable({ id: `gap-${index}` });
+	const [open, setOpen] = useState(false);
+	return (
+		<div
+			ref={setNodeRef}
+			className={cn(
+				"group/gap relative flex h-3 items-center",
+				isOver && "h-8",
+			)}
+		>
+			<div
+				className={cn(
+					"h-px w-full bg-transparent transition-colors",
+					isOver && "bg-primary",
+				)}
+			/>
+			<Popover open={open} onOpenChange={setOpen}>
+				<PopoverTrigger asChild>
+					<Button
+						size="icon"
+						variant="outline"
+						className="absolute left-1/2 size-5 -translate-x-1/2 rounded-full bg-background opacity-0 group-hover/gap:opacity-100"
+					>
+						<IconPlus className="size-3" />
+					</Button>
+				</PopoverTrigger>
+				<PopoverContent className="w-auto max-w-sm" align="center">
+					<BlockLibraryGrid
+						catalog={catalog}
+						onPick={(type) => {
+							onInsert(type, index);
+							setOpen(false);
+						}}
+					/>
+				</PopoverContent>
+			</Popover>
+		</div>
+	);
 }
 
 function BlockCard({
@@ -244,7 +357,6 @@ export function BlockEditor({
 	onChange: (next: RawBlock[]) => void;
 }) {
 	const [items, setItems] = useState<EditableBlock[]>(() => withIds(blocks));
-	const [addType, setAddType] = useState("");
 
 	const { data: catalog, isLoading } = useQuery({
 		queryKey: ["cms", "blocks"],
@@ -253,7 +365,7 @@ export function BlockEditor({
 	const catalogByType = new Map((catalog ?? []).map((b) => [b.type, b]));
 
 	const sensors = useSensors(
-		useSensor(PointerSensor),
+		useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
 		useSensor(KeyboardSensor, {
 			coordinateGetter: sortableKeyboardCoordinates,
 		}),
@@ -264,30 +376,56 @@ export function BlockEditor({
 		onChange(stripIds(next));
 	}
 
+	function insertBlock(type: string, index: number) {
+		const info = catalogByType.get(type);
+		if (!info) return;
+		const next = [...items];
+		next.splice(index, 0, {
+			type: info.type,
+			data: defaultDataFor(info),
+			__id: `block-${nextId++}`,
+		});
+		commit(next);
+	}
+
 	function handleDragEnd(event: DragEndEvent) {
 		const { active, over } = event;
-		if (!over || active.id === over.id) return;
-		const oldIndex = items.findIndex((b) => b.__id === active.id);
-		const newIndex = items.findIndex((b) => b.__id === over.id);
-		if (oldIndex === -1 || newIndex === -1) return;
+		if (!over) return;
+		const activeId = String(active.id);
+		const overId = String(over.id);
+
+		if (activeId.startsWith("lib:")) {
+			const type = activeId.slice("lib:".length);
+			const gapIndex = overId.startsWith("gap-")
+				? Number(overId.slice("gap-".length))
+				: items.findIndex((b) => b.__id === overId);
+			if (gapIndex === -1) return;
+			insertBlock(type, gapIndex);
+			return;
+		}
+
+		if (activeId === overId) return;
+		const oldIndex = items.findIndex((b) => b.__id === activeId);
+		if (oldIndex === -1) return;
+
+		if (overId.startsWith("gap-")) {
+			// Gap indices use insert-before semantics, so account for the
+			// shift caused by removing the dragged item first.
+			let gapIndex = Number(overId.slice("gap-".length));
+			if (gapIndex > oldIndex) gapIndex -= 1;
+			const next = [...items];
+			const [moved] = next.splice(oldIndex, 1);
+			next.splice(gapIndex, 0, moved);
+			commit(next);
+			return;
+		}
+
+		const newIndex = items.findIndex((b) => b.__id === overId);
+		if (newIndex === -1) return;
 		const next = [...items];
 		const [moved] = next.splice(oldIndex, 1);
 		next.splice(newIndex, 0, moved);
 		commit(next);
-	}
-
-	function addBlock() {
-		const info = catalogByType.get(addType);
-		if (!info) return;
-		commit([
-			...items,
-			{
-				type: info.type,
-				data: defaultDataFor(info),
-				__id: `block-${nextId++}`,
-			},
-		]);
-		setAddType("");
 	}
 
 	function updateBlock(id: string, data: unknown) {
@@ -318,41 +456,40 @@ export function BlockEditor({
 					items={items.map((b) => b.__id)}
 					strategy={verticalListSortingStrategy}
 				>
-					{items.map((block) => (
-						<BlockCard
-							key={block.__id}
-							block={block}
-							info={catalogByType.get(block.type)}
-							onChange={(data) => updateBlock(block.__id, data)}
-							onRemove={() => removeBlock(block.__id)}
-						/>
+					<InsertGap index={0} catalog={catalog ?? []} onInsert={insertBlock} />
+					{items.map((block, i) => (
+						<div key={block.__id}>
+							<BlockCard
+								block={block}
+								info={catalogByType.get(block.type)}
+								onChange={(data) => updateBlock(block.__id, data)}
+								onRemove={() => removeBlock(block.__id)}
+							/>
+							<InsertGap
+								index={i + 1}
+								catalog={catalog ?? []}
+								onInsert={insertBlock}
+							/>
+						</div>
 					))}
 				</SortableContext>
 			</DndContext>
 
 			{items.length === 0 && (
 				<div className="rounded-lg border border-dashed py-10 text-center text-sm text-muted-foreground">
-					No blocks yet. Add one below.
+					No blocks yet. Drag a block from the library below, or click one to
+					add it.
 				</div>
 			)}
 
-			<div className="flex gap-2">
-				<Select value={addType} onValueChange={setAddType}>
-					<SelectTrigger className="flex-1">
-						<SelectValue placeholder="Add a block…" />
-					</SelectTrigger>
-					<SelectContent>
-						{(catalog ?? []).map((b) => (
-							<SelectItem key={b.type} value={b.type}>
-								{b.label}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
-				<Button variant="outline" onClick={addBlock} disabled={!addType}>
-					<IconPlus className="size-4" />
-					Add block
-				</Button>
+			<div className="space-y-2 rounded-lg border border-dashed p-3">
+				<p className="text-xs font-medium text-muted-foreground">
+					Block library - drag onto the list above, or click to append
+				</p>
+				<BlockLibraryGrid
+					catalog={catalog ?? []}
+					onPick={(type) => insertBlock(type, items.length)}
+				/>
 			</div>
 		</div>
 	);

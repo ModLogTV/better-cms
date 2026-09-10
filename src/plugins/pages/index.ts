@@ -32,6 +32,7 @@ export type {
 	BlockDefinition,
 	BlockFieldDefinition,
 	BlockFieldType,
+	BlockPreview,
 	BlockUnion,
 	PageBlock,
 } from "./types";

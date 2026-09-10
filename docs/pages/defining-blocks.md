@@ -36,6 +36,16 @@ export const heroBlock: PageBlock = {
 
 `schema` is a Zod schema for the block's `data` field. The API validates incoming blocks against this schema on `PUT /cms/pages/:id`.
 
+Optionally add a `preview` (`{ icon?: string; image?: string }`) so the block shows a recognizable card - an emoji/short glyph or a small thumbnail image URL - in the admin UI's block library. Blocks without one fall back to `label`/`type`:
+
+```ts
+export const heroBlock: PageBlock = {
+  type: "hero",
+  schema: z.object({ /* ... */ }),
+  preview: { icon: "🦸" },
+};
+```
+
 ## Registering blocks
 
 Collect all blocks in your shared config package and pass them to `pagesPlugin`:
