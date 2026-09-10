@@ -8,6 +8,8 @@ export interface CMSAuthResult {
 	authorized: boolean;
 	permissions: string[];
 	userId?: string;
+	/** Group ids the user belongs to - used to resolve page-level ACL grants made to a group. */
+	groupIds?: string[];
 }
 
 export interface CMSAdminUser {

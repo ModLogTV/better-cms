@@ -11,6 +11,7 @@ const mockAdapter: CMSAdapter = {
 	upsertTranslations: mock(async () => {}),
 	listNamespaceLocaleMeta: mock(async () => []),
 	getPage: mock(async () => null),
+	getPageById: mock(async () => null),
 	upsertPage: mock(async () => {}),
 	createPage: mock(async ({ id, slug, locale, parentId = null }) => ({
 		id,
@@ -40,6 +41,19 @@ const mockAdapter: CMSAdapter = {
 	listPages: mock(async () => ({ items: [], total: 0 })),
 	listPageTree: mock(async () => []),
 	movePage: mock(async () => {}),
+	listPageGrants: mock(async () => []),
+	addPageGrant: mock(
+		async ({ id, nodeId, subjectType, subjectId, permission, locale }) => ({
+			id,
+			nodeId,
+			subjectType,
+			subjectId,
+			permission,
+			locale: locale ?? null,
+		}),
+	),
+	removePageGrant: mock(async () => {}),
+	getEffectivePagePermissions: mock(async () => []),
 	listLocales: mock(async () => []),
 	upsertLocale: mock(async () => {}),
 	deleteLocale: mock(async () => {}),

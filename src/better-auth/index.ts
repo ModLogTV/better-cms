@@ -108,13 +108,24 @@ async function resolvePermissions(
 	prisma: BetterAuthPrismaLike,
 	userId: string,
 ): Promise<string[]> {
+	const { permissions } = await resolveUserAuth(prisma, userId);
+	return permissions;
+}
+
+async function resolveUserAuth(
+	prisma: BetterAuthPrismaLike,
+	userId: string,
+): Promise<{ permissions: string[]; groupIds: string[] }> {
 	const user = await prisma.user.findUnique({
 		where: { id: userId },
 		include: { cmsGroups: { include: { group: true } } },
 	});
-	if (!user) return [];
+	if (!user) return { permissions: [], groupIds: [] };
 	const groupPerms = user.cmsGroups.flatMap((ug) => ug.group.permissions);
-	return [...new Set([...user.cmsPermissions, ...groupPerms])];
+	return {
+		permissions: [...new Set([...user.cmsPermissions, ...groupPerms])],
+		groupIds: user.cmsGroups.map((ug) => ug.groupId),
+	};
 }
 
 function buildManagement(prisma: BetterAuthPrismaLike): CMSAuthManagement {
@@ -282,7 +293,7 @@ export function betterAuthCMSAdapter(
 			});
 			if (!session) return { authorized: false, permissions: [] };
 
-			const permissions = await resolvePermissions(
+			const { permissions, groupIds } = await resolveUserAuth(
 				opts.prisma,
 				session.user.id,
 			);
@@ -290,6 +301,7 @@ export function betterAuthCMSAdapter(
 				authorized: true,
 				permissions,
 				userId: session.user.id,
+				groupIds,
 			};
 		},
 

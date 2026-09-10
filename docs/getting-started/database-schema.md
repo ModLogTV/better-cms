@@ -36,11 +36,30 @@ model PageNode {
   parent   PageNode?     @relation("PageTree", fields: [parentId], references: [id], onDelete: Cascade)
   children PageNode[]    @relation("PageTree")
   contents PageContent[]
+  grants   PageGrant[]
 
   // Slug uniqueness is scoped to the parent, not global.
   @@unique([parentId, slug])
   @@unique([path])
   @@index([parentId])
+}
+
+// ACL grant scoping a user/group to a permission on a node (and, by
+// inheritance, its subtree). Additive-only - no deny/inheritance-break.
+// `locale: null` applies to all locales of the node.
+model PageGrant {
+  id          String   @id @default(cuid())
+  nodeId      String
+  subjectType String
+  subjectId   String
+  permission  String
+  locale      String?
+  createdAt   DateTime @default(now())
+
+  node PageNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  @@index([nodeId])
+  @@index([subjectType, subjectId])
 }
 
 // One row per (node, locale) - a page can exist for a single locale without

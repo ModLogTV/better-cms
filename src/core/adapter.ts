@@ -92,6 +92,27 @@ export interface ListPagesParams extends PaginationParams {
 	locale?: string;
 }
 
+/**
+ * A page-level ACL grant: `subjectId` (a user or group id) may `permission`
+ * on `nodeId` and its whole subtree, scoped to `locale` (null = all locales).
+ * Grants are additive-only - there's no "deny" or inheritance-break.
+ */
+export interface PageGrant {
+	id: string;
+	nodeId: string;
+	subjectType: "user" | "group";
+	subjectId: string;
+	/** A CMS_PERMISSIONS value (cms:pages:read/write/publish), scoped to this node. */
+	permission: string;
+	locale: string | null;
+}
+
+/** Identifies the requester for page-ACL checks - omit userId for anonymous/service callers. */
+export interface PageAclSubject {
+	userId?: string;
+	groupIds: string[];
+}
+
 export interface CMSAdapter {
 	getTranslations(opts: {
 		namespace: string;
@@ -112,6 +133,8 @@ export interface CMSAdapter {
 		locale: string;
 		draft: boolean;
 	}): Promise<Page | null>;
+	/** Fetches a page by its own content id - used to resolve the node for a permission check before mutating. */
+	getPageById(opts: { id: string }): Promise<Page | null>;
 	upsertPage(opts: { id: string; blocks: RawBlock[] }): Promise<void>;
 	/** Creates a new page node with exactly one starting locale's content - no other locale rows are created implicitly. */
 	createPage(opts: {
@@ -132,10 +155,39 @@ export interface CMSAdapter {
 	}): Promise<Page>;
 	publishPage(opts: { id: string }): Promise<void>;
 	listPages(params: ListPagesParams): Promise<PaginatedResult<PageSummary>>;
-	/** Full page tree (nested by parentId) - each node lists which locales have content and their status. */
-	listPageTree(): Promise<PageTreeNode[]>;
+	/**
+	 * Full page tree (nested by parentId) - each node lists which locales have
+	 * content and their status. When `subject` is given, the tree is pruned to
+	 * nodes the subject can at least read via ACL grants (nodes without their
+	 * own qualifying grant are promoted to root so descendants stay reachable).
+	 * Callers only pass `subject` when the requester lacks the global read
+	 * permission - this filtering is purely additive on top of that.
+	 */
+	listPageTree(opts?: { subject?: PageAclSubject }): Promise<PageTreeNode[]>;
 	/** Reparents a page node (locale-independent), revalidating slug uniqueness at the destination and recomputing path for its whole subtree. */
 	movePage(opts: { nodeId: string; parentId: string | null }): Promise<void>;
+	/** Grants for one node (not including inherited ancestor grants) - powers the admin "Access" panel. */
+	listPageGrants(opts: { nodeId: string }): Promise<PageGrant[]>;
+	addPageGrant(opts: {
+		id: string;
+		nodeId: string;
+		subjectType: "user" | "group";
+		subjectId: string;
+		permission: string;
+		locale?: string | null;
+	}): Promise<PageGrant>;
+	removePageGrant(opts: { id: string }): Promise<void>;
+	/**
+	 * The subject's effective page permissions on `nodeId`, from ACL grants
+	 * only (own node + every ancestor's grants, unioned). `locale` narrows to
+	 * grants that apply to that locale or to all locales (locale: null).
+	 * Purely additive - callers should OR this with the subject's global
+	 * CMS permissions, never use it to restrict a subject who already has
+	 * the equivalent global permission.
+	 */
+	getEffectivePagePermissions(
+		opts: PageAclSubject & { nodeId: string; locale?: string },
+	): Promise<string[]>;
 	listLocales(): Promise<Locale[]>;
 	upsertLocale(opts: {
 		code: string;

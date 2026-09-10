@@ -42,6 +42,7 @@ export function requirePermission(opts: {
 			return {
 				cmsUserId: result.userId,
 				cmsPermissions: result.permissions,
+				cmsGroupIds: result.groupIds ?? [],
 			};
 		},
 	);
@@ -62,6 +63,7 @@ export function requireAuth(opts: { cms: WithAuth }) {
 			return {
 				cmsUserId: result.userId,
 				cmsPermissions: result.permissions,
+				cmsGroupIds: result.groupIds ?? [],
 			};
 		},
 	);

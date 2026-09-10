@@ -145,6 +145,16 @@ export interface PageTreeNode {
 	children: PageTreeNode[];
 }
 
+export interface PageGrant {
+	id: string;
+	nodeId: string;
+	subjectType: "user" | "group";
+	subjectId: string;
+	permission: string;
+	/** null = applies to all locales of the node */
+	locale: string | null;
+}
+
 export interface RawBlock {
 	type: string;
 	data: unknown;
@@ -232,6 +242,19 @@ export const api = {
 		update: (id: string, blocks: RawBlock[]) => put(`/pages/${id}`, blocks),
 		publish: (id: string) => post(`/pages/${id}/publish`),
 		describeBlocks: () => get<BlockInfo[]>("/pages/blocks"),
+		grants: {
+			list: (nodeId: string) => get<PageGrant[]>(`/pages/${nodeId}/grants`),
+			add: (
+				nodeId: string,
+				grant: {
+					subjectType: "user" | "group";
+					subjectId: string;
+					permission: string;
+					locale?: string | null;
+				},
+			) => post<PageGrant>(`/pages/${nodeId}/grants`, grant),
+			remove: (grantId: string) => del(`/pages/grants/${grantId}`),
+		},
 	},
 
 	media: {

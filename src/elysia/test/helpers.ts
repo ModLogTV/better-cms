@@ -5,6 +5,7 @@ import type {
 	CMSAdapter,
 	MediaAsset,
 	Page,
+	PageGrant,
 	PageSummary,
 	PageTreeNode,
 } from "../../core/adapter";
@@ -45,6 +46,7 @@ export function makeAdapter(overrides: Partial<CMSAdapter> = {}): CMSAdapter {
 		upsertTranslations: mock(async () => {}),
 		listNamespaceLocaleMeta: mock(async () => []),
 		getPage: mock(async () => null),
+		getPageById: mock(async () => null),
 		upsertPage: mock(async () => {}),
 		createPage: mock(async (opts) => makePage(opts)),
 		addPageLocale: mock(async (opts) =>
@@ -54,6 +56,17 @@ export function makeAdapter(overrides: Partial<CMSAdapter> = {}): CMSAdapter {
 		listPages: mock(async () => ({ items: [] as PageSummary[], total: 0 })),
 		listPageTree: mock(async () => [] as PageTreeNode[]),
 		movePage: mock(async () => {}),
+		listPageGrants: mock(async () => [] as PageGrant[]),
+		addPageGrant: mock(async (opts) => ({
+			id: opts.id,
+			nodeId: opts.nodeId,
+			subjectType: opts.subjectType,
+			subjectId: opts.subjectId,
+			permission: opts.permission,
+			locale: opts.locale ?? null,
+		})),
+		removePageGrant: mock(async () => {}),
+		getEffectivePagePermissions: mock(async () => [] as string[]),
 		listLocales: mock(async () => []),
 		upsertLocale: mock(async () => {}),
 		deleteLocale: mock(async () => {}),
@@ -93,14 +106,36 @@ export function makePage(overrides: Partial<Page> = {}): Page {
 export function makeApp(
 	adapter: CMSAdapter,
 	plugins: import("../../core/plugin").CMSPlugin[] = [],
+	auth: import("../../auth/adapter").CMSAuthAdapter = tokenAuthAdapter({
+		readToken: TOKEN,
+		adminToken: TOKEN,
+	}),
 ) {
 	const cms = createCMS({
 		database: adapter,
 		namespaces: [ns],
-		auth: tokenAuthAdapter({ readToken: TOKEN, adminToken: TOKEN }),
+		auth,
 		plugins,
 	});
 	return new Elysia().use(toElysiaPlugin(cms));
+}
+
+/** Auth adapter stub for a signed-in user with no global CMS permissions - used to test page ACL fallback. */
+export function makeUserAuth(opts: {
+	userId: string;
+	groupIds?: string[];
+	permissions?: string[];
+}): import("../../auth/adapter").CMSAuthAdapter {
+	return {
+		async verifyRequest() {
+			return {
+				authorized: true,
+				permissions: opts.permissions ?? [],
+				userId: opts.userId,
+				groupIds: opts.groupIds ?? [],
+			};
+		},
+	};
 }
 
 export function req(

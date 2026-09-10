@@ -113,6 +113,8 @@ export type {
 	CMSAdapter,
 	NamespaceLocaleMeta,
 	Page,
+	PageAclSubject,
+	PageGrant,
 	PageNodeLocale,
 	PageSummary,
 	PageTreeNode,

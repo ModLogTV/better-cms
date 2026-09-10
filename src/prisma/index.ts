@@ -1,3 +1,4 @@
+import { CMS_PERMISSIONS } from "../auth/permissions";
 import type {
 	CMSAdapter,
 	ListPagesParams,
@@ -5,6 +6,8 @@ import type {
 	MediaAsset,
 	NamespaceLocaleMeta,
 	Page,
+	PageAclSubject,
+	PageGrant,
 	PageNodeLocale,
 	PageSummary,
 	PageTreeNode,
@@ -16,6 +19,15 @@ interface PrismaPageNodeRow {
 	parentId: string | null;
 	slug: string;
 	path: string;
+}
+
+interface PrismaPageGrantRow {
+	id: string;
+	nodeId: string;
+	subjectType: string;
+	subjectId: string;
+	permission: string;
+	locale: string | null;
 }
 
 interface PrismaPageContentRow {
@@ -89,6 +101,28 @@ interface PrismaClient {
 		count(args: {
 			where?: { status?: string; locale?: string };
 		}): Promise<number>;
+	};
+	pageGrant: {
+		findMany(args?: {
+			where?: {
+				nodeId?: string | { in: string[] };
+				OR?: Array<{
+					subjectType: string;
+					subjectId: string | { in: string[] };
+				}>;
+			};
+		}): Promise<PrismaPageGrantRow[]>;
+		create(args: {
+			data: {
+				id: string;
+				nodeId: string;
+				subjectType: string;
+				subjectId: string;
+				permission: string;
+				locale: string | null;
+			};
+		}): Promise<PrismaPageGrantRow>;
+		delete(args: { where: { id: string } }): Promise<unknown>;
 	};
 	locale: {
 		findMany(): Promise<
@@ -176,6 +210,47 @@ async function computePath(
 	return `${parent.path}/${opts.slug}`;
 }
 
+function toPageGrant(row: PrismaPageGrantRow): PageGrant {
+	return {
+		id: row.id,
+		nodeId: row.nodeId,
+		subjectType: row.subjectType as "user" | "group",
+		subjectId: row.subjectId,
+		permission: row.permission,
+		locale: row.locale,
+	};
+}
+
+/** Node ids from `nodeId` up to (and including) the root ancestor. */
+async function getAncestorChain(
+	prisma: PrismaClient,
+	nodeId: string,
+): Promise<string[]> {
+	const chain = [nodeId];
+	let cursor: string | null = nodeId;
+	while (cursor) {
+		const node: PrismaPageNodeRow | null = await prisma.pageNode.findUnique({
+			where: { id: cursor },
+		});
+		cursor = node?.parentId ?? null;
+		if (cursor) chain.push(cursor);
+	}
+	return chain;
+}
+
+function subjectGrantFilter(subject: PageAclSubject) {
+	const OR: Array<{
+		subjectType: string;
+		subjectId: string | { in: string[] };
+	}> = [];
+	if (subject.userId)
+		OR.push({ subjectType: "user", subjectId: subject.userId });
+	if (subject.groupIds.length > 0) {
+		OR.push({ subjectType: "group", subjectId: { in: subject.groupIds } });
+	}
+	return OR;
+}
+
 /** Recomputes `path` for every descendant of `id` after it (or an ancestor) moved/renamed. */
 async function reparentDescendantPaths(
 	prisma: PrismaClient,
@@ -234,6 +309,16 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 			});
 			if (!content) return null;
 			if (!draft && content.status !== "published") return null;
+			return toPage({ ...content, node });
+		},
+
+		async getPageById({ id }) {
+			const content = await prisma.pageContent.findUnique({ where: { id } });
+			if (!content) return null;
+			const node = await prisma.pageNode.findUnique({
+				where: { id: content.nodeId },
+			});
+			if (!node) return null;
 			return toPage({ ...content, node });
 		},
 
@@ -314,7 +399,7 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 			};
 		},
 
-		async listPageTree() {
+		async listPageTree({ subject } = {}) {
 			const [nodes, contents] = await Promise.all([
 				prisma.pageNode.findMany(),
 				prisma.pageContent.findMany({ where: {} }),
@@ -338,8 +423,52 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 				siblings.push(node);
 				byParent.set(node.parentId, siblings);
 			}
-			const build = (parentId: string | null): PageTreeNode[] =>
-				(byParent.get(parentId) ?? [])
+
+			// Node visibility for a subject without the global read permission -
+			// additive-only inheritance: a node is readable if it (or an ancestor)
+			// has a matching node-level (locale: null) read grant.
+			let readableIds: Set<string> | null = null;
+			if (subject && (subject.userId || subject.groupIds.length > 0)) {
+				const OR = subjectGrantFilter(subject);
+				const grants =
+					OR.length > 0
+						? await prisma.pageGrant.findMany({ where: { OR } })
+						: [];
+				const ownReadGrant = new Set(
+					grants
+						.filter(
+							(g) =>
+								g.locale === null &&
+								g.permission === CMS_PERMISSIONS.PAGES_READ,
+						)
+						.map((g) => g.nodeId),
+				);
+				readableIds = new Set();
+				const visit = (parentId: string | null, inherited: boolean) => {
+					for (const n of byParent.get(parentId) ?? []) {
+						const readable = inherited || ownReadGrant.has(n.id);
+						if (readable) readableIds?.add(n.id);
+						visit(n.id, readable);
+					}
+				};
+				visit(null, false);
+			}
+
+			const build = (parentId: string | null): PageTreeNode[] => {
+				// Nodes whose actual parent is filtered out get promoted to this
+				// level so they stay reachable, rather than disappearing entirely.
+				const candidates = (byParent.get(parentId) ?? []).concat(
+					readableIds && parentId === null
+						? nodes.filter(
+								(n) =>
+									readableIds?.has(n.id) &&
+									n.parentId !== null &&
+									!readableIds?.has(n.parentId),
+							)
+						: [],
+				);
+				return candidates
+					.filter((n) => !readableIds || readableIds.has(n.id))
 					.map(
 						(n): PageTreeNode => ({
 							id: n.id,
@@ -353,6 +482,7 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 						}),
 					)
 					.sort((a, b) => a.slug.localeCompare(b.slug));
+			};
 			return build(null);
 		},
 
@@ -395,6 +525,45 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 				data: { parentId, path: newPath },
 			});
 			await reparentDescendantPaths(prisma, { id: nodeId, path: newPath });
+		},
+
+		async listPageGrants({ nodeId }) {
+			const rows = await prisma.pageGrant.findMany({ where: { nodeId } });
+			return rows.map(toPageGrant);
+		},
+
+		async addPageGrant({
+			id,
+			nodeId,
+			subjectType,
+			subjectId,
+			permission,
+			locale = null,
+		}) {
+			const row = await prisma.pageGrant.create({
+				data: { id, nodeId, subjectType, subjectId, permission, locale },
+			});
+			return toPageGrant(row);
+		},
+
+		async removePageGrant({ id }) {
+			await prisma.pageGrant.delete({ where: { id } });
+		},
+
+		async getEffectivePagePermissions({ userId, groupIds, nodeId, locale }) {
+			const OR = subjectGrantFilter({ userId, groupIds });
+			if (OR.length === 0) return [];
+
+			const chain = await getAncestorChain(prisma, nodeId);
+			const grants = await prisma.pageGrant.findMany({
+				where: { nodeId: { in: chain }, OR },
+			});
+			const matching = grants.filter((g) =>
+				locale !== undefined
+					? g.locale === null || g.locale === locale
+					: g.locale === null,
+			);
+			return [...new Set(matching.map((g) => g.permission))];
 		},
 
 		async listLocales() {

@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { BlockEditor } from "@/components/shared/BlockEditor";
+import { PageAccessPanel } from "@/components/shared/PageAccessPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -94,6 +95,9 @@ function PageEditorPage() {
 					</div>
 				</div>
 				<div className="flex gap-2">
+					{pageSummary && (
+						<PageAccessPanel nodeId={pageSummary.nodeId} path={path} />
+					)}
 					<Button
 						variant="outline"
 						size="sm"

@@ -1,7 +1,7 @@
 import { describe, expect, mock, test } from "bun:test";
 import { z } from "zod";
 import { pagesPlugin } from "../../plugins/pages/index";
-import { makeAdapter, makeApp, makePage, req } from "./helpers";
+import { makeAdapter, makeApp, makePage, makeUserAuth, req } from "./helpers";
 
 const heroBlock = {
 	type: "hero",
@@ -128,7 +128,10 @@ describe("pages routes", () => {
 	});
 
 	test("PUT /cms/pages/:id validates block schema", async () => {
-		const app = makeApp(makeAdapter(), [pagesPlugin({ blocks: [heroBlock] })]);
+		const adapter = makeAdapter({
+			getPageById: async () => makePage({ id: "page-1" }),
+		});
+		const app = makeApp(adapter, [pagesPlugin({ blocks: [heroBlock] })]);
 		const res = await app.handle(
 			req("/cms/pages/page-1", {
 				method: "PUT",
@@ -140,7 +143,9 @@ describe("pages routes", () => {
 	});
 
 	test("PUT /cms/pages/:id accepts valid blocks", async () => {
-		const adapter = makeAdapter();
+		const adapter = makeAdapter({
+			getPageById: async () => makePage({ id: "page-1" }),
+		});
 		const app = makeApp(adapter, [pagesPlugin({ blocks: [heroBlock] })]);
 		const res = await app.handle(
 			req("/cms/pages/page-1", {
@@ -154,7 +159,10 @@ describe("pages routes", () => {
 	});
 
 	test("PUT unknown block type returns error", async () => {
-		const app = makeApp(makeAdapter(), [pagesPlugin({ blocks: [heroBlock] })]);
+		const adapter = makeAdapter({
+			getPageById: async () => makePage({ id: "page-1" }),
+		});
+		const app = makeApp(adapter, [pagesPlugin({ blocks: [heroBlock] })]);
 		const res = await app.handle(
 			req("/cms/pages/page-1", {
 				method: "PUT",
@@ -166,7 +174,9 @@ describe("pages routes", () => {
 	});
 
 	test("POST /cms/pages/:id/publish calls publishPage", async () => {
-		const adapter = makeAdapter();
+		const adapter = makeAdapter({
+			getPageById: async () => makePage({ id: "page-1" }),
+		});
 		const app = makeApp(adapter, [pagesPlugin()]);
 		const res = await app.handle(
 			req("/cms/pages/page-1/publish", { method: "POST" }),
@@ -309,5 +319,190 @@ describe("pages routes", () => {
 			}),
 		);
 		expect(res.status).toBe(409);
+	});
+});
+
+describe("pages ACL", () => {
+	test("GET /cms/pages/:path 404s for a user with neither global read nor a grant", async () => {
+		const page = makePage({ nodeId: "node-1" });
+		const adapter = makeAdapter({
+			getPage: async () => page,
+			getEffectivePagePermissions: mock(async () => []),
+		});
+		const app = makeApp(
+			adapter,
+			[pagesPlugin()],
+			makeUserAuth({ userId: "u1" }),
+		);
+		const res = await app.handle(req("/cms/pages/home?locale=en"));
+		expect(res.status).toBe(404);
+	});
+
+	test("GET /cms/pages/:path succeeds when the user has a node-scoped read grant", async () => {
+		const page = makePage({
+			nodeId: "node-1",
+			blocks: [{ type: "hero", data: {} }],
+		});
+		const adapter = makeAdapter({
+			getPage: async () => page,
+			getEffectivePagePermissions: mock(async () => ["cms:pages:read"]),
+		});
+		const app = makeApp(
+			adapter,
+			[pagesPlugin()],
+			makeUserAuth({ userId: "u1" }),
+		);
+		const res = await app.handle(req("/cms/pages/home?locale=en"));
+		expect(res.status).toBe(200);
+		expect(adapter.getEffectivePagePermissions).toHaveBeenCalledWith(
+			expect.objectContaining({ userId: "u1", nodeId: "node-1", locale: "en" }),
+		);
+	});
+
+	test("PUT /cms/pages/:id returns 403 without global write or a grant", async () => {
+		const adapter = makeAdapter({
+			getPageById: async () => makePage({ id: "page-1", nodeId: "node-1" }),
+			getEffectivePagePermissions: mock(async () => []),
+		});
+		const app = makeApp(
+			adapter,
+			[pagesPlugin()],
+			makeUserAuth({ userId: "u1" }),
+		);
+		const res = await app.handle(
+			req("/cms/pages/page-1", { method: "PUT", body: JSON.stringify([]) }),
+		);
+		expect(res.status).toBe(403);
+		expect(adapter.upsertPage).not.toHaveBeenCalled();
+	});
+
+	test("PUT /cms/pages/:id succeeds with a node-scoped write grant", async () => {
+		const adapter = makeAdapter({
+			getPageById: async () =>
+				makePage({ id: "page-1", nodeId: "node-1", locale: "en" }),
+			getEffectivePagePermissions: mock(async () => ["cms:pages:write"]),
+		});
+		const app = makeApp(
+			adapter,
+			[pagesPlugin()],
+			makeUserAuth({ userId: "u1" }),
+		);
+		const res = await app.handle(
+			req("/cms/pages/page-1", { method: "PUT", body: JSON.stringify([]) }),
+		);
+		expect(res.status).toBe(200);
+		expect(adapter.upsertPage).toHaveBeenCalledTimes(1);
+	});
+
+	test("GET /cms/pages/tree passes the subject through when the user lacks global read", async () => {
+		const adapter = makeAdapter();
+		const app = makeApp(
+			adapter,
+			[pagesPlugin()],
+			makeUserAuth({ userId: "u1", groupIds: ["g1"] }),
+		);
+		const res = await app.handle(req("/cms/pages/tree"));
+		expect(res.status).toBe(200);
+		expect(adapter.listPageTree).toHaveBeenCalledWith({
+			subject: { userId: "u1", groupIds: ["g1"] },
+		});
+	});
+
+	test("GET /cms/pages/tree skips the subject for a user with global read", async () => {
+		const adapter = makeAdapter();
+		const app = makeApp(adapter, [pagesPlugin()]);
+		const res = await app.handle(req("/cms/pages/tree"));
+		expect(res.status).toBe(200);
+		expect(adapter.listPageTree).toHaveBeenCalledWith();
+	});
+
+	test("POST /cms/pages requires global write for root pages - a node grant elsewhere doesn't count", async () => {
+		const adapter = makeAdapter({
+			getEffectivePagePermissions: mock(async () => ["cms:pages:write"]),
+		});
+		const app = makeApp(
+			adapter,
+			[pagesPlugin()],
+			makeUserAuth({ userId: "u1" }),
+		);
+		const res = await app.handle(
+			req("/cms/pages", {
+				method: "POST",
+				body: JSON.stringify({ slug: "about", locale: "en" }),
+			}),
+		);
+		expect(res.status).toBe(403);
+		expect(adapter.createPage).not.toHaveBeenCalled();
+	});
+
+	test("POST /cms/pages/:id/grants adds a grant (requires global write)", async () => {
+		const adapter = makeAdapter();
+		const app = makeApp(adapter, [pagesPlugin()]);
+		const res = await app.handle(
+			req("/cms/pages/node-1/grants", {
+				method: "POST",
+				body: JSON.stringify({
+					subjectType: "group",
+					subjectId: "g1",
+					permission: "cms:pages:write",
+				}),
+			}),
+		);
+		expect(res.status).toBe(200);
+		expect(adapter.addPageGrant).toHaveBeenCalledWith(
+			expect.objectContaining({
+				nodeId: "node-1",
+				subjectType: "group",
+				subjectId: "g1",
+				permission: "cms:pages:write",
+			}),
+		);
+	});
+
+	test("POST /cms/pages/:id/grants returns 403 for a user without global write", async () => {
+		const adapter = makeAdapter();
+		const app = makeApp(
+			adapter,
+			[pagesPlugin()],
+			makeUserAuth({ userId: "u1" }),
+		);
+		const res = await app.handle(
+			req("/cms/pages/node-1/grants", {
+				method: "POST",
+				body: JSON.stringify({
+					subjectType: "user",
+					subjectId: "u2",
+					permission: "cms:pages:read",
+				}),
+			}),
+		);
+		expect(res.status).toBe(403);
+	});
+
+	test("GET /cms/pages/:id/grants lists grants for a node", async () => {
+		const grant = {
+			id: "grant-1",
+			nodeId: "node-1",
+			subjectType: "user" as const,
+			subjectId: "u1",
+			permission: "cms:pages:read",
+			locale: null,
+		};
+		const adapter = makeAdapter({ listPageGrants: mock(async () => [grant]) });
+		const app = makeApp(adapter, [pagesPlugin()]);
+		const res = await app.handle(req("/cms/pages/node-1/grants"));
+		expect(res.status).toBe(200);
+		const body = await res.json();
+		expect(body).toEqual([grant]);
+	});
+
+	test("DELETE /cms/pages/grants/:grantId removes a grant", async () => {
+		const adapter = makeAdapter();
+		const app = makeApp(adapter, [pagesPlugin()]);
+		const res = await app.handle(
+			req("/cms/pages/grants/grant-1", { method: "DELETE" }),
+		);
+		expect(res.status).toBe(200);
+		expect(adapter.removePageGrant).toHaveBeenCalledWith({ id: "grant-1" });
 	});
 });
