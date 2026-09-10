@@ -987,9 +987,12 @@ export function prismaAdapter(
 				cursor = ancestor?.parentId ?? null;
 			}
 
-			const existing = await prisma.pageNode.findUnique({
-				where: { parentId_slug: { parentId, slug: node.slug } },
-			});
+			// Not findUnique({ where: { parentId_slug } }): Prisma rejects a null
+			// member of a composite-unique key in a findUnique lookup ("Argument
+			// `parentId` must not be null"), even though the schema allows a null
+			// parentId (root-level pages) - findMany + filter sidesteps that.
+			const siblings = await prisma.pageNode.findMany({ where: { parentId } });
+			const existing = siblings.find((s) => s.slug === node.slug);
 			if (existing && existing.id !== nodeId) {
 				throw new Error(
 					`A page with slug "${node.slug}" already exists under the destination parent.`,
