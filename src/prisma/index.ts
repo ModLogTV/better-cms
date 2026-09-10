@@ -272,7 +272,7 @@ interface PrismaClient {
 		}): Promise<PrismaMediaVersionRow>;
 		update(args: {
 			where: { id: string };
-			data: { publishedAt: Date };
+			data: { publishedAt: Date } | { metadata: unknown };
 		}): Promise<PrismaMediaVersionRow>;
 		findUnique(args: {
 			where: { id: string };
@@ -1108,11 +1108,25 @@ export function prismaAdapter(
 			return toMediaAsset(asset, version);
 		},
 
-		async confirmMediaAsset({ id }) {
+		async confirmMediaAsset({ id, metadata }) {
 			await prisma.mediaAsset.update({
 				where: { id },
 				data: { confirmedAt: new Date() },
 			});
+			if (metadata && Object.keys(metadata).length > 0) {
+				const latest = await mediaLatestVersion(prisma, id);
+				if (latest) {
+					await prisma.mediaVersion.update({
+						where: { id: latest.id },
+						data: {
+							metadata: {
+								...(latest.metadata as Record<string, unknown>),
+								...metadata,
+							},
+						},
+					});
+				}
+			}
 		},
 
 		async listMediaAssets(opts) {

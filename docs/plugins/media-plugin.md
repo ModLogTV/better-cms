@@ -57,7 +57,7 @@ Every route below except `/cms/media/public/:key` requires at least `cms:media:v
 | `PUT` | `/cms/media/:id/tags` | `cms:media:upload` / tag `edit` | Replace an asset's full tag set (`{ tagIds }`) |
 | `DELETE` | `/cms/media/:key` | `cms:media:delete` / tag `delete` | Delete a file from storage and the asset registry |
 | `POST` | `/cms/media/presign` | `cms:media:upload` | Generate a presigned upload URL and register the asset |
-| `POST` | `/cms/media/:assetId/confirm` | `cms:media:upload` | Mark an asset upload as completed |
+| `POST` | `/cms/media/:assetId/confirm` | `cms:media:upload` | Mark an asset upload as completed. Optional `{ metadata }` merges into the initial version's metadata (used for client-extracted image dimensions / video-audio duration) |
 | `POST` | `/cms/media/tags` | `cms:media:tag-manage` | Create a tag (`{ name }`) |
 | `DELETE` | `/cms/media/tags/:id` | `cms:media:tag-manage` | Delete a tag |
 | `GET` | `/cms/media/tags/:id/grants` | `cms:media:tag-manage` | List access grants for a tag |
@@ -115,14 +115,29 @@ Like pages, media has its own draft/published lifecycle, independent of any page
 
 Draft/unpublished versions are never exposed via `GET /cms/media/public/:key` - only the currently published version is publicly reachable there. Draft content remains fully visible to authorized admins via the routes above. If you reference media in your frontend and want it to respect draft/publish state, link to `/cms/media/public/:key` instead of the asset's raw `publicUrl` - the latter is a direct storage URL and isn't gated by this CMS at all (see [Storage Adapters](../storage-adapters/overview.md)).
 
+## Metadata
+
+`MediaAsset.metadata` (and each `MediaVersion.metadata`) is a flat, arbitrary `Record<string, unknown>`. A few keys are reserved with dedicated meaning; anything else is a free-form custom field an editor can add via the admin UI's edit form:
+
+| Key | Set by | Notes |
+|-----|--------|-------|
+| `alt` | Edit form | Alt text |
+| `caption` | Edit form | Caption |
+| `width`, `height` | Upload flow | Extracted client-side from images (and from videos, as `videoWidth`/`videoHeight`) before confirm - never present for asset types where that doesn't apply |
+| `duration` | Upload flow | Extracted client-side from video/audio files before confirm |
+
+Since `PATCH /cms/media/:id` replaces the version's metadata wholesale (not a per-key merge), a client editing only `alt`/`caption`/custom fields must spread the asset's existing `metadata` first to avoid dropping `width`/`height`/`duration` - this is what the admin UI's `MediaEditForm` does. Assets uploaded before this extraction existed simply have no `width`/`height`/`duration` keys; the admin UI hides those rows rather than showing an error.
+
 ## Upload flow
 
 ```
 1. Admin UI: POST /cms/media/presign { filename, mimeType, size }
 2. CMS API:  generate presigned URL, record MediaAsset (confirmedAt: null)
 3. Admin UI: PUT uploadUrl (browser → storage directly, no API involvement)
-4. Admin UI: POST /cms/media/:assetId/confirm
-5. CMS API:  set confirmedAt = now()
+4. Admin UI: read image dimensions / video-audio duration from the File object
+             (client-side only - the API never touches raw bytes in this flow)
+5. Admin UI: POST /cms/media/:assetId/confirm { metadata? }
+6. CMS API:  set confirmedAt = now(), merge metadata into the initial version
 ```
 
 The high-level `admin.media.upload()` helper performs all five steps automatically.

@@ -14,6 +14,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { MediaEditForm } from "@/components/shared/MediaEditForm";
 import {
 	MediaTagsPopover,
 	TagChip,
@@ -132,6 +133,7 @@ function MediaCard({
 					<div className="flex items-center justify-between gap-2">
 						<MediaStatusBadge status={asset.status} />
 						<div className="flex items-center gap-1">
+							<MediaEditForm asset={asset} />
 							<MediaTagsPopover assetId={asset.id} tagIds={asset.tagIds} />
 							<MediaVersionHistoryPanel
 								assetId={asset.id}

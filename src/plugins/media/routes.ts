@@ -470,11 +470,21 @@ export function mediaRoutes(ctx: CMSContext) {
 		)
 		.post(
 			"/media/:id/confirm",
-			async ({ params, set }) => {
-				await ctx.adapter.confirmMediaAsset({ id: params.id });
+			async ({ params, body, set }) => {
+				await ctx.adapter.confirmMediaAsset({
+					id: params.id,
+					metadata: body?.metadata,
+				});
 				set.status = 204;
 			},
-			{ params: t.Object({ id: t.String() }) },
+			{
+				params: t.Object({ id: t.String() }),
+				body: t.Optional(
+					t.Object({
+						metadata: t.Optional(t.Record(t.String(), t.Unknown())),
+					}),
+				),
+			},
 		);
 
 	// Tag CRUD and grant management require MEDIA_TAG_MANAGE specifically -

@@ -139,6 +139,24 @@ describe("media routes - confirm", () => {
 		};
 		expect(args.id).toBe("asset-42");
 	});
+
+	test("POST /cms/media/:assetId/confirm forwards client-extracted metadata", async () => {
+		const confirmMediaAsset = mock(async () => {});
+		const adapter = makeAdapter({ confirmMediaAsset });
+		const app = makeApp(adapter, [makePlugin()]);
+		const res = await app.handle(
+			req("/cms/media/asset-42/confirm", {
+				method: "POST",
+				body: JSON.stringify({ metadata: { width: 1920, height: 1080 } }),
+			}),
+		);
+		expect(res.status).toBe(204);
+		const args = (confirmMediaAsset.mock.calls as unknown[][])[0][0] as {
+			id: string;
+			metadata?: Record<string, unknown>;
+		};
+		expect(args.metadata).toEqual({ width: 1920, height: 1080 });
+	});
 });
 
 describe("media routes - list", () => {

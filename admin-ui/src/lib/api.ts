@@ -265,6 +265,58 @@ export interface ListUsersParams extends ListParams {
 	permission?: string;
 }
 
+/**
+ * Reads image dimensions or video/audio duration from the file the browser
+ * already has in memory, before it's ever uploaded - there's no reliable way
+ * to extract this server-side without the API touching raw bytes, which the
+ * direct-to-storage presigned upload flow avoids. Resolves to `{}` (never
+ * rejects) for unsupported types or read errors.
+ */
+function extractMediaMetadata(file: File): Promise<Record<string, unknown>> {
+	const mimeType = file.type;
+	if (mimeType.startsWith("image/")) {
+		return new Promise((resolve) => {
+			const url = URL.createObjectURL(file);
+			const img = new Image();
+			const cleanup = () => URL.revokeObjectURL(url);
+			img.onload = () => {
+				resolve({ width: img.naturalWidth, height: img.naturalHeight });
+				cleanup();
+			};
+			img.onerror = () => {
+				resolve({});
+				cleanup();
+			};
+			img.src = url;
+		});
+	}
+	if (mimeType.startsWith("video/") || mimeType.startsWith("audio/")) {
+		return new Promise((resolve) => {
+			const url = URL.createObjectURL(file);
+			const isVideo = mimeType.startsWith("video/");
+			const el = document.createElement(isVideo ? "video" : "audio");
+			const cleanup = () => URL.revokeObjectURL(url);
+			el.preload = "metadata";
+			el.onloadedmetadata = () => {
+				const meta: Record<string, unknown> = {};
+				if (Number.isFinite(el.duration)) meta.duration = el.duration;
+				if (isVideo && el instanceof HTMLVideoElement) {
+					meta.width = el.videoWidth;
+					meta.height = el.videoHeight;
+				}
+				resolve(meta);
+				cleanup();
+			};
+			el.onerror = () => {
+				resolve({});
+				cleanup();
+			};
+			el.src = url;
+		});
+	}
+	return Promise.resolve({});
+}
+
 export const api = {
 	namespaces: {
 		list: () => get<NamespaceSummary[]>("/admin/namespaces"),
@@ -349,6 +401,7 @@ export const api = {
 				"/media/presign",
 				opts,
 			),
+		extractMetadata: extractMediaMetadata,
 		upload: async (file: File, onProgress?: (percent: number) => void) => {
 			if (file.size === 0) {
 				throw new Error(`"${file.name}" is empty, there is nothing to upload.`);
@@ -404,7 +457,11 @@ export const api = {
 					);
 				xhr.send(file);
 			});
-			await post(`/media/${assetId}/confirm`);
+			const metadata = await extractMediaMetadata(file);
+			await post(
+				`/media/${assetId}/confirm`,
+				Object.keys(metadata).length > 0 ? { metadata } : undefined,
+			);
 			return { publicUrl, assetId };
 		},
 		delete: (key: string) => del(`/media/${encodeURIComponent(key)}`),

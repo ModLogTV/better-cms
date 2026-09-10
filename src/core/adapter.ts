@@ -302,7 +302,16 @@ export interface CMSAdapter {
 		publicUrl: string;
 		uploadedBy?: string;
 	}): Promise<MediaAsset>;
-	confirmMediaAsset(opts: { id: string }): Promise<void>;
+	/**
+	 * `metadata` merges into the initial version's metadata (e.g. extracted
+	 * image width/height or video/audio duration, measured client-side before
+	 * upload) - it's not a new version, just finalizing the one `createMediaAsset`
+	 * already created.
+	 */
+	confirmMediaAsset(opts: {
+		id: string;
+		metadata?: Record<string, unknown>;
+	}): Promise<void>;
 	/**
 	 * Lists media assets. `tagIds` narrows to assets carrying at least one
 	 * (OR) or all (AND, the default) of the given tags - an asset with
