@@ -41,6 +41,11 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
 	ApiError,
 	api,
 	type Locale,
@@ -310,7 +315,7 @@ function LocaleBadge({ node, locale }: { node: PageTreeNode; locale: Locale }) {
 				trigger={
 					<button
 						type="button"
-						className="rounded-full border border-dashed px-1.5 py-0.5 text-[0.625rem] text-muted-foreground uppercase tracking-wide hover:border-foreground hover:text-foreground"
+						className="cursor-pointer rounded-full border border-dashed px-1.5 py-0.5 text-[0.625rem] text-muted-foreground uppercase tracking-wide hover:border-foreground hover:text-foreground"
 						title={`Add ${locale.code}`}
 					>
 						+{locale.code}
@@ -374,99 +379,112 @@ function TreeRow({
 
 	return (
 		<div>
-			<div
-				ref={setDropRef}
-				className={cn(
-					"group flex items-center gap-1.5 rounded-md py-1.5 pr-2",
-					isOver && "bg-accent ring-1 ring-primary",
-					isDragging && "opacity-40",
-				)}
-				style={{ paddingLeft: depth * 20 + 4 }}
-			>
-				<button
-					type="button"
-					ref={setDragRef}
-					{...listeners}
-					{...attributes}
-					className="cursor-grab text-muted-foreground opacity-0 group-hover:opacity-100 active:cursor-grabbing"
-					aria-label="Drag to move"
-				>
-					<IconGripVertical className="size-3.5" />
-				</button>
-				<button
-					type="button"
-					onClick={() => hasChildren && onToggle(node.id)}
-					className={cn(
-						"flex size-4 items-center justify-center text-muted-foreground",
-						!hasChildren && "invisible",
-					)}
-					aria-label={isExpanded ? "Collapse" : "Expand"}
-				>
-					<IconChevronRight
+			<Tooltip open={isOver}>
+				<TooltipTrigger asChild>
+					<div
+						ref={setDropRef}
 						className={cn(
-							"size-3.5 transition-transform",
-							isExpanded && "rotate-90",
+							"group flex items-center gap-1.5 rounded-md py-1.5 pr-2",
+							isOver && "bg-accent ring-1 ring-primary",
+							isDragging && "opacity-40",
 						)}
-					/>
-				</button>
-				{hasChildren ? (
-					<IconFolder className="size-4 text-muted-foreground" />
-				) : (
-					<IconFileText className="size-4 text-muted-foreground" />
-				)}
-				<span className="font-mono text-sm">{node.slug}</span>
-				<span className="flex items-center gap-1">
-					{locales.map((l) => (
-						<LocaleBadge key={l.code} node={node} locale={l} />
-					))}
-				</span>
-				<span className="ml-auto flex items-center gap-2">
-					<NewPageDialog
-						parentId={node.id}
-						parentPath={node.path}
-						locales={locales}
-						trigger={
-							<Button
-								size="icon"
-								variant="ghost"
-								className="size-6 opacity-0 group-hover:opacity-100"
-								title="Add child page"
-							>
-								<IconPlus className="size-3.5" />
-							</Button>
-						}
-					/>
-					{publishableContent && (
-						<Button
-							size="sm"
-							variant="outline"
-							className="h-6 gap-1 text-xs"
-							onClick={() => onPublish(publishableContent.contentId)}
-							disabled={publishingId === publishableContent.contentId}
+						style={{ paddingLeft: depth * 20 + 4 }}
+					>
+						<button
+							type="button"
+							ref={setDragRef}
+							{...listeners}
+							{...attributes}
+							className="cursor-grab text-muted-foreground opacity-0 group-hover:opacity-100 active:cursor-grabbing"
+							aria-label="Drag to move"
 						>
-							<IconRocket className="size-3" />
-							Publish {publishableContent.locale}
-						</Button>
-					)}
-					{node.locales[0] && (
-						<Button
-							size="sm"
-							variant="outline"
-							className="h-6 gap-1 text-xs"
-							asChild
+							<IconGripVertical className="size-3.5" />
+						</button>
+						<button
+							type="button"
+							onClick={() => hasChildren && onToggle(node.id)}
+							className={cn(
+								"flex size-4 items-center justify-center text-muted-foreground",
+								hasChildren ? "cursor-pointer" : "invisible",
+							)}
+							aria-label={isExpanded ? "Collapse" : "Expand"}
 						>
-							<Link
-								to="/pages/$pageId"
-								params={{ pageId: node.locales[0].contentId }}
-								search={{ path: node.path, locale: node.locales[0].locale }}
-							>
-								<IconPencil className="size-3" />
-								Edit
-							</Link>
-						</Button>
-					)}
-				</span>
-			</div>
+							<IconChevronRight
+								className={cn(
+									"size-3.5 transition-transform",
+									isExpanded && "rotate-90",
+								)}
+							/>
+						</button>
+						{hasChildren ? (
+							<IconFolder className="size-4 text-muted-foreground" />
+						) : (
+							<IconFileText className="size-4 text-muted-foreground" />
+						)}
+						<span className="font-mono text-sm">{node.slug}</span>
+						<span className="flex items-center gap-1">
+							{locales.map((l) => (
+								<LocaleBadge key={l.code} node={node} locale={l} />
+							))}
+						</span>
+						<span className="ml-auto flex items-center gap-2">
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<span>
+										<NewPageDialog
+											parentId={node.id}
+											parentPath={node.path}
+											locales={locales}
+											trigger={
+												<Button
+													size="icon"
+													variant="ghost"
+													className="size-6 opacity-0 group-hover:opacity-100"
+												>
+													<IconPlus className="size-3.5" />
+												</Button>
+											}
+										/>
+									</span>
+								</TooltipTrigger>
+								<TooltipContent>Add child page</TooltipContent>
+							</Tooltip>
+							{publishableContent && (
+								<Button
+									size="sm"
+									variant="outline"
+									className="h-6 gap-1 text-xs"
+									onClick={() => onPublish(publishableContent.contentId)}
+									disabled={publishingId === publishableContent.contentId}
+								>
+									<IconRocket className="size-3" />
+									Publish {publishableContent.locale}
+								</Button>
+							)}
+							{node.locales[0] && (
+								<Button
+									size="sm"
+									variant="outline"
+									className="h-6 gap-1 text-xs"
+									asChild
+								>
+									<Link
+										to="/pages/$pageId"
+										params={{ pageId: node.locales[0].contentId }}
+										search={{ path: node.path, locale: node.locales[0].locale }}
+									>
+										<IconPencil className="size-3" />
+										Edit
+									</Link>
+								</Button>
+							)}
+						</span>
+					</div>
+				</TooltipTrigger>
+				<TooltipContent side="bottom">
+					Drop to nest under <span className="font-mono">{node.slug}</span>
+				</TooltipContent>
+			</Tooltip>
 			{hasChildren && isExpanded && (
 				<div>
 					{node.children.map((child) => (
@@ -604,11 +622,6 @@ function PagesPage() {
 							/>
 						))}
 					</RootDropZone>
-					<p className="text-muted-foreground text-xs">
-						Drag the handle to reparent a page - drop on a folder to nest it, or
-						anywhere empty to move it to the root. Click a dashed locale badge
-						to add that locale to a page.
-					</p>
 				</DndContext>
 			)}
 		</div>
