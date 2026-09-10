@@ -32,7 +32,7 @@ function makeManagement(
 		groupIds: ["g1"],
 	};
 	return {
-		listUsers: mock(async () => [user]),
+		listUsers: mock(async () => ({ items: [user], total: 1 })),
 		getUserPermissions: mock(async () => ["cms:translations:read"]),
 		setUserPermissions: mock(async () => {}),
 		getUserGroups: mock(async () => [group]),
@@ -125,8 +125,9 @@ describe("GET /cms/admin/users", () => {
 		const res = await app.handle(adminReq("/cms/admin/users"));
 		expect(res.status).toBe(200);
 		const body = await res.json();
-		expect(body).toHaveLength(1);
-		expect(body[0].email).toBe("alice@example.com");
+		expect(body.items).toHaveLength(1);
+		expect(body.items[0].email).toBe("alice@example.com");
+		expect(body.total).toBe(1);
 		expect(mgmt.listUsers).toHaveBeenCalledTimes(1);
 	});
 });

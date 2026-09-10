@@ -13,7 +13,13 @@ import type {
 	KeyMetadata,
 	MediaAsset,
 } from "../admin/types";
-import type { PageSummary, RawBlock } from "../core/adapter";
+import type { ListUsersParams } from "../auth/adapter";
+import type {
+	ListPagesParams,
+	PageSummary,
+	PaginatedResult,
+	RawBlock,
+} from "../core/adapter";
 
 export { QueryClientProvider };
 
@@ -100,10 +106,10 @@ export function createAdminHooks(admin: AdminClient) {
 			});
 		},
 
-		usePages() {
-			return useQuery<PageSummary[]>({
-				queryKey: ["cms", "pages"],
-				queryFn: () => admin.pages.list(),
+		usePages(params: ListPagesParams) {
+			return useQuery<PaginatedResult<PageSummary>>({
+				queryKey: ["cms", "pages", params],
+				queryFn: () => admin.pages.list(params),
 			});
 		},
 
@@ -207,10 +213,10 @@ export function createAdminHooks(admin: AdminClient) {
 			});
 		},
 
-		useUsers() {
-			return useQuery<CMSUserSummary[]>({
-				queryKey: ["cms", "users"],
-				queryFn: () => admin.users.list(),
+		useUsers(params: ListUsersParams) {
+			return useQuery<PaginatedResult<CMSUserSummary>>({
+				queryKey: ["cms", "users", params],
+				queryFn: () => admin.users.list(params),
 			});
 		},
 

@@ -1,16 +1,34 @@
 import {
+	IconClock,
 	IconFileText,
+	IconFlag,
+	IconLink,
 	IconPencil,
 	IconPlus,
 	IconRocket,
+	IconWorld,
 } from "@tabler/icons-react";
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	keepPreviousData,
+	useMutation,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { DataTable } from "@/components/data-table/data-table";
+import { DataTableAdvancedToolbar } from "@/components/data-table/data-table-advanced-toolbar";
+import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { DataTableFilterMenu } from "@/components/data-table/data-table-filter-menu";
+import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
+import { DataTableSortList } from "@/components/data-table/data-table-sort-list";
+import { SelectionActionBar } from "@/components/shared/SelectionActionBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Dialog,
 	DialogContent,
@@ -28,15 +46,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
+import { useDataTable } from "@/hooks/use-data-table";
+import { filterValue, useTableQueryState } from "@/hooks/use-table-query-state";
 import { api, type PageSummary } from "@/lib/api";
 
 export const Route = createFileRoute("/_layout/pages/")({
@@ -190,11 +201,35 @@ function NewPageDialog() {
 	);
 }
 
+const FILTERABLE_COLUMN_IDS = ["status", "locale"];
+
 function PagesPage() {
 	const qc = useQueryClient();
+
+	const { data: locales = [] } = useQuery({
+		queryKey: ["cms", "locales"],
+		queryFn: () => api.locales.list(),
+	});
+
+	const { page, perPage, sorting, filters } = useTableQueryState<PageSummary>({
+		filterableColumnIds: FILTERABLE_COLUMN_IDS,
+	});
+	const status = filterValue(filters, "status") as
+		| PageSummary["status"]
+		| undefined;
+	const locale = filterValue(filters, "locale");
+
 	const { data, isLoading } = useQuery({
-		queryKey: ["cms", "pages"],
-		queryFn: () => api.pages.list(),
+		queryKey: ["cms", "pages", page, perPage, sorting, status, locale],
+		queryFn: () =>
+			api.pages.list({
+				page,
+				pageSize: perPage,
+				sort: sorting,
+				status,
+				locale,
+			}),
+		placeholderData: keepPreviousData,
 	});
 
 	const publish = useMutation({
@@ -204,6 +239,160 @@ function PagesPage() {
 			qc.invalidateQueries({ queryKey: ["cms", "pages"] });
 		},
 		onError: () => toast.error("Publish failed"),
+	});
+
+	const publishSelected = useMutation({
+		mutationFn: (ids: string[]) =>
+			Promise.all(ids.map((id) => api.pages.publish(id))),
+		onSuccess: (_data, ids) => {
+			toast.success(
+				`${ids.length} page${ids.length === 1 ? "" : "s"} published`,
+			);
+			qc.invalidateQueries({ queryKey: ["cms", "pages"] });
+		},
+		onError: () => toast.error("Publish failed"),
+	});
+
+	const columns = useMemo<ColumnDef<PageSummary>[]>(
+		() => [
+			{
+				id: "select",
+				header: ({ table }) => (
+					<Checkbox
+						checked={
+							table.getIsAllPageRowsSelected()
+								? true
+								: table.getIsSomePageRowsSelected()
+									? "indeterminate"
+									: false
+						}
+						onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
+						aria-label="Select all"
+					/>
+				),
+				cell: ({ row }) => (
+					<Checkbox
+						checked={row.getIsSelected()}
+						onCheckedChange={(v) => row.toggleSelected(!!v)}
+						aria-label="Select row"
+					/>
+				),
+				enableSorting: false,
+				enableHiding: false,
+				size: 32,
+			},
+			{
+				id: "slug",
+				accessorKey: "slug",
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} label="Slug" />
+				),
+				cell: ({ row }) => (
+					<span className="font-mono text-sm">{row.original.slug}</span>
+				),
+				meta: { label: "Slug", icon: IconLink },
+			},
+			{
+				id: "locale",
+				accessorKey: "locale",
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} label="Locale" />
+				),
+				cell: ({ row }) => (
+					<Badge variant="outline">{row.original.locale}</Badge>
+				),
+				enableColumnFilter: true,
+				meta: {
+					label: "Locale",
+					variant: "select",
+					icon: IconWorld,
+					options: locales.map((l) => ({
+						label: `${l.name} (${l.code})`,
+						value: l.code,
+					})),
+				},
+			},
+			{
+				id: "status",
+				accessorKey: "status",
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} label="Status" />
+				),
+				cell: ({ row }) => <StatusBadge status={row.original.status} />,
+				enableColumnFilter: true,
+				meta: {
+					label: "Status",
+					variant: "select",
+					icon: IconFlag,
+					options: [
+						{ label: "Draft", value: "draft" },
+						{ label: "Published", value: "published" },
+					],
+				},
+			},
+			{
+				id: "updatedAt",
+				accessorKey: "updatedAt",
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} label="Updated" />
+				),
+				cell: ({ row }) => (
+					<span className="text-muted-foreground text-sm">
+						{new Date(row.original.updatedAt).toLocaleDateString()}
+					</span>
+				),
+				meta: { label: "Updated", icon: IconClock },
+			},
+			{
+				id: "actions",
+				header: "",
+				cell: ({ row }) => {
+					const page = row.original;
+					return (
+						<div className="flex items-center justify-end gap-2">
+							{page.status === "draft" && (
+								<Button
+									size="sm"
+									variant="outline"
+									className="h-7 gap-1 text-xs"
+									onClick={() => publish.mutate(page.id)}
+									disabled={publish.isPending}
+								>
+									<IconRocket className="size-3" />
+									Publish
+								</Button>
+							)}
+							<Button
+								size="sm"
+								variant="outline"
+								className="h-7 gap-1 text-xs"
+								asChild
+							>
+								<Link
+									to="/pages/$pageId"
+									params={{ pageId: page.id }}
+									search={{ slug: page.slug, locale: page.locale }}
+								>
+									<IconPencil className="size-3" />
+									Edit
+								</Link>
+							</Button>
+						</div>
+					);
+				},
+				enableSorting: false,
+				enableHiding: false,
+			},
+		],
+		[locales, publish],
+	);
+
+	const { table } = useDataTable({
+		data: data?.items ?? [],
+		columns,
+		pageCount: data ? Math.max(1, Math.ceil(data.total / perPage)) : -1,
+		initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
+		getRowId: (row) => row.id,
 	});
 
 	return (
@@ -218,92 +407,48 @@ function PagesPage() {
 				<NewPageDialog />
 			</div>
 
-			<div className="rounded-lg border">
-				<Table>
-					<TableHeader>
-						<TableRow>
-							<TableHead>Slug</TableHead>
-							<TableHead>Locale</TableHead>
-							<TableHead>Status</TableHead>
-							<TableHead>Updated</TableHead>
-							<TableHead className="text-right">Actions</TableHead>
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{isLoading ? (
-							Array.from({ length: 4 }).map((_, i) => (
-								// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton row count, never reordered
-								<TableRow key={i}>
-									{Array.from({ length: 5 }).map((_, j) => (
-										// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton row count, never reordered
-										<TableCell key={j}>
-											<Skeleton className="h-5 w-24" />
-										</TableCell>
-									))}
-								</TableRow>
-							))
-						) : data?.length === 0 ? (
-							<TableRow>
-								<TableCell
-									colSpan={5}
-									className="py-10 text-center text-muted-foreground"
-								>
-									<IconFileText className="mx-auto mb-2 size-8 opacity-40" />
-									No pages yet.
-								</TableCell>
-							</TableRow>
-						) : (
-							data?.map((page) => (
-								<TableRow key={page.id}>
-									<TableCell className="font-mono text-sm">
-										{page.slug}
-									</TableCell>
-									<TableCell>
-										<Badge variant="outline">{page.locale}</Badge>
-									</TableCell>
-									<TableCell>
-										<StatusBadge status={page.status} />
-									</TableCell>
-									<TableCell className="text-muted-foreground text-sm">
-										{new Date(page.updatedAt).toLocaleDateString()}
-									</TableCell>
-									<TableCell className="text-right">
-										<div className="flex items-center justify-end gap-2">
-											{page.status === "draft" && (
-												<Button
-													size="sm"
-													variant="outline"
-													className="h-7 gap-1 text-xs"
-													onClick={() => publish.mutate(page.id)}
-													disabled={publish.isPending}
-												>
-													<IconRocket className="size-3" />
-													Publish
-												</Button>
-											)}
-											<Button
-												size="sm"
-												variant="outline"
-												className="h-7 gap-1 text-xs"
-												asChild
-											>
-												<Link
-													to="/pages/$pageId"
-													params={{ pageId: page.id }}
-													search={{ slug: page.slug, locale: page.locale }}
-												>
-													<IconPencil className="size-3" />
-													Edit
-												</Link>
-											</Button>
-										</div>
-									</TableCell>
-								</TableRow>
-							))
-						)}
-					</TableBody>
-				</Table>
-			</div>
+			{isLoading && !data ? (
+				<DataTableSkeleton columnCount={columns.length} filterCount={2} />
+			) : data?.total === 0 && !status && !locale ? (
+				<div className="rounded-lg border py-10 text-center text-muted-foreground">
+					<IconFileText className="mx-auto mb-2 size-8 opacity-40" />
+					No pages yet.
+				</div>
+			) : (
+				<DataTable
+					table={table}
+					actionBar={
+						<SelectionActionBar
+							table={table}
+							actions={(rows) => {
+								const draftIds = rows
+									.map((r) => r.original)
+									.filter((p) => p.status === "draft")
+									.map((p) => p.id);
+								if (draftIds.length === 0) return null;
+								return (
+									<Button
+										size="sm"
+										onClick={() => {
+											publishSelected.mutate(draftIds);
+											table.toggleAllRowsSelected(false);
+										}}
+										disabled={publishSelected.isPending}
+									>
+										<IconRocket className="size-3.5" />
+										Publish {draftIds.length}
+									</Button>
+								);
+							}}
+						/>
+					}
+				>
+					<DataTableAdvancedToolbar table={table}>
+						<DataTableFilterMenu table={table} />
+						<DataTableSortList table={table} />
+					</DataTableAdvancedToolbar>
+				</DataTable>
+			)}
 		</div>
 	);
 }

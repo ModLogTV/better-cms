@@ -384,8 +384,13 @@ function DashboardPage() {
 		queryFn: () => api.namespaces.list(),
 	});
 	const pages = useQuery({
-		queryKey: ["cms", "pages"],
-		queryFn: () => api.pages.list(),
+		queryKey: ["cms", "pages", "recent"],
+		queryFn: () =>
+			api.pages.list({
+				page: 1,
+				pageSize: 5,
+				sort: [{ id: "updatedAt", desc: true }],
+			}),
 	});
 	const media = useQuery({
 		queryKey: ["cms", "media"],
@@ -396,8 +401,8 @@ function DashboardPage() {
 		queryFn: () => api.locales.list(),
 	});
 	const users = useQuery({
-		queryKey: ["cms", "users"],
-		queryFn: () => api.users.list(),
+		queryKey: ["cms", "users", "count"],
+		queryFn: () => api.users.list({ page: 1, pageSize: 1 }),
 	});
 	const groups = useQuery({
 		queryKey: ["cms", "groups"],
@@ -426,7 +431,7 @@ function DashboardPage() {
 				/>
 				<StatCard
 					title="Pages"
-					value={pages.data?.length}
+					value={pages.data?.total}
 					icon={IconFileText}
 					to="/pages"
 					loading={pages.isLoading}
@@ -447,7 +452,7 @@ function DashboardPage() {
 				/>
 				<StatCard
 					title="Users"
-					value={users.data?.length}
+					value={users.data?.total}
 					icon={IconUsers}
 					to="/users"
 					loading={users.isLoading}
@@ -462,7 +467,10 @@ function DashboardPage() {
 			</div>
 
 			<div className="grid gap-4 lg:grid-cols-2">
-				<RecentPagesCard pages={pages.data} isLoading={pages.isLoading} />
+				<RecentPagesCard
+					pages={pages.data?.items}
+					isLoading={pages.isLoading}
+				/>
 				<RecentNamespacesCard
 					namespaces={namespaces.data}
 					isLoading={namespaces.isLoading}

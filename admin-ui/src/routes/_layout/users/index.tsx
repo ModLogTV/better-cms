@@ -1,20 +1,34 @@
 import {
 	IconCopy,
 	IconDotsVertical,
+	IconLetterCase,
 	IconPlus,
 	IconShield,
 	IconShieldLock,
-	IconUsers,
 	IconX,
 } from "@tabler/icons-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	keepPreviousData,
+	useMutation,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { DataTable } from "@/components/data-table/data-table";
+import { DataTableAdvancedToolbar } from "@/components/data-table/data-table-advanced-toolbar";
+import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { DataTableFilterMenu } from "@/components/data-table/data-table-filter-menu";
+import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
+import { DataTableSortList } from "@/components/data-table/data-table-sort-list";
 import { PermissionPicker } from "@/components/shared/PermissionPicker";
+import { SelectionActionBar } from "@/components/shared/SelectionActionBar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Dialog,
 	DialogContent,
@@ -27,24 +41,9 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
+import { useDataTable } from "@/hooks/use-data-table";
+import { filterValue, useTableQueryState } from "@/hooks/use-table-query-state";
 import { api, type CMSGroup, type CMSUserSummary } from "@/lib/api";
 import { getSession } from "@/lib/auth";
 
@@ -176,13 +175,19 @@ function UserDetailDialog({
 	);
 }
 
+const FILTERABLE_COLUMN_IDS = ["name", "permission"];
+
+function copyUserId(id: string) {
+	navigator.clipboard.writeText(id).then(
+		() => toast.success("User ID copied"),
+		() => toast.error("Couldn't copy user ID"),
+	);
+}
+
 function UsersPage() {
+	const qc = useQueryClient();
 	const [selectedUser, setSelectedUser] = useState<CMSUserSummary | null>(null);
 
-	const { data: users, isLoading } = useQuery({
-		queryKey: ["cms", "users"],
-		queryFn: () => api.users.list(),
-	});
 	const { data: groups = [] } = useQuery({
 		queryKey: ["cms", "groups"],
 		queryFn: () => api.groups.list(),
@@ -196,26 +201,227 @@ function UsersPage() {
 		queryFn: () => api.permissions.list(),
 	});
 
-	const [search, setSearch] = useState("");
-	const [permissionFilter, setPermissionFilter] = useState("all");
+	const { page, perPage, sorting, filters } =
+		useTableQueryState<CMSUserSummary>({
+			filterableColumnIds: FILTERABLE_COLUMN_IDS,
+		});
+	const search = filterValue(filters, "name");
+	const permissionFilter = filterValue(filters, "permission");
 
-	function copyUserId(id: string) {
-		navigator.clipboard.writeText(id).then(
-			() => toast.success("User ID copied"),
-			() => toast.error("Couldn't copy user ID"),
-		);
-	}
+	const { data, isLoading } = useQuery({
+		queryKey: [
+			"cms",
+			"users",
+			page,
+			perPage,
+			sorting,
+			search,
+			permissionFilter,
+		],
+		queryFn: () =>
+			api.users.list({
+				page,
+				pageSize: perPage,
+				sort: sorting,
+				search,
+				permission: permissionFilter,
+			}),
+		placeholderData: keepPreviousData,
+	});
 
-	const filteredUsers = (users ?? []).filter((user) => {
-		const q = search.trim().toLowerCase();
-		const matchesSearch =
-			!q ||
-			user.name?.toLowerCase().includes(q) ||
-			user.email.toLowerCase().includes(q) ||
-			user.id.toLowerCase().includes(q);
-		const matchesPermission =
-			permissionFilter === "all" || user.permissions.includes(permissionFilter);
-		return matchesSearch && matchesPermission;
+	const addSelectedToGroup = useMutation({
+		mutationFn: ({
+			userIds,
+			groupId,
+		}: {
+			userIds: string[];
+			groupId: string;
+		}) =>
+			Promise.all(
+				userIds.map((userId) => api.users.addToGroup(userId, groupId)),
+			),
+		onSuccess: (_data, { userIds }) => {
+			toast.success(
+				`Added ${userIds.length} user${userIds.length === 1 ? "" : "s"} to group`,
+			);
+			qc.invalidateQueries({ queryKey: ["cms", "users"] });
+		},
+		onError: () => toast.error("Couldn't add users to group"),
+	});
+
+	const columns = useMemo<ColumnDef<CMSUserSummary>[]>(
+		() => [
+			{
+				id: "select",
+				header: ({ table }) => (
+					<Checkbox
+						checked={
+							table.getIsAllPageRowsSelected()
+								? true
+								: table.getIsSomePageRowsSelected()
+									? "indeterminate"
+									: false
+						}
+						onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
+						onClick={(e) => e.stopPropagation()}
+						aria-label="Select all"
+					/>
+				),
+				cell: ({ row }) => (
+					<Checkbox
+						checked={row.getIsSelected()}
+						onCheckedChange={(v) => row.toggleSelected(!!v)}
+						onClick={(e) => e.stopPropagation()}
+						aria-label="Select row"
+					/>
+				),
+				enableSorting: false,
+				enableHiding: false,
+				size: 32,
+			},
+			{
+				id: "name",
+				accessorKey: "name",
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} label="User" />
+				),
+				cell: ({ row }) => {
+					const user = row.original;
+					const isSelf = session?.user.id === user.id;
+					return (
+						<div className="flex items-center gap-2">
+							<Avatar className="size-7">
+								<AvatarFallback className="text-xs">
+									{user.name?.[0]?.toUpperCase() ?? user.email[0].toUpperCase()}
+								</AvatarFallback>
+							</Avatar>
+							<div>
+								<p className="flex items-center gap-1.5 text-sm font-medium">
+									{user.name || user.email}
+									{isSelf && (
+										<Badge variant="outline" className="text-[10px]">
+											you
+										</Badge>
+									)}
+								</p>
+								{user.name && (
+									<p className="text-xs text-muted-foreground">{user.email}</p>
+								)}
+							</div>
+						</div>
+					);
+				},
+				enableColumnFilter: true,
+				meta: {
+					label: "Search",
+					placeholder: "Search name, email or user ID",
+					variant: "text",
+					icon: IconLetterCase,
+				},
+			},
+			{
+				id: "groups",
+				header: "Groups",
+				cell: ({ row }) => {
+					const user = row.original;
+					return (
+						<div className="flex flex-wrap gap-1">
+							{user.groupIds.slice(0, 3).map((gid) => {
+								const g = groups.find((g) => g.id === gid);
+								return g ? (
+									<Badge key={gid} variant="secondary" className="text-xs">
+										{g.name}
+									</Badge>
+								) : null;
+							})}
+							{user.groupIds.length > 3 && (
+								<Badge variant="outline" className="text-xs">
+									+{user.groupIds.length - 3}
+								</Badge>
+							)}
+						</div>
+					);
+				},
+				enableSorting: false,
+			},
+			{
+				id: "permission",
+				accessorFn: (row) => row.permissions.length,
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} label="Permissions" />
+				),
+				cell: ({ row }) => {
+					const user = row.original;
+					return (
+						<span className="flex items-center gap-1 text-sm text-muted-foreground">
+							{user.permissions.includes("cms:*") && (
+								<IconShieldLock className="size-3.5 text-primary" />
+							)}
+							{user.permissions.length} direct
+						</span>
+					);
+				},
+				enableSorting: false,
+				enableColumnFilter: true,
+				meta: {
+					label: "Permission",
+					variant: "select",
+					icon: IconShield,
+					options: permissionCatalog.map((p) => ({
+						label: p.description,
+						value: p.value,
+					})),
+				},
+			},
+			{
+				id: "actions",
+				header: "",
+				cell: ({ row }) => {
+					const user = row.original;
+					return (
+						<div className="text-right">
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button
+										size="icon-sm"
+										variant="ghost"
+										onClick={(e) => e.stopPropagation()}
+									>
+										<IconDotsVertical className="size-4" />
+										<span className="sr-only">Actions</span>
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent
+									align="end"
+									className="w-44"
+									onClick={(e) => e.stopPropagation()}
+								>
+									<DropdownMenuItem onClick={() => setSelectedUser(user)}>
+										<IconShield className="size-4" />
+										Manage access
+									</DropdownMenuItem>
+									<DropdownMenuItem onClick={() => copyUserId(user.id)}>
+										<IconCopy className="size-4" />
+										Copy user ID
+									</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
+						</div>
+					);
+				},
+				enableSorting: false,
+				enableHiding: false,
+			},
+		],
+		[groups, permissionCatalog, session],
+	);
+
+	const { table } = useDataTable({
+		data: data?.items ?? [],
+		columns,
+		pageCount: data ? Math.max(1, Math.ceil(data.total / perPage)) : -1,
+		initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
+		getRowId: (row) => row.id,
 	});
 
 	return (
@@ -227,171 +433,54 @@ function UsersPage() {
 				</p>
 			</div>
 
-			<div className="flex flex-wrap items-center gap-2">
-				<Input
-					placeholder="Search by name, email or user ID"
-					value={search}
-					onChange={(e) => setSearch(e.target.value)}
-					className="max-w-xs"
-				/>
-				<Select value={permissionFilter} onValueChange={setPermissionFilter}>
-					<SelectTrigger className="w-56">
-						<SelectValue placeholder="Filter by permission" />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="all">All permissions</SelectItem>
-						{permissionCatalog.map((p) => (
-							<SelectItem key={p.value} value={p.value}>
-								{p.description}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
-			</div>
-
-			<div className="rounded-lg border">
-				<Table>
-					<TableHeader>
-						<TableRow>
-							<TableHead>User</TableHead>
-							<TableHead>Groups</TableHead>
-							<TableHead>Permissions</TableHead>
-							<TableHead className="text-right">Actions</TableHead>
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{isLoading ? (
-							Array.from({ length: 3 }).map((_, i) => (
-								// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton row count, never reordered
-								<TableRow key={i}>
-									{Array.from({ length: 4 }).map((_, j) => (
-										// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton row count, never reordered
-										<TableCell key={j}>
-											<Skeleton className="h-5 w-28" />
-										</TableCell>
-									))}
-								</TableRow>
-							))
-						) : users?.length === 0 ? (
-							<TableRow>
-								<TableCell
-									colSpan={4}
-									className="py-10 text-center text-muted-foreground"
-								>
-									<IconUsers className="mx-auto mb-2 size-8 opacity-40" />
-									No users found.
-								</TableCell>
-							</TableRow>
-						) : filteredUsers.length === 0 ? (
-							<TableRow>
-								<TableCell
-									colSpan={4}
-									className="py-10 text-center text-muted-foreground"
-								>
-									<IconUsers className="mx-auto mb-2 size-8 opacity-40" />
-									No users match your filters.
-								</TableCell>
-							</TableRow>
-						) : (
-							filteredUsers.map((user) => {
-								const isSelf = session?.user.id === user.id;
+			{isLoading && !data ? (
+				<DataTableSkeleton columnCount={columns.length} filterCount={2} />
+			) : (
+				<DataTable
+					table={table}
+					onRowClick={(user) => setSelectedUser(user)}
+					actionBar={
+						<SelectionActionBar
+							table={table}
+							actions={(rows) => {
+								if (groups.length === 0) return null;
+								const userIds = rows.map((r) => r.original.id);
 								return (
-									<TableRow
-										key={user.id}
-										className="cursor-pointer"
-										onClick={() => setSelectedUser(user)}
-									>
-										<TableCell>
-											<div className="flex items-center gap-2">
-												<Avatar className="size-7">
-													<AvatarFallback className="text-xs">
-														{user.name?.[0]?.toUpperCase() ??
-															user.email[0].toUpperCase()}
-													</AvatarFallback>
-												</Avatar>
-												<div>
-													<p className="flex items-center gap-1.5 text-sm font-medium">
-														{user.name || user.email}
-														{isSelf && (
-															<Badge variant="outline" className="text-[10px]">
-																you
-															</Badge>
-														)}
-													</p>
-													{user.name && (
-														<p className="text-xs text-muted-foreground">
-															{user.email}
-														</p>
-													)}
-												</div>
-											</div>
-										</TableCell>
-										<TableCell>
-											<div className="flex flex-wrap gap-1">
-												{user.groupIds.slice(0, 3).map((gid) => {
-													const g = groups.find((g) => g.id === gid);
-													return g ? (
-														<Badge
-															key={gid}
-															variant="secondary"
-															className="text-xs"
-														>
-															{g.name}
-														</Badge>
-													) : null;
-												})}
-												{user.groupIds.length > 3 && (
-													<Badge variant="outline" className="text-xs">
-														+{user.groupIds.length - 3}
-													</Badge>
-												)}
-											</div>
-										</TableCell>
-										<TableCell>
-											<span className="flex items-center gap-1 text-sm text-muted-foreground">
-												{user.permissions.includes("cms:*") && (
-													<IconShieldLock className="size-3.5 text-primary" />
-												)}
-												{user.permissions.length} direct
-											</span>
-										</TableCell>
-										<TableCell className="text-right">
-											<DropdownMenu>
-												<DropdownMenuTrigger asChild>
-													<Button
-														size="icon-sm"
-														variant="ghost"
-														onClick={(e) => e.stopPropagation()}
-													>
-														<IconDotsVertical className="size-4" />
-														<span className="sr-only">Actions</span>
-													</Button>
-												</DropdownMenuTrigger>
-												<DropdownMenuContent
-													align="end"
-													className="w-44"
-													onClick={(e) => e.stopPropagation()}
+									<DropdownMenu>
+										<DropdownMenuTrigger asChild>
+											<Button size="sm" disabled={addSelectedToGroup.isPending}>
+												<IconShield className="size-3.5" />
+												Add to group
+											</Button>
+										</DropdownMenuTrigger>
+										<DropdownMenuContent align="end">
+											{groups.map((g) => (
+												<DropdownMenuItem
+													key={g.id}
+													onClick={() => {
+														addSelectedToGroup.mutate({
+															userIds,
+															groupId: g.id,
+														});
+														table.toggleAllRowsSelected(false);
+													}}
 												>
-													<DropdownMenuItem
-														onClick={() => setSelectedUser(user)}
-													>
-														<IconShield className="size-4" />
-														Manage access
-													</DropdownMenuItem>
-													<DropdownMenuItem onClick={() => copyUserId(user.id)}>
-														<IconCopy className="size-4" />
-														Copy user ID
-													</DropdownMenuItem>
-												</DropdownMenuContent>
-											</DropdownMenu>
-										</TableCell>
-									</TableRow>
+													{g.name}
+												</DropdownMenuItem>
+											))}
+										</DropdownMenuContent>
+									</DropdownMenu>
 								);
-							})
-						)}
-					</TableBody>
-				</Table>
-			</div>
+							}}
+						/>
+					}
+				>
+					<DataTableAdvancedToolbar table={table}>
+						<DataTableFilterMenu table={table} />
+						<DataTableSortList table={table} />
+					</DataTableAdvancedToolbar>
+				</DataTable>
+			)}
 
 			{selectedUser && (
 				<UserDetailDialog

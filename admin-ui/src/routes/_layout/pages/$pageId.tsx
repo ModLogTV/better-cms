@@ -34,11 +34,13 @@ function PageEditorPage() {
 		queryKey: ["cms", "page", slug, locale, true],
 		queryFn: () => api.pages.get(slug, locale, true),
 	});
+	// Only fetching this for the status badge below - there's no by-slug lookup on
+	// the paginated endpoint, so filter to the locale and fetch generously.
 	const { data: pageSummaries } = useQuery({
-		queryKey: ["cms", "pages"],
-		queryFn: () => api.pages.list(),
+		queryKey: ["cms", "pages", "byLocale", locale],
+		queryFn: () => api.pages.list({ page: 1, pageSize: 1000, locale }),
 	});
-	const pageSummary = pageSummaries?.find((p) => p.id === pageId);
+	const pageSummary = pageSummaries?.items.find((p) => p.id === pageId);
 
 	const [blocks, setBlocks] = useState<RawBlock[]>([]);
 

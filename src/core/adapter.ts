@@ -1,3 +1,15 @@
+import type {
+	PaginatedResult,
+	PaginationParams,
+	SortParam,
+} from "./pagination";
+
+export type {
+	PaginatedResult,
+	PaginationParams,
+	SortParam,
+} from "./pagination";
+
 export interface MediaAsset {
 	id: string;
 	key: string;
@@ -48,6 +60,12 @@ export interface NamespaceLocaleMeta {
 	keyCount: number;
 }
 
+export interface ListPagesParams extends PaginationParams {
+	sort?: SortParam[];
+	status?: Page["status"];
+	locale?: string;
+}
+
 export interface CMSAdapter {
 	getTranslations(opts: {
 		namespace: string;
@@ -70,7 +88,7 @@ export interface CMSAdapter {
 	upsertPage(opts: { id: string; blocks: RawBlock[] }): Promise<void>;
 	createPage(opts: { id: string; slug: string; locale: string }): Promise<Page>;
 	publishPage(opts: { id: string }): Promise<void>;
-	listPages(): Promise<PageSummary[]>;
+	listPages(params: ListPagesParams): Promise<PaginatedResult<PageSummary>>;
 	listLocales(): Promise<Locale[]>;
 	upsertLocale(opts: {
 		code: string;

@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 import { CMS_PERMISSIONS } from "../../auth/permissions";
 import type { CMSInstance } from "../../core/index";
 import { requirePermission } from "../auth";
+import { parseSort } from "../pagination";
 
 /**
  * Mounts user and group management routes.
@@ -16,7 +17,26 @@ export function userRoutes(cms: CMSInstance) {
 		.use(
 			requirePermission({ cms, permissions: [CMS_PERMISSIONS.USERS_MANAGE] }),
 		)
-		.get("/users", () => mgmt.listUsers())
+		.get(
+			"/users",
+			({ query }) =>
+				mgmt.listUsers({
+					page: query.page ? Number(query.page) : 1,
+					pageSize: query.pageSize ? Number(query.pageSize) : 20,
+					sort: parseSort(query.sort),
+					search: query.search,
+					permission: query.permission,
+				}),
+			{
+				query: t.Object({
+					page: t.Optional(t.String()),
+					pageSize: t.Optional(t.String()),
+					sort: t.Optional(t.String()),
+					search: t.Optional(t.String()),
+					permission: t.Optional(t.String()),
+				}),
+			},
+		)
 		.get("/users/:userId/permissions", ({ params }) =>
 			mgmt.getUserPermissions({ userId: params.userId }),
 		)

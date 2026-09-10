@@ -1,5 +1,5 @@
 import type { AdminClient } from "../admin/types";
-import type { RawBlock } from "../core/adapter";
+import type { ListPagesParams, RawBlock } from "../core/adapter";
 
 /**
  * Wraps AdminClient methods as TanStack Start server functions.
@@ -29,7 +29,7 @@ export function createServerFns(admin: AdminClient) {
 			value: string,
 		) => admin.namespaces.updateTranslation({ namespace, locale, key, value }),
 
-		listPages: () => admin.pages.list(),
+		listPages: (params: ListPagesParams) => admin.pages.list(params),
 		getPage: (slug: string, locale: string, draft?: boolean) =>
 			admin.pages.get({ slug, locale, draft }),
 		updatePage: (id: string, blocks: unknown[]) =>

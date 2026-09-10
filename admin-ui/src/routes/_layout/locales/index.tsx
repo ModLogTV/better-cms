@@ -2,9 +2,17 @@ import { IconPlus, IconStar, IconTrash } from "@tabler/icons-react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import {
+	type ColumnDef,
+	getCoreRowModel,
+	getPaginationRowModel,
+	useReactTable,
+} from "@tanstack/react-table";
 import { cn } from "cn";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { DataTable } from "@/components/data-table/data-table";
+import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { ConfirmPopover } from "@/components/shared/ConfirmPopover";
 import { LocaleCombobox, LocaleFlag } from "@/components/shared/LocaleCombobox";
 import { Badge } from "@/components/ui/badge";
@@ -20,16 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
-import { api } from "@/lib/api";
+import { api, type Locale } from "@/lib/api";
 import { countryFromLocaleCode } from "@/lib/locales";
 
 export const Route = createFileRoute("/_layout/locales/")({
@@ -264,6 +263,98 @@ function LocalesPage() {
 		},
 	});
 
+	const columns = useMemo<ColumnDef<Locale>[]>(
+		() => [
+			{
+				id: "code",
+				accessorKey: "code",
+				header: "Code",
+				cell: ({ row }) => {
+					const country = countryFromLocaleCode(row.original.code);
+					return (
+						<Badge variant="outline" className="gap-1.5 font-mono">
+							{country && <LocaleFlag country={country} />}
+							{row.original.code}
+						</Badge>
+					);
+				},
+			},
+			{
+				id: "name",
+				accessorKey: "name",
+				header: "Name",
+				cell: ({ row }) => (
+					<span className="font-medium">{row.original.name}</span>
+				),
+			},
+			{
+				id: "isDefault",
+				header: "Default",
+				cell: ({ row }) =>
+					row.original.isDefault && <Badge variant="success">default</Badge>,
+			},
+			{
+				id: "updatedAt",
+				accessorKey: "updatedAt",
+				header: "Updated",
+				cell: ({ row }) => (
+					<span className="text-muted-foreground text-sm">
+						{new Date(row.original.updatedAt).toLocaleDateString()}
+					</span>
+				),
+			},
+			{
+				id: "actions",
+				header: "",
+				cell: ({ row }) => {
+					const locale = row.original;
+					return (
+						<div className="flex items-center justify-end gap-2">
+							{!locale.isDefault && (
+								<ConfirmPopover
+									trigger={
+										<Button
+											size="sm"
+											variant="outline"
+											className="h-7 gap-1 text-xs"
+										>
+											<IconStar className="size-3" />
+											Set default
+										</Button>
+									}
+									title={`Make "${locale.name}" the default locale?`}
+									description="Content without an explicit locale will fall back to this one."
+									confirmLabel="Set default"
+									loading={setDefault.isPending}
+									onConfirm={() =>
+										setDefault.mutate({ code: locale.code, name: locale.name })
+									}
+								/>
+							)}
+							<Button
+								size="sm"
+								variant="outline"
+								className="h-7 text-destructive hover:bg-destructive/10"
+								onClick={() => remove.mutate(locale.code)}
+								disabled={locale.isDefault || remove.isPending}
+							>
+								<IconTrash className="size-3" />
+							</Button>
+						</div>
+					);
+				},
+			},
+		],
+		[remove, setDefault],
+	);
+
+	const table = useReactTable({
+		data: data ?? [],
+		columns,
+		getCoreRowModel: getCoreRowModel(),
+		getPaginationRowModel: getPaginationRowModel(),
+	});
+
 	return (
 		<div className="space-y-4">
 			<div className="flex items-start justify-between">
@@ -276,94 +367,15 @@ function LocalesPage() {
 				<AddLocaleDialog />
 			</div>
 
-			<div className="rounded-lg border">
-				<Table>
-					<TableHeader>
-						<TableRow>
-							<TableHead>Code</TableHead>
-							<TableHead>Name</TableHead>
-							<TableHead>Default</TableHead>
-							<TableHead>Updated</TableHead>
-							<TableHead className="text-right">Actions</TableHead>
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{isLoading
-							? Array.from({ length: 3 }).map((_, i) => (
-									// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton row count, never reordered
-									<TableRow key={i}>
-										{Array.from({ length: 5 }).map((_, j) => (
-											// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton row count, never reordered
-											<TableCell key={j}>
-												<Skeleton className="h-5 w-20" />
-											</TableCell>
-										))}
-									</TableRow>
-								))
-							: data?.map((locale) => {
-									const country = countryFromLocaleCode(locale.code);
-									return (
-										<TableRow key={locale.code}>
-											<TableCell>
-												<Badge variant="outline" className="gap-1.5 font-mono">
-													{country && <LocaleFlag country={country} />}
-													{locale.code}
-												</Badge>
-											</TableCell>
-											<TableCell className="font-medium">
-												{locale.name}
-											</TableCell>
-											<TableCell>
-												{locale.isDefault && (
-													<Badge variant="success">default</Badge>
-												)}
-											</TableCell>
-											<TableCell className="text-muted-foreground text-sm">
-												{new Date(locale.updatedAt).toLocaleDateString()}
-											</TableCell>
-											<TableCell className="text-right">
-												<div className="flex items-center justify-end gap-2">
-													{!locale.isDefault && (
-														<ConfirmPopover
-															trigger={
-																<Button
-																	size="sm"
-																	variant="outline"
-																	className="h-7 gap-1 text-xs"
-																>
-																	<IconStar className="size-3" />
-																	Set default
-																</Button>
-															}
-															title={`Make "${locale.name}" the default locale?`}
-															description="Content without an explicit locale will fall back to this one."
-															confirmLabel="Set default"
-															loading={setDefault.isPending}
-															onConfirm={() =>
-																setDefault.mutate({
-																	code: locale.code,
-																	name: locale.name,
-																})
-															}
-														/>
-													)}
-													<Button
-														size="sm"
-														variant="outline"
-														className="h-7 text-destructive hover:bg-destructive/10"
-														onClick={() => remove.mutate(locale.code)}
-														disabled={locale.isDefault || remove.isPending}
-													>
-														<IconTrash className="size-3" />
-													</Button>
-												</div>
-											</TableCell>
-										</TableRow>
-									);
-								})}
-					</TableBody>
-				</Table>
-			</div>
+			{isLoading ? (
+				<DataTableSkeleton
+					columnCount={columns.length}
+					withViewOptions={false}
+					rowCount={3}
+				/>
+			) : (
+				<DataTable table={table} />
+			)}
 		</div>
 	);
 }

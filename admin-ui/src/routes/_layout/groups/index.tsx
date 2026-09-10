@@ -7,8 +7,16 @@ import {
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import {
+	type ColumnDef,
+	getCoreRowModel,
+	getPaginationRowModel,
+	useReactTable,
+} from "@tanstack/react-table";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { DataTable } from "@/components/data-table/data-table";
+import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { ConfirmPopover } from "@/components/shared/ConfirmPopover";
 import { PermissionPicker } from "@/components/shared/PermissionPicker";
 import { Badge } from "@/components/ui/badge";
@@ -23,15 +31,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
 import { api, type CMSGroup } from "@/lib/api";
 
 export const Route = createFileRoute("/_layout/groups/")({
@@ -176,6 +175,79 @@ function GroupsPage() {
 		onError: () => toast.error("Delete failed"),
 	});
 
+	const columns = useMemo<ColumnDef<CMSGroup>[]>(
+		() => [
+			{
+				id: "name",
+				accessorKey: "name",
+				header: "Name",
+				cell: ({ row }) => (
+					<span className="font-medium">{row.original.name}</span>
+				),
+			},
+			{
+				id: "permissions",
+				header: "Permissions",
+				cell: ({ row }) => (
+					<div className="flex flex-wrap gap-1">
+						{row.original.permissions.slice(0, 4).map((p) => (
+							<Badge
+								key={p}
+								variant="outline"
+								className="font-mono text-[10px]"
+							>
+								{p}
+							</Badge>
+						))}
+						{row.original.permissions.length > 4 && (
+							<Badge variant="outline" className="text-xs">
+								+{row.original.permissions.length - 4}
+							</Badge>
+						)}
+					</div>
+				),
+			},
+			{
+				id: "actions",
+				header: "",
+				cell: ({ row }) => {
+					const group = row.original;
+					return (
+						<div className="text-right">
+							<GroupDialog group={group} />
+							<ConfirmPopover
+								trigger={
+									<Button
+										size="sm"
+										variant="outline"
+										className="ml-2 h-7 text-destructive hover:bg-destructive/10"
+										disabled={remove.isPending}
+									>
+										<IconTrash className="size-3.5" />
+									</Button>
+								}
+								title={`Delete "${group.name}"?`}
+								description="Members lose these permissions immediately. This cannot be undone."
+								confirmLabel="Delete"
+								variant="destructive"
+								loading={remove.isPending}
+								onConfirm={() => remove.mutate(group.id)}
+							/>
+						</div>
+					);
+				},
+			},
+		],
+		[remove],
+	);
+
+	const table = useReactTable({
+		data: data ?? [],
+		columns,
+		getCoreRowModel: getCoreRowModel(),
+		getPaginationRowModel: getPaginationRowModel(),
+	});
+
 	return (
 		<div className="space-y-4">
 			<div className="flex items-start justify-between">
@@ -188,87 +260,20 @@ function GroupsPage() {
 				<GroupDialog />
 			</div>
 
-			<div className="rounded-lg border">
-				<Table>
-					<TableHeader>
-						<TableRow>
-							<TableHead>Name</TableHead>
-							<TableHead>Permissions</TableHead>
-							<TableHead className="text-right">Actions</TableHead>
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{isLoading ? (
-							Array.from({ length: 3 }).map((_, i) => (
-								// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton row count, never reordered
-								<TableRow key={i}>
-									{Array.from({ length: 3 }).map((_, j) => (
-										// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton row count, never reordered
-										<TableCell key={j}>
-											<Skeleton className="h-5 w-32" />
-										</TableCell>
-									))}
-								</TableRow>
-							))
-						) : data?.length === 0 ? (
-							<TableRow>
-								<TableCell
-									colSpan={3}
-									className="py-10 text-center text-muted-foreground"
-								>
-									<IconShield className="mx-auto mb-2 size-8 opacity-40" />
-									No groups yet.
-								</TableCell>
-							</TableRow>
-						) : (
-							data?.map((group) => (
-								<TableRow key={group.id}>
-									<TableCell className="font-medium">{group.name}</TableCell>
-									<TableCell>
-										<div className="flex flex-wrap gap-1">
-											{group.permissions.slice(0, 4).map((p) => (
-												<Badge
-													key={p}
-													variant="outline"
-													className="font-mono text-[10px]"
-												>
-													{p}
-												</Badge>
-											))}
-											{group.permissions.length > 4 && (
-												<Badge variant="outline" className="text-xs">
-													+{group.permissions.length - 4}
-												</Badge>
-											)}
-										</div>
-									</TableCell>
-									<TableCell className="text-right">
-										<GroupDialog group={group} />
-										<ConfirmPopover
-											trigger={
-												<Button
-													size="sm"
-													variant="outline"
-													className="ml-2 h-7 text-destructive hover:bg-destructive/10"
-													disabled={remove.isPending}
-												>
-													<IconTrash className="size-3.5" />
-												</Button>
-											}
-											title={`Delete "${group.name}"?`}
-											description="Members lose these permissions immediately. This cannot be undone."
-											confirmLabel="Delete"
-											variant="destructive"
-											loading={remove.isPending}
-											onConfirm={() => remove.mutate(group.id)}
-										/>
-									</TableCell>
-								</TableRow>
-							))
-						)}
-					</TableBody>
-				</Table>
-			</div>
+			{isLoading ? (
+				<DataTableSkeleton
+					columnCount={columns.length}
+					withViewOptions={false}
+					rowCount={3}
+				/>
+			) : data?.length === 0 ? (
+				<div className="rounded-lg border py-10 text-center text-muted-foreground">
+					<IconShield className="mx-auto mb-2 size-8 opacity-40" />
+					No groups yet.
+				</div>
+			) : (
+				<DataTable table={table} />
+			)}
 		</div>
 	);
 }

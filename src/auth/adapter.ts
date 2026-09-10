@@ -1,3 +1,9 @@
+import type {
+	PaginatedResult,
+	PaginationParams,
+	SortParam,
+} from "../core/pagination";
+
 export interface CMSAuthResult {
 	authorized: boolean;
 	permissions: string[];
@@ -24,9 +30,15 @@ export interface CMSGroup {
 	permissions: string[];
 }
 
+export interface ListUsersParams extends PaginationParams {
+	sort?: SortParam[];
+	search?: string;
+	permission?: string;
+}
+
 /** Optional management interface for user/group CRUD in the admin UI. */
 export interface CMSAuthManagement {
-	listUsers(): Promise<CMSUserSummary[]>;
+	listUsers(params: ListUsersParams): Promise<PaginatedResult<CMSUserSummary>>;
 	getUserPermissions(opts: { userId: string }): Promise<string[]>;
 	setUserPermissions(opts: {
 		userId: string;

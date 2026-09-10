@@ -1,12 +1,10 @@
 import { IconLoader2 } from "@tabler/icons-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { api, type KeyMetadata } from "@/lib/api";
+import { useTranslationEditor } from "@/hooks/use-translation-editor";
+import type { KeyMetadata } from "@/lib/api";
 
 function inputHintBadge(hint: KeyMetadata["inputHint"]) {
 	const map: Record<KeyMetadata["inputHint"], string> = {
@@ -30,31 +28,12 @@ export function TranslationRow({
 	namespace: string;
 	locale: string;
 }) {
-	const qc = useQueryClient();
-	const [draft, setDraft] = useState(value);
-	const [dirty, setDirty] = useState(false);
-
-	const { mutate, isPending } = useMutation({
-		mutationFn: () =>
-			api.namespaces.updateTranslation(namespace, locale, meta.key, draft),
-		onSuccess: () => {
-			setDirty(false);
-			qc.invalidateQueries({
-				queryKey: ["cms", "translations", namespace, locale],
-			});
-			qc.invalidateQueries({ queryKey: ["cms", "namespaces"] });
-		},
-		onError: () => toast.error("Failed to save translation"),
+	const { draft, handleChange, handleBlur, isPending } = useTranslationEditor({
+		namespace,
+		locale,
+		keyName: meta.key,
+		value,
 	});
-
-	function handleChange(val: string) {
-		setDraft(val);
-		setDirty(val !== value);
-	}
-
-	function handleBlur() {
-		if (dirty) mutate();
-	}
 
 	const isMultiline = meta.inputHint === "rich-text";
 

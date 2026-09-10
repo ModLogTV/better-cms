@@ -41,13 +41,14 @@ describe("admin.users.list", () => {
 				groupIds: [],
 			},
 		];
+		const paginated = { items: users, total: 1 };
 		const spy = mockFetch((url, init) => {
-			expect(url).toBe(`${CMS_URL}/cms/admin/users`);
+			expect(url).toBe(`${CMS_URL}/cms/admin/users?page=1&pageSize=20`);
 			expect(init.method).toBeUndefined();
-			return jsonOk(users);
+			return jsonOk(paginated);
 		});
-		const result = await admin.users.list();
-		expect(result).toEqual(users);
+		const result = await admin.users.list({ page: 1, pageSize: 20 });
+		expect(result).toEqual(paginated);
 		spy.mockRestore();
 	});
 });
@@ -213,9 +214,9 @@ describe("admin client - auth header", () => {
 		const spy = mockFetch((_, init) => {
 			const headers = init.headers as Record<string, string>;
 			expect(headers["x-internal-token"]).toBe(TOKEN);
-			return jsonOk([]);
+			return jsonOk({ items: [], total: 0 });
 		});
-		await admin.users.list();
+		await admin.users.list({ page: 1, pageSize: 20 });
 		spy.mockRestore();
 	});
 });
@@ -228,7 +229,9 @@ describe("admin client - error handling", () => {
 	test("throws CMSError on 403 response", async () => {
 		const spy = mockFetch(() => new Response("Forbidden", { status: 403 }));
 		const { CMSError } = await import("../index");
-		await expect(admin.users.list()).rejects.toBeInstanceOf(CMSError);
+		await expect(
+			admin.users.list({ page: 1, pageSize: 20 }),
+		).rejects.toBeInstanceOf(CMSError);
 		spy.mockRestore();
 	});
 

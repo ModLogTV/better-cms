@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 import { CMS_PERMISSIONS } from "../../auth/permissions";
 import type { CMSContext } from "../../core/plugin";
 import { requirePermission } from "../../elysia/auth";
+import { parseSort } from "../../elysia/pagination";
 import type { PageBlock } from "./types";
 
 const CACHE_HEADER = "s-maxage=60, stale-while-revalidate=300";
@@ -19,9 +20,27 @@ export function pageRoutes(opts: { ctx: CMSContext; blocks: PageBlock[] }) {
 				permissions: [CMS_PERMISSIONS.PAGES_READ],
 			}),
 		)
-		.get("/pages", async () => {
-			return ctx.adapter.listPages();
-		})
+		.get(
+			"/pages",
+			async ({ query }) => {
+				return ctx.adapter.listPages({
+					page: query.page ? Number(query.page) : 1,
+					pageSize: query.pageSize ? Number(query.pageSize) : 20,
+					sort: parseSort(query.sort),
+					status: query.status as "draft" | "published" | undefined,
+					locale: query.locale,
+				});
+			},
+			{
+				query: t.Object({
+					page: t.Optional(t.String()),
+					pageSize: t.Optional(t.String()),
+					sort: t.Optional(t.String()),
+					status: t.Optional(t.String()),
+					locale: t.Optional(t.String()),
+				}),
+			},
+		)
 		.get("/pages/blocks", () => {
 			return blocks.map((b) => ({
 				type: b.type,

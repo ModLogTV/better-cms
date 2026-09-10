@@ -22,7 +22,7 @@ const mockAdapter: CMSAdapter = {
 		updatedAt: new Date(),
 	})),
 	publishPage: mock(async () => {}),
-	listPages: mock(async () => []),
+	listPages: mock(async () => ({ items: [], total: 0 })),
 	listLocales: mock(async () => []),
 	upsertLocale: mock(async () => {}),
 	deleteLocale: mock(async () => {}),

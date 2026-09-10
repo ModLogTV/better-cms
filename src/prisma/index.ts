@@ -1,5 +1,6 @@
 import type {
 	CMSAdapter,
+	ListPagesParams,
 	Locale,
 	MediaAsset,
 	NamespaceLocaleMeta,
@@ -53,7 +54,12 @@ interface PrismaClient {
 			where: { id: string };
 			data: { status: string; publishedAt: Date };
 		}): Promise<unknown>;
-		findMany(): Promise<
+		findMany(args: {
+			where?: { status?: string; locale?: string };
+			orderBy?: Record<string, "asc" | "desc">[];
+			skip?: number;
+			take?: number;
+		}): Promise<
 			{
 				id: string;
 				slug: string;
@@ -62,6 +68,9 @@ interface PrismaClient {
 				updatedAt: Date;
 			}[]
 		>;
+		count(args: {
+			where?: { status?: string; locale?: string };
+		}): Promise<number>;
 	};
 	locale: {
 		findMany(): Promise<
@@ -204,17 +213,37 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 			});
 		},
 
-		async listPages() {
-			const rows = await prisma.page.findMany();
-			return rows.map(
-				(r): PageSummary => ({
-					id: r.id,
-					slug: r.slug,
-					locale: r.locale,
-					status: r.status as "draft" | "published",
-					updatedAt: r.updatedAt,
+		async listPages(params: ListPagesParams) {
+			const where: { status?: string; locale?: string } = {};
+			if (params.status) where.status = params.status;
+			if (params.locale) where.locale = params.locale;
+
+			const orderBy = (params.sort ?? []).map((s) => ({
+				[s.id]: s.desc ? ("desc" as const) : ("asc" as const),
+			}));
+
+			const [rows, total] = await Promise.all([
+				prisma.page.findMany({
+					where,
+					orderBy: orderBy.length > 0 ? orderBy : [{ updatedAt: "desc" }],
+					skip: (params.page - 1) * params.pageSize,
+					take: params.pageSize,
 				}),
-			);
+				prisma.page.count({ where }),
+			]);
+
+			return {
+				items: rows.map(
+					(r): PageSummary => ({
+						id: r.id,
+						slug: r.slug,
+						locale: r.locale,
+						status: r.status as "draft" | "published",
+						updatedAt: r.updatedAt,
+					}),
+				),
+				total,
+			};
 		},
 
 		async listLocales() {

@@ -1,25 +1,27 @@
-import { IconChevronLeft, IconSearch } from "@tabler/icons-react";
+import { IconChevronLeft, IconLoader2, IconSearch } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { TranslationRow } from "@/components/shared/TranslationRow";
+import {
+	type ColumnDef,
+	getCoreRowModel,
+	getFilteredRowModel,
+	getPaginationRowModel,
+	useReactTable,
+} from "@tanstack/react-table";
+import { useEffect, useMemo, useState } from "react";
+import { DataTable } from "@/components/data-table/data-table";
+import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
 	InputGroup,
 	InputGroupAddon,
 	InputGroupInput,
 } from "@/components/ui/input-group";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { api } from "@/lib/api";
+import { Textarea } from "@/components/ui/textarea";
+import { useTranslationEditor } from "@/hooks/use-translation-editor";
+import { api, type KeyMetadata } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_layout/translations/$namespace")({
@@ -30,6 +32,16 @@ function coverageVariant(pct: number): "success" | "warning" | "destructive" {
 	if (pct >= 100) return "success";
 	if (pct >= 50) return "warning";
 	return "destructive";
+}
+
+function inputHintBadge(hint: KeyMetadata["inputHint"]) {
+	const map: Record<KeyMetadata["inputHint"], string> = {
+		text: "text",
+		"text+vars": "vars",
+		"text+count": "plural",
+		"rich-text": "rich",
+	};
+	return map[hint];
 }
 
 function NamespaceRail({ current }: { current: string }) {
@@ -64,6 +76,49 @@ function NamespaceRail({ current }: { current: string }) {
 					{ns.name}
 				</button>
 			))}
+		</div>
+	);
+}
+
+function TranslationValueCell({
+	meta,
+	value,
+	namespace,
+	locale,
+}: {
+	meta: KeyMetadata;
+	value: string;
+	namespace: string;
+	locale: string;
+}) {
+	const { draft, handleChange, handleBlur, isPending } = useTranslationEditor({
+		namespace,
+		locale,
+		keyName: meta.key,
+		value,
+	});
+	const isMultiline = meta.inputHint === "rich-text";
+
+	return (
+		<div className="relative">
+			{isMultiline ? (
+				<Textarea
+					value={draft}
+					onChange={(e) => handleChange(e.target.value)}
+					onBlur={handleBlur}
+					className="min-h-20 font-mono text-sm"
+				/>
+			) : (
+				<Input
+					value={draft}
+					onChange={(e) => handleChange(e.target.value)}
+					onBlur={handleBlur}
+					className="font-mono text-sm"
+				/>
+			)}
+			{isPending && (
+				<IconLoader2 className="absolute right-2 top-1/2 size-3 -translate-y-1/2 animate-spin text-muted-foreground" />
+			)}
 		</div>
 	);
 }
@@ -107,9 +162,69 @@ function TranslationEditorPage() {
 
 	const isLoading = metadata.isLoading || translations.isLoading || !locale;
 
-	const filteredKeys = (metadata.data ?? []).filter((meta) =>
-		meta.key.toLowerCase().includes(search.trim().toLowerCase()),
+	const columns = useMemo<ColumnDef<KeyMetadata>[]>(
+		() => [
+			{
+				id: "key",
+				accessorKey: "key",
+				header: "Key",
+				cell: ({ row }) => {
+					const meta = row.original;
+					return (
+						<div className="flex flex-col gap-1">
+							<code className="text-xs text-foreground">{meta.key}</code>
+							<Badge variant="outline" className="w-fit text-[10px]">
+								{inputHintBadge(meta.inputHint)}
+							</Badge>
+							{meta.vars && meta.vars.length > 0 && (
+								<div className="flex flex-wrap gap-1">
+									{meta.vars.map((v) => (
+										<code
+											key={v}
+											className="rounded bg-muted px-1 py-0.5 text-[10px] text-muted-foreground"
+										>
+											{"{"}
+											{v}
+											{"}"}
+										</code>
+									))}
+								</div>
+							)}
+						</div>
+					);
+				},
+			},
+			{
+				id: "value",
+				header: `Value (${locale || "…"})`,
+				cell: ({ row }) => (
+					<TranslationValueCell
+						meta={row.original}
+						value={translations.data?.[row.original.key] ?? ""}
+						namespace={namespace}
+						locale={locale}
+					/>
+				),
+			},
+		],
+		[locale, namespace, translations.data],
 	);
+
+	const table = useReactTable({
+		data: metadata.data ?? [],
+		columns,
+		getRowId: (row) => row.key,
+		state: { globalFilter: search },
+		onGlobalFilterChange: setSearch,
+		globalFilterFn: (row, _columnId, filterValue) =>
+			row.original.key
+				.toLowerCase()
+				.includes(String(filterValue).toLowerCase()),
+		getCoreRowModel: getCoreRowModel(),
+		getFilteredRowModel: getFilteredRowModel(),
+		getPaginationRowModel: getPaginationRowModel(),
+		initialState: { pagination: { pageSize: 25 } },
+	});
 
 	return (
 		<div className="flex gap-4">
@@ -164,50 +279,15 @@ function TranslationEditorPage() {
 					</InputGroup>
 				</div>
 
-				<div className="rounded-lg border">
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead className="w-64">Key</TableHead>
-								<TableHead>Value ({locale || "…"})</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{isLoading ? (
-								Array.from({ length: 6 }).map((_, i) => (
-									// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton row count, never reordered
-									<TableRow key={i}>
-										<TableCell>
-											<Skeleton className="h-5 w-40" />
-										</TableCell>
-										<TableCell>
-											<Skeleton className="h-9 w-full" />
-										</TableCell>
-									</TableRow>
-								))
-							) : filteredKeys.length === 0 ? (
-								<TableRow>
-									<TableCell
-										colSpan={2}
-										className="py-10 text-center text-muted-foreground"
-									>
-										No keys match "{search}".
-									</TableCell>
-								</TableRow>
-							) : (
-								filteredKeys.map((meta) => (
-									<TranslationRow
-										key={meta.key}
-										meta={meta}
-										value={translations.data?.[meta.key] ?? ""}
-										namespace={namespace}
-										locale={locale}
-									/>
-								))
-							)}
-						</TableBody>
-					</Table>
-				</div>
+				{isLoading ? (
+					<DataTableSkeleton
+						columnCount={columns.length}
+						withViewOptions={false}
+						rowCount={6}
+					/>
+				) : (
+					<DataTable table={table} />
+				)}
 			</div>
 		</div>
 	);

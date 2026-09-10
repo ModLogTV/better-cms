@@ -5,6 +5,15 @@ import type {
 	PermissionInfo,
 } from "./types";
 
+function buildQuery(params: object): string {
+	const search = new URLSearchParams();
+	for (const [key, value] of Object.entries(params)) {
+		if (value === undefined || value === "") continue;
+		search.set(key, key === "sort" ? JSON.stringify(value) : String(value));
+	}
+	return search.toString();
+}
+
 export class CMSError extends Error {
 	constructor(
 		public status: number,
@@ -119,8 +128,8 @@ export function createAdminClient(opts: AdminClientOptions): AdminClient {
 			},
 		},
 		pages: {
-			/** Lists all pages available in the CMS with their basic status and metadata. */
-			list: () => get("/cms/pages"),
+			/** Lists pages available in the CMS with their basic status and metadata, paginated server-side. */
+			list: (params) => get(`/cms/pages?${buildQuery(params)}`),
 			/**
 			 * Fetches a single page by its slug.
 			 * @param draft If true, fetches the latest saved draft instead of the published version.
@@ -188,8 +197,8 @@ export function createAdminClient(opts: AdminClientOptions): AdminClient {
 			delete: (opts) => del(`/cms/admin/locales/${opts.code}`),
 		},
 		users: {
-			/** Lists all CMS users with their direct permissions and group memberships. */
-			list: () => get("/cms/admin/users"),
+			/** Lists CMS users with their direct permissions and group memberships, paginated server-side. */
+			list: (params) => get(`/cms/admin/users?${buildQuery(params)}`),
 			/** Returns the resolved permission set for a user (direct + inherited from groups). */
 			getPermissions: ({ userId }) =>
 				get(`/cms/admin/users/${userId}/permissions`),

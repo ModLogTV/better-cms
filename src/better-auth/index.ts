@@ -4,6 +4,7 @@ import type {
 	CMSAuthResult,
 	CMSGroup,
 	CMSUserSummary,
+	ListUsersParams,
 } from "../auth/adapter";
 import { CMS_WILDCARD_PERMISSION } from "../auth/permissions";
 
@@ -32,6 +33,15 @@ interface BetterAuthCmsGroup {
 	permissions: string[];
 }
 
+interface BetterAuthUserWhere {
+	OR?: Array<{
+		name?: { contains: string; mode: "insensitive" };
+		email?: { contains: string; mode: "insensitive" };
+		id?: { contains: string; mode: "insensitive" };
+	}>;
+	cmsPermissions?: { has: string };
+}
+
 interface BetterAuthPrismaLike {
 	user: {
 		findUnique(args: {
@@ -45,8 +55,13 @@ interface BetterAuthPrismaLike {
 			data: { cmsPermissions?: string[] };
 		}): Promise<BetterAuthUser>;
 		findMany(args?: {
+			where?: BetterAuthUserWhere;
+			orderBy?: Record<string, "asc" | "desc">[];
+			skip?: number;
+			take?: number;
 			include?: { cmsGroups?: { include?: { group?: boolean } } };
 		}): Promise<BetterAuthUser[]>;
+		count(args?: { where?: BetterAuthUserWhere }): Promise<number>;
 	};
 	cmsGroup: {
 		findMany(): Promise<BetterAuthCmsGroup[]>;
@@ -104,19 +119,46 @@ async function resolvePermissions(
 
 function buildManagement(prisma: BetterAuthPrismaLike): CMSAuthManagement {
 	return {
-		async listUsers() {
-			const users = await prisma.user.findMany({
-				include: { cmsGroups: { include: { group: true } } },
-			});
-			return users.map(
-				(u): CMSUserSummary => ({
-					id: u.id,
-					email: u.email,
-					name: u.name,
-					permissions: u.cmsPermissions,
-					groupIds: u.cmsGroups.map((ug) => ug.groupId),
+		async listUsers(params: ListUsersParams) {
+			const where: BetterAuthUserWhere = {};
+			if (params.search) {
+				const contains = {
+					contains: params.search,
+					mode: "insensitive" as const,
+				};
+				where.OR = [{ name: contains }, { email: contains }, { id: contains }];
+			}
+			if (params.permission) {
+				where.cmsPermissions = { has: params.permission };
+			}
+
+			const orderBy = (params.sort ?? []).map((s) => ({
+				[s.id]: s.desc ? ("desc" as const) : ("asc" as const),
+			}));
+
+			const [users, total] = await Promise.all([
+				prisma.user.findMany({
+					where,
+					orderBy: orderBy.length > 0 ? orderBy : [{ name: "asc" }],
+					skip: (params.page - 1) * params.pageSize,
+					take: params.pageSize,
+					include: { cmsGroups: { include: { group: true } } },
 				}),
-			);
+				prisma.user.count({ where }),
+			]);
+
+			return {
+				items: users.map(
+					(u): CMSUserSummary => ({
+						id: u.id,
+						email: u.email,
+						name: u.name,
+						permissions: u.cmsPermissions,
+						groupIds: u.cmsGroups.map((ug) => ug.groupId),
+					}),
+				),
+				total,
+			};
 		},
 
 		async getUserPermissions({ userId }) {

@@ -13,22 +13,26 @@ const heroBlock = {
 describe("pages routes", () => {
 	test("GET /cms/pages returns list of pages", async () => {
 		const adapter = makeAdapter({
-			listPages: async () => [
-				{
-					id: "1",
-					slug: "home",
-					locale: "en",
-					status: "published",
-					updatedAt: new Date(),
-				},
-			],
+			listPages: async () => ({
+				items: [
+					{
+						id: "1",
+						slug: "home",
+						locale: "en",
+						status: "published",
+						updatedAt: new Date(),
+					},
+				],
+				total: 1,
+			}),
 		});
 		const app = makeApp(adapter, [pagesPlugin()]);
 		const res = await app.handle(req("/cms/pages"));
 		expect(res.status).toBe(200);
 		const body = await res.json();
-		expect(body).toHaveLength(1);
-		expect(body[0].slug).toBe("home");
+		expect(body.items).toHaveLength(1);
+		expect(body.items[0].slug).toBe("home");
+		expect(body.total).toBe(1);
 	});
 
 	test("GET /cms/pages/blocks returns registered block catalog, not treated as a slug", async () => {

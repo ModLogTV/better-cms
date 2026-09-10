@@ -55,6 +55,7 @@ type FakePrisma = {
 		findUnique: ReturnType<typeof mock>;
 		update: ReturnType<typeof mock>;
 		findMany: ReturnType<typeof mock>;
+		count: ReturnType<typeof mock>;
 	};
 	cmsGroup: {
 		findMany: ReturnType<typeof mock>;
@@ -81,6 +82,7 @@ function makePrisma(
 			findUnique: mock(async () => makeUser()),
 			update: mock(async () => makeUser()),
 			findMany: mock(async () => [makeUser()]),
+			count: mock(async () => 1),
 			...overrides.user,
 		},
 		cmsGroup: {
@@ -410,6 +412,7 @@ describe("betterAuthCMSAdapter - management.listUsers", () => {
 						cmsGroups: [{ groupId: "g1", group: makeGroup() }],
 					}),
 				]),
+				count: mock(async () => 1),
 			},
 		});
 		const adapter = betterAuthCMSAdapter({
@@ -417,8 +420,12 @@ describe("betterAuthCMSAdapter - management.listUsers", () => {
 			prisma: prisma as never,
 		});
 
-		const users = await requireManagement(adapter).listUsers();
+		const { items: users, total } = await requireManagement(adapter).listUsers({
+			page: 1,
+			pageSize: 20,
+		});
 
+		expect(total).toBe(1);
 		expect(users).toHaveLength(1);
 		expect(users[0].id).toBe("u1");
 		expect(users[0].email).toBe("a@x.com");

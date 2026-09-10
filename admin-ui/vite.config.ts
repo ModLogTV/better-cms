@@ -16,6 +16,14 @@ export default defineConfig({
 			"@": path.resolve(__dirname, "./src"),
 		},
 	},
+	optimizeDeps: {
+		// Without this, Vite's dep pre-bundler splits "nuqs" and
+		// "nuqs/adapters/tanstack-router" into separate chunks, each with its own
+		// copy of nuqs's internal adapter context - useQueryState then can't find
+		// the context NuqsAdapter provides ("Multiple adapter contexts detected",
+		// https://nuqs.dev/NUQS-303), crashing every table that reads it.
+		exclude: ["nuqs"],
+	},
 	build: {
 		outDir: "../dist/admin-panel",
 		emptyOutDir: true,

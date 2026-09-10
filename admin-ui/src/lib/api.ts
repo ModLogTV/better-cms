@@ -39,6 +39,31 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 const get = <T>(path: string) => apiFetch<T>(path);
+
+export interface SortParam {
+	id: string;
+	desc: boolean;
+}
+
+export interface PaginatedResult<T> {
+	items: T[];
+	total: number;
+}
+
+interface ListParams {
+	page: number;
+	pageSize: number;
+	sort?: SortParam[];
+}
+
+function buildQuery(params: ListParams & object): string {
+	const search = new URLSearchParams();
+	for (const [key, value] of Object.entries(params)) {
+		if (value === undefined || value === "") continue;
+		search.set(key, key === "sort" ? JSON.stringify(value) : String(value));
+	}
+	return search.toString();
+}
 const put = <T>(path: string, body: unknown) =>
 	apiFetch<T>(path, { method: "PUT", body: JSON.stringify(body) });
 const post = <T>(path: string, body?: unknown) =>
@@ -129,6 +154,16 @@ export interface CMSGroup {
 	permissions: string[];
 }
 
+export interface ListPagesParams extends ListParams {
+	status?: PageSummary["status"];
+	locale?: string;
+}
+
+export interface ListUsersParams extends ListParams {
+	search?: string;
+	permission?: string;
+}
+
 export const api = {
 	namespaces: {
 		list: () => get<NamespaceSummary[]>("/admin/namespaces"),
@@ -153,7 +188,8 @@ export const api = {
 	},
 
 	pages: {
-		list: () => get<PageSummary[]>("/pages"),
+		list: (params: ListPagesParams) =>
+			get<PaginatedResult<PageSummary>>(`/pages?${buildQuery(params)}`),
 		get: (slug: string, locale: string, draft = false) =>
 			get<RawBlock[]>(
 				`/pages/${encodeURIComponent(slug)}?locale=${locale}&draft=${draft}`,
@@ -230,7 +266,10 @@ export const api = {
 	},
 
 	users: {
-		list: () => get<CMSUserSummary[]>("/admin/users"),
+		list: (params: ListUsersParams) =>
+			get<PaginatedResult<CMSUserSummary>>(
+				`/admin/users?${buildQuery(params)}`,
+			),
 		getPermissions: (userId: string) =>
 			get<string[]>(`/admin/users/${userId}/permissions`),
 		setPermissions: (userId: string, permissions: string[]) =>

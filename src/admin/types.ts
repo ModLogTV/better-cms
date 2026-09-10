@@ -1,7 +1,17 @@
-import type { CMSGroup, CMSUserSummary } from "../auth/adapter";
-import type { MediaAsset, PageSummary, RawBlock } from "../core/adapter";
+import type {
+	CMSGroup,
+	CMSUserSummary,
+	ListUsersParams,
+} from "../auth/adapter";
+import type {
+	ListPagesParams,
+	MediaAsset,
+	PageSummary,
+	PaginatedResult,
+	RawBlock,
+} from "../core/adapter";
 
-export type { CMSGroup, CMSUserSummary, MediaAsset };
+export type { CMSGroup, CMSUserSummary, MediaAsset, PaginatedResult };
 
 export interface NamespaceSummary {
 	name: string;
@@ -72,8 +82,8 @@ export interface AdminClient {
 		}): Promise<void>;
 	};
 	pages: {
-		/** Lists all pages available in the CMS with their basic status and metadata. */
-		list(): Promise<PageSummary[]>;
+		/** Lists pages available in the CMS with their basic status and metadata, paginated server-side. */
+		list(params: ListPagesParams): Promise<PaginatedResult<PageSummary>>;
 		/**
 		 * Fetches a single page's blocks by slug. Returns just the block array
 		 * (matching the underlying GET /pages/:slug route) - use `list()` for
@@ -135,8 +145,8 @@ export interface AdminClient {
 		delete(opts: { code: string }): Promise<void>;
 	};
 	users: {
-		/** Lists all CMS users with their direct permissions and group memberships. */
-		list(): Promise<CMSUserSummary[]>;
+		/** Lists CMS users with their direct permissions and group memberships, paginated server-side. */
+		list(params: ListUsersParams): Promise<PaginatedResult<CMSUserSummary>>;
 		/** Returns the resolved permission set for a user (direct + inherited from groups). */
 		getPermissions(opts: { userId: string }): Promise<string[]>;
 		/** Replaces the direct permissions on a user. Does not affect group-inherited permissions. */
