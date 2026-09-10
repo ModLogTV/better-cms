@@ -55,7 +55,7 @@ function AddLocaleDialog() {
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger asChild>
-				<Button size="sm">
+				<Button size="lg">
 					<IconPlus className="size-4" />
 					Add locale
 				</Button>
