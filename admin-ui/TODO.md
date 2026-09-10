@@ -5,7 +5,7 @@
 - [x] Permission picker overflows dialogs heavily (New group dialog, View user dialog)
 - [x] Pages table: add a way to create a new page
 - [x] Dashboard shows very little information - add more
-- [ ] Overhaul translations views (namespaces + translations) - switching namespaces/languages is clunky
+- [x] Overhaul translations views (namespaces + translations) - switching namespaces/languages is clunky
 - [x] Change password dialog: add confirm-new-password field + password strength indicator
 - [x] "+ Add locale" button needs to be a size larger
 - [x] Move theme switcher into account settings at the bottom of the sidebar

@@ -1,8 +1,10 @@
 import { IconClock, IconKey, IconLanguage } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 
@@ -21,6 +23,11 @@ function TranslationsIndexPage() {
 		queryKey: ["cms", "namespaces"],
 		queryFn: () => api.namespaces.list(),
 	});
+	const [search, setSearch] = useState("");
+
+	const filtered = (data ?? []).filter((ns) =>
+		ns.name.toLowerCase().includes(search.trim().toLowerCase()),
+	);
 
 	return (
 		<div className="space-y-4">
@@ -30,6 +37,15 @@ function TranslationsIndexPage() {
 					Manage translation keys across all namespaces.
 				</p>
 			</div>
+
+			{!isLoading && (data?.length ?? 0) > 0 && (
+				<Input
+					placeholder="Filter namespaces"
+					value={search}
+					onChange={(e) => setSearch(e.target.value)}
+					className="max-w-xs"
+				/>
+			)}
 
 			{isLoading ? (
 				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -43,9 +59,14 @@ function TranslationsIndexPage() {
 					<IconLanguage className="mb-3 size-12 opacity-30" />
 					<p className="text-sm">No namespaces configured.</p>
 				</div>
+			) : filtered.length === 0 ? (
+				<div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-muted-foreground">
+					<IconLanguage className="mb-3 size-12 opacity-30" />
+					<p className="text-sm">No namespaces match "{search}".</p>
+				</div>
 			) : (
 				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-					{data?.map((ns) => (
+					{filtered.map((ns) => (
 						<Link
 							key={ns.name}
 							to="/translations/$namespace"
