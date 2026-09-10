@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { api, type RawBlock } from "@/lib/api";
 
 const searchSchema = z.object({
-	slug: z.string(),
+	path: z.string(),
 	locale: z.string(),
 });
 
@@ -26,15 +26,15 @@ export const Route = createFileRoute("/_layout/pages/$pageId")({
 
 function PageEditorPage() {
 	const { pageId } = Route.useParams();
-	const { slug, locale } = Route.useSearch();
+	const { path, locale } = Route.useSearch();
 	const qc = useQueryClient();
 	const navigate = useNavigate();
 
 	const { data: fetchedBlocks, isLoading } = useQuery({
-		queryKey: ["cms", "page", slug, locale, true],
-		queryFn: () => api.pages.get(slug, locale, true),
+		queryKey: ["cms", "page", path, locale, true],
+		queryFn: () => api.pages.get(path, locale, true),
 	});
-	// Only fetching this for the status badge below - there's no by-slug lookup on
+	// Only fetching this for the status badge below - there's no by-id lookup on
 	// the paginated endpoint, so filter to the locale and fetch generously.
 	const { data: pageSummaries } = useQuery({
 		queryKey: ["cms", "pages", "byLocale", locale],
@@ -78,7 +78,7 @@ function PageEditorPage() {
 				</Link>
 				<div className="flex flex-1 items-center gap-3">
 					<div>
-						<h2 className="text-xl font-bold font-mono">{slug}</h2>
+						<h2 className="text-xl font-bold font-mono">{path}</h2>
 						<div className="flex items-center gap-2 mt-0.5">
 							<Badge variant="outline">{locale}</Badge>
 							{pageSummary && (

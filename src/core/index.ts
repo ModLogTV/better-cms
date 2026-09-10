@@ -114,6 +114,7 @@ export type {
 	NamespaceLocaleMeta,
 	Page,
 	PageSummary,
+	PageTreeNode,
 	RawBlock,
 } from "./adapter";
 export type { CMSConfig } from "./config";

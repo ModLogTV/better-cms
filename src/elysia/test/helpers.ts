@@ -6,6 +6,7 @@ import type {
 	MediaAsset,
 	Page,
 	PageSummary,
+	PageTreeNode,
 } from "../../core/adapter";
 import { createCMS } from "../../core/index";
 import { key, vars } from "../../i18n/markers";
@@ -48,6 +49,10 @@ export function makeAdapter(overrides: Partial<CMSAdapter> = {}): CMSAdapter {
 		createPage: mock(async (opts) => makePage(opts)),
 		publishPage: mock(async () => {}),
 		listPages: mock(async () => ({ items: [] as PageSummary[], total: 0 })),
+		listPageTree: mock(async () => [] as PageTreeNode[]),
+		movePage: mock(async (opts) =>
+			makePage({ id: opts.id, parentId: opts.parentId }),
+		),
 		listLocales: mock(async () => []),
 		upsertLocale: mock(async () => {}),
 		deleteLocale: mock(async () => {}),
@@ -71,7 +76,9 @@ export function makeAdapter(overrides: Partial<CMSAdapter> = {}): CMSAdapter {
 export function makePage(overrides: Partial<Page> = {}): Page {
 	return {
 		id: "page-1",
+		parentId: null,
 		slug: "home",
+		path: "home",
 		locale: "en",
 		blocks: [],
 		status: "draft",

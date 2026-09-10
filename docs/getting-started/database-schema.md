@@ -27,14 +27,23 @@ model TranslationNamespace {
 
 model Page {
   id          String    @id
+  parentId    String?
   slug        String
+  // Materialized full path (ancestor slugs joined by "/"). Root pages: path == slug.
+  path        String
   locale      String
   blocks      Json      @default("[]")
   status      String    @default("draft")
   publishedAt DateTime?
   updatedAt   DateTime  @updatedAt
 
-  @@unique([slug, locale])
+  parent   Page?  @relation("PageTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children Page[] @relation("PageTree")
+
+  // Slug uniqueness is scoped to the parent, not global.
+  @@unique([parentId, slug, locale])
+  @@unique([path, locale])
+  @@index([parentId])
 }
 
 model Locale {

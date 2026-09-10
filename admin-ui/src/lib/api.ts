@@ -64,6 +64,9 @@ function buildQuery(params: ListParams & object): string {
 	}
 	return search.toString();
 }
+const encodePath = (path: string) =>
+	path.split("/").map(encodeURIComponent).join("/");
+
 const put = <T>(path: string, body: unknown) =>
 	apiFetch<T>(path, { method: "PUT", body: JSON.stringify(body) });
 const post = <T>(path: string, body?: unknown) =>
@@ -117,10 +120,23 @@ export interface KeyMetadata {
 
 export interface PageSummary {
 	id: string;
+	parentId: string | null;
 	slug: string;
+	path: string;
 	locale: string;
 	status: "draft" | "published";
 	updatedAt: string;
+}
+
+export interface PageTreeNode {
+	id: string;
+	parentId: string | null;
+	slug: string;
+	path: string;
+	locale: string;
+	status: "draft" | "published";
+	updatedAt: string;
+	children: PageTreeNode[];
 }
 
 export interface RawBlock {
@@ -190,12 +206,20 @@ export const api = {
 	pages: {
 		list: (params: ListPagesParams) =>
 			get<PaginatedResult<PageSummary>>(`/pages?${buildQuery(params)}`),
+		tree: (locale?: string) =>
+			get<PageTreeNode[]>(
+				`/pages/tree${locale ? `?locale=${encodeURIComponent(locale)}` : ""}`,
+			),
+		// `slug` here is a full path (e.g. "company/about") - encode each segment,
+		// not the "/" separators, so the server's wildcard route still resolves it.
 		get: (slug: string, locale: string, draft = false) =>
 			get<RawBlock[]>(
-				`/pages/${encodeURIComponent(slug)}?locale=${locale}&draft=${draft}`,
+				`/pages/${encodePath(slug)}?locale=${locale}&draft=${draft}`,
 			),
-		create: (slug: string, locale: string) =>
-			post<PageSummary>("/pages", { slug, locale }),
+		create: (slug: string, locale: string, parentId?: string | null) =>
+			post<PageSummary>("/pages", { slug, locale, parentId }),
+		move: (id: string, parentId: string | null) =>
+			post<PageSummary>(`/pages/${id}/move`, { parentId }),
 		update: (id: string, blocks: RawBlock[]) => put(`/pages/${id}`, blocks),
 		publish: (id: string) => post(`/pages/${id}/publish`),
 		describeBlocks: () => get<BlockInfo[]>("/pages/blocks"),

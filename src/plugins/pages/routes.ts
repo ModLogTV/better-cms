@@ -49,12 +49,22 @@ export function pageRoutes(opts: { ctx: CMSContext; blocks: PageBlock[] }) {
 			}));
 		})
 		.get(
-			"/pages/:slug",
+			"/pages/tree",
+			async ({ query }) => {
+				return ctx.adapter.listPageTree({ locale: query.locale });
+			},
+			{
+				query: t.Object({ locale: t.Optional(t.String()) }),
+			},
+		)
+		.get(
+			"/pages/*",
 			async ({ params, query, set }) => {
+				const path = params["*"];
 				const draft = query.draft === "true";
 				const locale = query.locale ?? "en";
 				const page = await ctx.adapter.getPage({
-					slug: params.slug,
+					slug: path,
 					locale,
 					draft,
 				});
@@ -66,7 +76,6 @@ export function pageRoutes(opts: { ctx: CMSContext; blocks: PageBlock[] }) {
 				return page.blocks;
 			},
 			{
-				params: t.Object({ slug: t.String() }),
 				query: t.Object({
 					locale: t.Optional(t.String()),
 					draft: t.Optional(t.String()),
@@ -88,16 +97,41 @@ export function pageRoutes(opts: { ctx: CMSContext; blocks: PageBlock[] }) {
 						id,
 						slug: body.slug,
 						locale: body.locale,
+						parentId: body.parentId ?? null,
 					});
 				} catch {
 					set.status = 409;
 					return {
-						error: `A page already exists for slug "${body.slug}" and locale "${body.locale}".`,
+						error: `A page already exists for slug "${body.slug}" and locale "${body.locale}" under that parent.`,
 					};
 				}
 			},
 			{
-				body: t.Object({ slug: t.String(), locale: t.String() }),
+				body: t.Object({
+					slug: t.String(),
+					locale: t.String(),
+					parentId: t.Optional(t.Union([t.String(), t.Null()])),
+				}),
+			},
+		)
+		.post(
+			"/pages/:id/move",
+			async ({ params, body, set }) => {
+				try {
+					return await ctx.adapter.movePage({
+						id: params.id,
+						parentId: body.parentId,
+					});
+				} catch (err) {
+					set.status = 409;
+					return {
+						error: err instanceof Error ? err.message : "Couldn't move page",
+					};
+				}
+			},
+			{
+				params: t.Object({ id: t.String() }),
+				body: t.Object({ parentId: t.Union([t.String(), t.Null()]) }),
 			},
 		)
 		.put(

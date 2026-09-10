@@ -113,10 +113,10 @@ function RecentPagesCard({
 							<Link
 								to="/pages/$pageId"
 								params={{ pageId: page.id }}
-								search={{ slug: page.slug, locale: page.locale }}
+								search={{ path: page.path, locale: page.locale }}
 								className="flex items-center gap-2 truncate"
 							>
-								<span className="truncate font-mono text-sm">{page.slug}</span>
+								<span className="truncate font-mono text-sm">{page.path}</span>
 								<Badge variant="outline" className="shrink-0">
 									{page.locale}
 								</Badge>

@@ -25,7 +25,10 @@ export interface MediaAsset {
 
 export interface Page {
 	id: string;
+	parentId: string | null;
 	slug: string;
+	/** Materialized full path (ancestor slugs joined by "/"). Root pages: path === slug. */
+	path: string;
 	locale: string;
 	blocks: RawBlock[];
 	status: "draft" | "published";
@@ -35,10 +38,23 @@ export interface Page {
 
 export interface PageSummary {
 	id: string;
+	parentId: string | null;
 	slug: string;
+	path: string;
 	locale: string;
 	status: "draft" | "published";
 	updatedAt: Date;
+}
+
+export interface PageTreeNode {
+	id: string;
+	parentId: string | null;
+	slug: string;
+	path: string;
+	locale: string;
+	status: "draft" | "published";
+	updatedAt: Date;
+	children: PageTreeNode[];
 }
 
 export interface RawBlock {
@@ -81,14 +97,24 @@ export interface CMSAdapter {
 		namespace: string;
 	}): Promise<NamespaceLocaleMeta[]>;
 	getPage(opts: {
+		/** Full materialized path, e.g. "company/about". */
 		slug: string;
 		locale: string;
 		draft: boolean;
 	}): Promise<Page | null>;
 	upsertPage(opts: { id: string; blocks: RawBlock[] }): Promise<void>;
-	createPage(opts: { id: string; slug: string; locale: string }): Promise<Page>;
+	createPage(opts: {
+		id: string;
+		slug: string;
+		locale: string;
+		parentId?: string | null;
+	}): Promise<Page>;
 	publishPage(opts: { id: string }): Promise<void>;
 	listPages(params: ListPagesParams): Promise<PaginatedResult<PageSummary>>;
+	/** Full page tree (nested by parentId), optionally scoped to one locale - powers the admin folder view. */
+	listPageTree(opts?: { locale?: string }): Promise<PageTreeNode[]>;
+	/** Reparents a page node, revalidating slug uniqueness at the destination and recomputing path for it and all descendants. */
+	movePage(opts: { id: string; parentId: string | null }): Promise<Page>;
 	listLocales(): Promise<Locale[]>;
 	upsertLocale(opts: {
 		code: string;

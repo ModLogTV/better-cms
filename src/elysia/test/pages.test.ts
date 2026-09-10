@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, mock, test } from "bun:test";
 import { z } from "zod";
 import { pagesPlugin } from "../../plugins/pages/index";
 import { makeAdapter, makeApp, makePage, req } from "./helpers";
@@ -17,7 +17,9 @@ describe("pages routes", () => {
 				items: [
 					{
 						id: "1",
+						parentId: null,
 						slug: "home",
+						path: "home",
 						locale: "en",
 						status: "published",
 						updatedAt: new Date(),
@@ -181,5 +183,89 @@ describe("pages routes", () => {
 		const app = makeApp(adapter, [pagesPlugin()]);
 		const res = await app.handle(req("/cms/pages/home?locale=en&draft=true"));
 		expect(res.status).toBe(200);
+	});
+
+	test("GET /cms/pages/:path resolves a nested path, not just a single segment", async () => {
+		const adapter = makeAdapter({
+			getPage: mock(async ({ slug }) =>
+				slug === "company/about" ? makePage({ path: "company/about" }) : null,
+			),
+		});
+		const app = makeApp(adapter, [pagesPlugin()]);
+		const res = await app.handle(req("/cms/pages/company/about?locale=en"));
+		expect(res.status).toBe(200);
+		expect(adapter.getPage).toHaveBeenCalledWith(
+			expect.objectContaining({ slug: "company/about" }),
+		);
+	});
+
+	test("GET /cms/pages/tree returns the adapter's page tree", async () => {
+		const adapter = makeAdapter({
+			listPageTree: mock(async () => [
+				{
+					id: "1",
+					parentId: null,
+					slug: "company",
+					path: "company",
+					locale: "en",
+					status: "published" as const,
+					updatedAt: new Date(),
+					children: [],
+				},
+			]),
+		});
+		const app = makeApp(adapter, [pagesPlugin()]);
+		const res = await app.handle(req("/cms/pages/tree?locale=en"));
+		expect(res.status).toBe(200);
+		const body = await res.json();
+		expect(body).toHaveLength(1);
+		expect(body[0].slug).toBe("company");
+		expect(adapter.listPageTree).toHaveBeenCalledWith({ locale: "en" });
+	});
+
+	test("POST /cms/pages passes parentId through to the adapter", async () => {
+		const adapter = makeAdapter();
+		const app = makeApp(adapter, [pagesPlugin()]);
+		await app.handle(
+			req("/cms/pages", {
+				method: "POST",
+				body: JSON.stringify({ slug: "about", locale: "en", parentId: "p1" }),
+			}),
+		);
+		expect(adapter.createPage).toHaveBeenCalledWith(
+			expect.objectContaining({ slug: "about", locale: "en", parentId: "p1" }),
+		);
+	});
+
+	test("POST /cms/pages/:id/move calls adapter.movePage", async () => {
+		const adapter = makeAdapter();
+		const app = makeApp(adapter, [pagesPlugin()]);
+		const res = await app.handle(
+			req("/cms/pages/page-1/move", {
+				method: "POST",
+				body: JSON.stringify({ parentId: "p2" }),
+			}),
+		);
+		expect(res.status).toBe(200);
+		expect(adapter.movePage).toHaveBeenCalledWith({
+			id: "page-1",
+			parentId: "p2",
+		});
+	});
+
+	test("POST /cms/pages/:id/move returns 409 when the adapter rejects the move", async () => {
+		const adapter = makeAdapter({
+			movePage: async () => {
+				throw new Error("slug already exists under the destination parent");
+			},
+		});
+		const app = makeApp(adapter, [pagesPlugin()]);
+		const res = await app.handle(
+			req("/cms/pages/page-1/move", {
+				method: "POST",
+				body: JSON.stringify({ parentId: "p2" }),
+			}),
+		);
+		expect(res.status).toBe(409);
 	});
 });

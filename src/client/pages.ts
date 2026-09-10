@@ -32,7 +32,9 @@ export async function loadPageContent(opts: {
 
 		try {
 			const { cmsUrl, readToken } = config;
-			const encodedSlug = encodeURIComponent(slug);
+			// `slug` may be a full nested path (e.g. "company/about") - encode each
+			// segment, not the "/" separators, so the server's wildcard route resolves it.
+			const encodedSlug = slug.split("/").map(encodeURIComponent).join("/");
 			const res = await fetch(
 				`${cmsUrl}/cms/pages/${encodedSlug}?locale=${locale}`,
 				{
