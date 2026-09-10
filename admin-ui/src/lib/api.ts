@@ -1,6 +1,6 @@
 import { getConfig } from "@/config";
 
-class ApiError extends Error {
+export class ApiError extends Error {
 	constructor(
 		public status: number,
 		message: string,
@@ -163,21 +163,49 @@ export const api = {
 				opts,
 			),
 		upload: async (file: File) => {
-			const { uploadUrl, publicUrl, assetId } = await post<{
-				uploadUrl: string;
-				publicUrl: string;
-				assetId: string;
+			if (file.size === 0) {
+				throw new Error(`"${file.name}" is empty, there is nothing to upload.`);
+			}
+
+			const mimeType = file.type || "application/octet-stream";
+			const presigned = await post<{
+				uploadUrl?: string;
+				publicUrl?: string;
+				assetId?: string;
+				ok?: boolean;
+				error?: string;
 			}>("/media/presign", {
 				filename: file.name,
-				mimeType: file.type,
+				mimeType,
 				size: file.size,
 			});
-			const res = await fetch(uploadUrl, {
-				method: "PUT",
-				body: file,
-				headers: { "Content-Type": file.type },
-			});
-			if (!res.ok) throw new ApiError(res.status, "Upload failed");
+			if (!presigned.uploadUrl || !presigned.publicUrl || !presigned.assetId) {
+				throw new Error(
+					presigned.error ??
+						"Couldn't start the upload. No storage adapter is configured on the server, ask an administrator to set one up.",
+				);
+			}
+			const { uploadUrl, publicUrl, assetId } = presigned;
+
+			let res: Response;
+			try {
+				res = await fetch(uploadUrl, {
+					method: "PUT",
+					body: file,
+					headers: { "Content-Type": mimeType },
+				});
+			} catch {
+				throw new Error(
+					`Couldn't reach the upload server for "${file.name}". Check your connection and try again.`,
+				);
+			}
+			if (!res.ok) {
+				const text = await res.text().catch(() => "");
+				throw new Error(
+					text ||
+						`Upload of "${file.name}" failed (server responded with ${res.status}). The storage adapter may be misconfigured.`,
+				);
+			}
 			await post(`/media/${assetId}/confirm`);
 			return { publicUrl, assetId };
 		},

@@ -125,17 +125,30 @@ function MediaPage() {
 	const upload = useMutation({
 		mutationFn: (file: File) => api.media.upload(file),
 		onSuccess: () => {
-			toast.success("Upload complete");
 			qc.invalidateQueries({ queryKey: ["cms", "media"] });
 		},
-		onError: () => toast.error("Upload failed"),
 	});
 
 	async function handleFiles(files: FileList | null) {
-		if (!files) return;
-		for (const file of files) {
-			await upload.mutateAsync(file);
+		if (!files || files.length === 0) return;
+		let succeeded = 0;
+		for (const file of Array.from(files)) {
+			try {
+				await upload.mutateAsync(file);
+				succeeded++;
+			} catch (e) {
+				toast.error(
+					e instanceof Error ? e.message : `Couldn't upload "${file.name}".`,
+				);
+			}
 		}
+		if (succeeded > 0) {
+			toast.success(
+				succeeded === 1 ? "Upload complete" : `${succeeded} files uploaded`,
+			);
+		}
+		// Reset so selecting the same file again (e.g. to retry) fires onChange.
+		if (fileInputRef.current) fileInputRef.current.value = "";
 	}
 
 	return (
