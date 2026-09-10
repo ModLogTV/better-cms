@@ -4,6 +4,7 @@ import {
 	IconShield,
 	IconTrash,
 } from "@tabler/icons-react";
+import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
@@ -37,6 +38,11 @@ export const Route = createFileRoute("/_layout/groups/")({
 	component: GroupsPage,
 });
 
+interface GroupFormValues {
+	name: string;
+	permissions: string[];
+}
+
 function GroupDialog({
 	group,
 	onClose,
@@ -46,29 +52,31 @@ function GroupDialog({
 }) {
 	const qc = useQueryClient();
 	const [open, setOpen] = useState(false);
-	const [name, setName] = useState(group?.name ?? "");
-	const [permissions, setPermissions] = useState<string[]>(
-		group?.permissions ?? [],
-	);
-
 	const isEdit = !!group;
 
 	const save = useMutation({
-		mutationFn: () =>
+		mutationFn: (values: GroupFormValues) =>
 			isEdit
-				? api.groups.update(group.id, { name, permissions })
-				: api.groups.create(name, permissions),
+				? api.groups.update(group.id, values)
+				: api.groups.create(values.name, values.permissions),
 		onSuccess: () => {
 			toast.success(isEdit ? "Group updated" : "Group created");
 			qc.invalidateQueries({ queryKey: ["cms", "groups"] });
 			setOpen(false);
-			if (!isEdit) {
-				setName("");
-				setPermissions([]);
-			}
+			if (!isEdit) form.reset();
 			onClose?.();
 		},
 		onError: () => toast.error("Save failed"),
+	});
+
+	const form = useForm({
+		defaultValues: {
+			name: group?.name ?? "",
+			permissions: group?.permissions ?? [],
+		} as GroupFormValues,
+		onSubmit: async ({ value }) => {
+			await save.mutateAsync(value);
+		},
 	});
 
 	return (
@@ -95,29 +103,57 @@ function GroupDialog({
 				<DialogHeader>
 					<DialogTitle>{isEdit ? "Edit group" : "Create group"}</DialogTitle>
 				</DialogHeader>
-				<div className="space-y-4">
-					<div className="space-y-1.5">
-						<Label htmlFor="group-name">Name</Label>
-						<Input
-							id="group-name"
-							value={name}
-							onChange={(e) => setName(e.target.value)}
-							placeholder="Editors"
-						/>
+				<form
+					onSubmit={(e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						form.handleSubmit();
+					}}
+					className="contents"
+				>
+					<div className="space-y-4">
+						<form.Field
+							name="name"
+							validators={{
+								onChange: ({ value }) =>
+									!value.trim() ? "Required" : undefined,
+							}}
+						>
+							{(field) => (
+								<div className="space-y-1.5">
+									<Label htmlFor={field.name}>Name</Label>
+									<Input
+										id={field.name}
+										value={field.state.value}
+										onBlur={field.handleBlur}
+										onChange={(e) => field.handleChange(e.target.value)}
+										placeholder="Editors"
+									/>
+								</div>
+							)}
+						</form.Field>
+						<form.Field name="permissions">
+							{(field) => (
+								<div className="space-y-1.5">
+									<Label>Permissions</Label>
+									<PermissionPicker
+										value={field.state.value}
+										onChange={field.handleChange}
+									/>
+								</div>
+							)}
+						</form.Field>
 					</div>
-					<div className="space-y-1.5">
-						<Label>Permissions</Label>
-						<PermissionPicker value={permissions} onChange={setPermissions} />
-					</div>
-				</div>
-				<DialogFooter>
-					<Button
-						onClick={() => save.mutate()}
-						disabled={save.isPending || !name.trim()}
-					>
-						{save.isPending ? "Saving…" : "Save"}
-					</Button>
-				</DialogFooter>
+					<DialogFooter>
+						<form.Subscribe selector={(state) => state.values.name}>
+							{(name) => (
+								<Button type="submit" disabled={save.isPending || !name.trim()}>
+									{save.isPending ? "Saving…" : "Save"}
+								</Button>
+							)}
+						</form.Subscribe>
+					</DialogFooter>
+				</form>
 			</DialogContent>
 		</Dialog>
 	);

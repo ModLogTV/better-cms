@@ -11,7 +11,7 @@
 - [x] Move theme switcher into account settings at the bottom of the sidebar
 - [x] Fix media uploads (broken for all files, not just `.icon`) and show actionable error messages
 - [x] Fix browser console warning: "[DOM] Password field is not contained in a form"
-- [ ] Use TanStack Form for forms and TanStack Query for API calls throughout
+- [x] Use TanStack Form for forms and TanStack Query for API calls throughout
 - [x] add confirmation popover for deleting a group
 - [x] make the actions popover for the users data table wider (because "Manage Access" warps into two lines)
 - [x] the users table needs filter options above the table (e.g. for permissions, searching a user id or name, etc.)

@@ -1,6 +1,7 @@
 import { IconSettings } from "@tabler/icons-react";
+import { useForm } from "@tanstack/react-form";
+import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,24 +23,27 @@ export const Route = createFileRoute("/login")({
 	component: LoginPage,
 });
 
+interface LoginValues {
+	email: string;
+	password: string;
+}
+
 function LoginPage() {
 	const navigate = useNavigate();
-	const [email, setEmail] = useState("");
-	const [password, setPassword] = useState("");
-	const [loading, setLoading] = useState(false);
 
-	async function handleSubmit(e: React.FormEvent) {
-		e.preventDefault();
-		setLoading(true);
-		try {
-			await signIn(email, password);
-			navigate({ to: "/" });
-		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Sign in failed");
-		} finally {
-			setLoading(false);
-		}
-	}
+	const submit = useMutation({
+		mutationFn: (values: LoginValues) => signIn(values.email, values.password),
+		onSuccess: () => navigate({ to: "/" }),
+		onError: (e) =>
+			toast.error(e instanceof Error ? e.message : "Sign in failed"),
+	});
+
+	const form = useForm({
+		defaultValues: { email: "", password: "" } as LoginValues,
+		onSubmit: async ({ value }) => {
+			await submit.mutateAsync(value);
+		},
+	});
 
 	return (
 		<div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
@@ -52,33 +56,72 @@ function LoginPage() {
 					<CardDescription>Sign in to access the admin panel</CardDescription>
 				</CardHeader>
 				<CardContent>
-					<form onSubmit={handleSubmit} className="space-y-4">
-						<div className="space-y-1.5">
-							<Label htmlFor="email">Email</Label>
-							<Input
-								id="email"
-								type="email"
-								placeholder="admin@example.com"
-								value={email}
-								onChange={(e) => setEmail(e.target.value)}
-								required
-								autoComplete="email"
-							/>
-						</div>
-						<div className="space-y-1.5">
-							<Label htmlFor="password">Password</Label>
-							<Input
-								id="password"
-								type="password"
-								value={password}
-								onChange={(e) => setPassword(e.target.value)}
-								required
-								autoComplete="current-password"
-							/>
-						</div>
-						<Button type="submit" className="w-full" disabled={loading}>
-							{loading ? "Signing in…" : "Sign in"}
-						</Button>
+					<form
+						onSubmit={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							form.handleSubmit();
+						}}
+						className="space-y-4"
+					>
+						<form.Field
+							name="email"
+							validators={{
+								onChange: ({ value }) =>
+									!value.trim() ? "Email is required" : undefined,
+							}}
+						>
+							{(field) => (
+								<div className="space-y-1.5">
+									<Label htmlFor={field.name}>Email</Label>
+									<Input
+										id={field.name}
+										type="email"
+										placeholder="admin@example.com"
+										value={field.state.value}
+										onBlur={field.handleBlur}
+										onChange={(e) => field.handleChange(e.target.value)}
+										autoComplete="email"
+									/>
+								</div>
+							)}
+						</form.Field>
+						<form.Field
+							name="password"
+							validators={{
+								onChange: ({ value }) =>
+									!value ? "Password is required" : undefined,
+							}}
+						>
+							{(field) => (
+								<div className="space-y-1.5">
+									<Label htmlFor={field.name}>Password</Label>
+									<Input
+										id={field.name}
+										type="password"
+										value={field.state.value}
+										onBlur={field.handleBlur}
+										onChange={(e) => field.handleChange(e.target.value)}
+										autoComplete="current-password"
+									/>
+								</div>
+							)}
+						</form.Field>
+						<form.Subscribe
+							selector={(state) =>
+								[state.values.email, state.values.password] as const
+							}
+						>
+							{([email, password]) => (
+								<Button
+									type="submit"
+									className="w-full"
+									disabled={submit.isPending || !email.trim() || !password}
+								>
+									{submit.isPending ? "Signing in…" : "Sign in"}
+								</Button>
+							)}
+						</form.Subscribe>
 					</form>
 				</CardContent>
 			</Card>
