@@ -589,3 +589,225 @@ describe("page versions", () => {
 		});
 	});
 });
+
+/**
+ * Ticket #6 regression suite. Root cause of the original bug: Save and
+ * Publish both wrote in place to the same `blocks` column with no
+ * snapshot boundary, so a save on an already-published page could land
+ * on the same row Publish had just read from (or vice versa), and there
+ * was no way to tell "published" from "published, but a later save
+ * changed it" - a save could silently go missing from what the public
+ * route served. Ticket #5's version-history rework removes the shared
+ * column entirely: Save always appends a new PageVersion, Publish only
+ * ever points `publishedVersionId` at one, and the public read path
+ * resolves that pointer - so a save can never retroactively change
+ * what's already published. This in-memory fake reproduces that real
+ * adapter's persistence semantics (not just a mock) to prove it.
+ */
+function makeStatefulPageAdapter() {
+	interface Version {
+		id: string;
+		blocks: unknown;
+		createdAt: Date;
+		publishedAt: Date | null;
+	}
+	interface Content {
+		id: string;
+		path: string;
+		locale: string;
+		publishedVersionId: string | null;
+		versions: Version[];
+	}
+	const contents = new Map<string, Content>();
+	let versionCounter = 0;
+
+	function status(content: Content): "draft" | "published" | "modified" {
+		if (!content.publishedVersionId) return "draft";
+		const latest = content.versions[content.versions.length - 1];
+		return content.publishedVersionId === latest?.id ? "published" : "modified";
+	}
+
+	function toPage(content: Content, blocks: unknown) {
+		return makePage({
+			id: content.id,
+			path: content.path,
+			locale: content.locale,
+			blocks: blocks as never,
+			status: status(content),
+		});
+	}
+
+	const adapter = makeAdapter({
+		createPage: mock(async ({ id, slug, locale }) => {
+			const version: Version = {
+				id: `v${++versionCounter}`,
+				blocks: [],
+				createdAt: new Date(),
+				publishedAt: null,
+			};
+			contents.set(id, {
+				id,
+				path: slug,
+				locale,
+				publishedVersionId: null,
+				versions: [version],
+			});
+			return toPage(contents.get(id) as Content, []);
+		}),
+		upsertPage: mock(async ({ id, blocks }) => {
+			const content = contents.get(id);
+			if (!content) throw new Error("not found");
+			content.versions.push({
+				id: `v${++versionCounter}`,
+				blocks,
+				createdAt: new Date(),
+				publishedAt: null,
+			});
+		}),
+		publishPage: mock(async ({ id }) => {
+			const content = contents.get(id);
+			if (!content) throw new Error("not found");
+			const latest = content.versions[content.versions.length - 1] as Version;
+			if (!latest.publishedAt) latest.publishedAt = new Date();
+			content.publishedVersionId = latest.id;
+		}),
+		getPageById: mock(async ({ id }) => {
+			const content = contents.get(id);
+			if (!content) return null;
+			return toPage(
+				content,
+				content.versions[content.versions.length - 1]?.blocks ?? [],
+			);
+		}),
+		getPage: mock(async ({ slug, locale, draft }) => {
+			const content = [...contents.values()].find(
+				(c) => c.path === slug && c.locale === locale,
+			);
+			if (!content) return null;
+			if (draft)
+				return toPage(
+					content,
+					content.versions[content.versions.length - 1]?.blocks,
+				);
+			if (!content.publishedVersionId) return null;
+			const published = content.versions.find(
+				(v) => v.id === content.publishedVersionId,
+			);
+			return toPage(content, published?.blocks);
+		}),
+	});
+	return { adapter, contents };
+}
+
+async function createTestPage(
+	app: ReturnType<typeof makeApp>,
+	slug: string,
+): Promise<string> {
+	const res = await app.handle(
+		req("/cms/pages", {
+			method: "POST",
+			body: JSON.stringify({ slug, locale: "en" }),
+		}),
+	);
+	const body = (await res.json()) as { id: string };
+	return body.id;
+}
+
+describe("ticket #6 regression: page saves reliably persist", () => {
+	test("saving a draft on an already-published page never changes what's public until explicitly re-published", async () => {
+		const { adapter } = makeStatefulPageAdapter();
+		const app = makeApp(adapter, [pagesPlugin({ blocks: [heroBlock] })]);
+		const id = await createTestPage(app, "about");
+
+		await app.handle(
+			req(`/cms/pages/${id}`, {
+				method: "PUT",
+				body: JSON.stringify([{ type: "hero", data: { title: "v1" } }]),
+			}),
+		);
+		await app.handle(req(`/cms/pages/${id}/publish`, { method: "POST" }));
+
+		const publicBefore = await app
+			.handle(req("/cms/pages/about?locale=en"))
+			.then((r) => r.json());
+		expect(publicBefore).toEqual([{ type: "hero", data: { title: "v1" } }]);
+
+		// Save a draft edit - must NOT touch the live/published content.
+		await app.handle(
+			req(`/cms/pages/${id}`, {
+				method: "PUT",
+				body: JSON.stringify([{ type: "hero", data: { title: "v2 draft" } }]),
+			}),
+		);
+
+		const publicAfterSave = await app
+			.handle(req("/cms/pages/about?locale=en"))
+			.then((r) => r.json());
+		expect(publicAfterSave).toEqual(publicBefore);
+
+		const draftAfterSave = await app
+			.handle(req("/cms/pages/about?locale=en&draft=true"))
+			.then((r) => r.json());
+		expect(draftAfterSave).toEqual([
+			{ type: "hero", data: { title: "v2 draft" } },
+		]);
+
+		// Publishing promotes the draft - now it's public too.
+		await app.handle(req(`/cms/pages/${id}/publish`, { method: "POST" }));
+		const publicAfterPublish = await app
+			.handle(req("/cms/pages/about?locale=en"))
+			.then((r) => r.json());
+		expect(publicAfterPublish).toEqual(draftAfterSave);
+	});
+
+	test("saving a plain draft page (never published) is reflected immediately and stays unpublished", async () => {
+		const { adapter } = makeStatefulPageAdapter();
+		const app = makeApp(adapter, [pagesPlugin({ blocks: [heroBlock] })]);
+		const id = await createTestPage(app, "draft-only");
+
+		await app.handle(
+			req(`/cms/pages/${id}`, {
+				method: "PUT",
+				body: JSON.stringify([
+					{ type: "hero", data: { title: "still a draft" } },
+				]),
+			}),
+		);
+
+		const draft = await app
+			.handle(req("/cms/pages/draft-only?locale=en&draft=true"))
+			.then((r) => r.json());
+		expect(draft).toEqual([{ type: "hero", data: { title: "still a draft" } }]);
+
+		const publicRes = await app.handle(req("/cms/pages/draft-only?locale=en"));
+		expect(publicRes.status).toBe(404);
+	});
+
+	test("rapid consecutive saves are never lost - the last write wins and each is a distinct version", async () => {
+		const { adapter, contents } = makeStatefulPageAdapter();
+		const app = makeApp(adapter, [pagesPlugin({ blocks: [heroBlock] })]);
+		const id = await createTestPage(app, "rapid");
+
+		await Promise.all(
+			Array.from({ length: 5 }, (_, i) =>
+				app.handle(
+					req(`/cms/pages/${id}`, {
+						method: "PUT",
+						body: JSON.stringify([
+							{ type: "hero", data: { title: `save-${i}` } },
+						]),
+					}),
+				),
+			),
+		);
+
+		const content = contents.get(id);
+		// initial version from createPage + 5 saves = 6, none lost.
+		expect(content?.versions).toHaveLength(6);
+
+		const draft = await app
+			.handle(req("/cms/pages/rapid?locale=en&draft=true"))
+			.then((r) => r.json());
+		expect(draft[0].data.title).toMatch(/^save-\d$/);
+	});
+});
