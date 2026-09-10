@@ -27,6 +27,14 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -183,6 +191,13 @@ function UsersPage() {
 		queryKey: ["cms", "session"],
 		queryFn: () => getSession(),
 	});
+	const { data: permissionCatalog = [] } = useQuery({
+		queryKey: ["cms", "permissions"],
+		queryFn: () => api.permissions.list(),
+	});
+
+	const [search, setSearch] = useState("");
+	const [permissionFilter, setPermissionFilter] = useState("all");
 
 	function copyUserId(id: string) {
 		navigator.clipboard.writeText(id).then(
@@ -191,6 +206,18 @@ function UsersPage() {
 		);
 	}
 
+	const filteredUsers = (users ?? []).filter((user) => {
+		const q = search.trim().toLowerCase();
+		const matchesSearch =
+			!q ||
+			user.name?.toLowerCase().includes(q) ||
+			user.email.toLowerCase().includes(q) ||
+			user.id.toLowerCase().includes(q);
+		const matchesPermission =
+			permissionFilter === "all" || user.permissions.includes(permissionFilter);
+		return matchesSearch && matchesPermission;
+	});
+
 	return (
 		<div className="space-y-4">
 			<div>
@@ -198,6 +225,28 @@ function UsersPage() {
 				<p className="text-muted-foreground">
 					Manage CMS user permissions and group memberships.
 				</p>
+			</div>
+
+			<div className="flex flex-wrap items-center gap-2">
+				<Input
+					placeholder="Search by name, email or user ID"
+					value={search}
+					onChange={(e) => setSearch(e.target.value)}
+					className="max-w-xs"
+				/>
+				<Select value={permissionFilter} onValueChange={setPermissionFilter}>
+					<SelectTrigger className="w-56">
+						<SelectValue placeholder="Filter by permission" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="all">All permissions</SelectItem>
+						{permissionCatalog.map((p) => (
+							<SelectItem key={p.value} value={p.value}>
+								{p.description}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 			</div>
 
 			<div className="rounded-lg border">
@@ -233,8 +282,18 @@ function UsersPage() {
 									No users found.
 								</TableCell>
 							</TableRow>
+						) : filteredUsers.length === 0 ? (
+							<TableRow>
+								<TableCell
+									colSpan={4}
+									className="py-10 text-center text-muted-foreground"
+								>
+									<IconUsers className="mx-auto mb-2 size-8 opacity-40" />
+									No users match your filters.
+								</TableCell>
+							</TableRow>
 						) : (
-							users?.map((user) => {
+							filteredUsers.map((user) => {
 								const isSelf = session?.user.id === user.id;
 								return (
 									<TableRow
@@ -310,6 +369,7 @@ function UsersPage() {
 												</DropdownMenuTrigger>
 												<DropdownMenuContent
 													align="end"
+													className="w-44"
 													onClick={(e) => e.stopPropagation()}
 												>
 													<DropdownMenuItem

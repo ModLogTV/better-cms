@@ -1,11 +1,15 @@
 import { IconPlus, IconStar, IconTrash } from "@tabler/icons-react";
+import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { cn } from "cn";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ConfirmPopover } from "@/components/shared/ConfirmPopover";
 import { LocaleCombobox, LocaleFlag } from "@/components/shared/LocaleCombobox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Dialog,
 	DialogContent,
@@ -32,28 +36,49 @@ export const Route = createFileRoute("/_layout/locales/")({
 	component: LocalesPage,
 });
 
+interface AddLocaleValues {
+	code: string;
+	name: string;
+	isDefault: boolean;
+}
+
+type LocaleSourceMode = "preset" | "custom";
+
 function AddLocaleDialog() {
 	const qc = useQueryClient();
 	const [open, setOpen] = useState(false);
-	const [code, setCode] = useState("");
-	const [name, setName] = useState("");
-	const [isDefault, setIsDefault] = useState(false);
+	const [mode, setMode] = useState<LocaleSourceMode>("preset");
 
 	const upsert = useMutation({
-		mutationFn: () => api.locales.upsert({ code, name, isDefault }),
+		mutationFn: (values: AddLocaleValues) => api.locales.upsert(values),
 		onSuccess: () => {
 			toast.success("Locale saved");
 			qc.invalidateQueries({ queryKey: ["cms", "locales"] });
 			setOpen(false);
-			setCode("");
-			setName("");
-			setIsDefault(false);
 		},
 		onError: () => toast.error("Failed to save locale"),
 	});
 
+	const form = useForm({
+		defaultValues: { code: "", name: "", isDefault: false } as AddLocaleValues,
+		onSubmit: async ({ value }) => {
+			await upsert.mutateAsync(value);
+		},
+	});
+
+	function resetAll() {
+		form.reset();
+		setMode("preset");
+	}
+
 	return (
-		<Dialog open={open} onOpenChange={setOpen}>
+		<Dialog
+			open={open}
+			onOpenChange={(o) => {
+				setOpen(o);
+				if (!o) resetAll();
+			}}
+		>
 			<DialogTrigger asChild>
 				<Button size="lg">
 					<IconPlus className="size-4" />
@@ -64,52 +89,151 @@ function AddLocaleDialog() {
 				<DialogHeader>
 					<DialogTitle>Add locale</DialogTitle>
 				</DialogHeader>
-				<div className="space-y-4">
-					<div className="space-y-1.5">
-						<Label>Search common locales</Label>
-						<LocaleCombobox
-							onSelect={(locale) => {
-								setCode(locale.code);
-								setName(locale.name);
-							}}
-						/>
+				<form
+					onSubmit={(e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						form.handleSubmit();
+					}}
+					className="contents"
+				>
+					<div className="space-y-4">
+						<div className="grid grid-cols-2 gap-2">
+							<button
+								type="button"
+								onClick={() => setMode("preset")}
+								className={cn(
+									"rounded-lg border p-3 text-left text-sm transition-colors",
+									mode === "preset"
+										? "border-primary text-primary"
+										: "border-border text-muted-foreground hover:text-foreground",
+								)}
+							>
+								<p className="font-medium">Use common preset</p>
+								<p className="text-xs opacity-80">Pick a curated locale</p>
+							</button>
+							<button
+								type="button"
+								onClick={() => setMode("custom")}
+								className={cn(
+									"rounded-lg border p-3 text-left text-sm transition-colors",
+									mode === "custom"
+										? "border-primary text-primary"
+										: "border-border text-muted-foreground hover:text-foreground",
+								)}
+							>
+								<p className="font-medium">Custom configuration</p>
+								<p className="text-xs opacity-80">Enter code and name</p>
+							</button>
+						</div>
+
+						{mode === "preset" ? (
+							<div className="space-y-1.5">
+								<Label>Search common locales</Label>
+								<LocaleCombobox
+									onSelect={(locale) => {
+										form.setFieldValue("code", locale.code);
+										form.setFieldValue("name", locale.name);
+									}}
+								/>
+								<form.Subscribe
+									selector={(state) =>
+										[state.values.code, state.values.name] as const
+									}
+								>
+									{([code, name]) =>
+										code ? (
+											<p className="text-xs text-muted-foreground">
+												Selected{" "}
+												<span className="font-medium text-foreground">
+													{name}
+												</span>{" "}
+												(<code className="font-mono">{code}</code>)
+											</p>
+										) : null
+									}
+								</form.Subscribe>
+							</div>
+						) : (
+							<>
+								<form.Field
+									name="code"
+									validators={{
+										onChange: ({ value }) =>
+											!value.trim() ? "Required" : undefined,
+									}}
+								>
+									{(field) => (
+										<div className="space-y-1.5">
+											<Label htmlFor={field.name}>Code</Label>
+											<Input
+												id={field.name}
+												placeholder="en"
+												value={field.state.value}
+												onBlur={field.handleBlur}
+												onChange={(e) => field.handleChange(e.target.value)}
+											/>
+										</div>
+									)}
+								</form.Field>
+								<form.Field
+									name="name"
+									validators={{
+										onChange: ({ value }) =>
+											!value.trim() ? "Required" : undefined,
+									}}
+								>
+									{(field) => (
+										<div className="space-y-1.5">
+											<Label htmlFor={field.name}>Name</Label>
+											<Input
+												id={field.name}
+												placeholder="English"
+												value={field.state.value}
+												onBlur={field.handleBlur}
+												onChange={(e) => field.handleChange(e.target.value)}
+											/>
+										</div>
+									)}
+								</form.Field>
+							</>
+						)}
+
+						<form.Field name="isDefault">
+							{(field) => (
+								<label
+									htmlFor={field.name}
+									className="flex items-center gap-2 text-sm"
+								>
+									<Checkbox
+										id={field.name}
+										checked={field.state.value}
+										onCheckedChange={(checked) =>
+											field.handleChange(checked === true)
+										}
+									/>
+									Set as default
+								</label>
+							)}
+						</form.Field>
 					</div>
-					<div className="space-y-1.5">
-						<Label htmlFor="code">Code</Label>
-						<Input
-							id="code"
-							placeholder="en"
-							value={code}
-							onChange={(e) => setCode(e.target.value)}
-						/>
-					</div>
-					<div className="space-y-1.5">
-						<Label htmlFor="name">Name</Label>
-						<Input
-							id="name"
-							placeholder="English"
-							value={name}
-							onChange={(e) => setName(e.target.value)}
-						/>
-					</div>
-					<label className="flex items-center gap-2 text-sm">
-						<input
-							type="checkbox"
-							checked={isDefault}
-							onChange={(e) => setIsDefault(e.target.checked)}
-							className="rounded"
-						/>
-						Set as default
-					</label>
-				</div>
-				<DialogFooter>
-					<Button
-						onClick={() => upsert.mutate()}
-						disabled={upsert.isPending || !code || !name}
-					>
-						{upsert.isPending ? "Saving…" : "Save"}
-					</Button>
-				</DialogFooter>
+					<DialogFooter>
+						<form.Subscribe
+							selector={(state) =>
+								[state.values.code, state.values.name] as const
+							}
+						>
+							{([code, name]) => (
+								<Button
+									type="submit"
+									disabled={upsert.isPending || !code.trim() || !name.trim()}
+								>
+									{upsert.isPending ? "Saving…" : "Save"}
+								</Button>
+							)}
+						</form.Subscribe>
+					</DialogFooter>
+				</form>
 			</DialogContent>
 		</Dialog>
 	);
@@ -200,20 +324,28 @@ function LocalesPage() {
 											<TableCell className="text-right">
 												<div className="flex items-center justify-end gap-2">
 													{!locale.isDefault && (
-														<Button
-															size="sm"
-															variant="outline"
-															className="h-7 gap-1 text-xs"
-															onClick={() =>
+														<ConfirmPopover
+															trigger={
+																<Button
+																	size="sm"
+																	variant="outline"
+																	className="h-7 gap-1 text-xs"
+																>
+																	<IconStar className="size-3" />
+																	Set default
+																</Button>
+															}
+															title={`Make "${locale.name}" the default locale?`}
+															description="Content without an explicit locale will fall back to this one."
+															confirmLabel="Set default"
+															loading={setDefault.isPending}
+															onConfirm={() =>
 																setDefault.mutate({
 																	code: locale.code,
 																	name: locale.name,
 																})
 															}
-														>
-															<IconStar className="size-3" />
-															Set default
-														</Button>
+														/>
 													)}
 													<Button
 														size="sm"

@@ -8,6 +8,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ConfirmPopover } from "@/components/shared/ConfirmPopover";
 import { PermissionPicker } from "@/components/shared/PermissionPicker";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -207,15 +208,24 @@ function GroupsPage() {
 									</TableCell>
 									<TableCell className="text-right">
 										<GroupDialog group={group} />
-										<Button
-											size="sm"
-											variant="outline"
-											className="ml-2 h-7 text-destructive hover:bg-destructive/10"
-											onClick={() => remove.mutate(group.id)}
-											disabled={remove.isPending}
-										>
-											<IconTrash className="size-3.5" />
-										</Button>
+										<ConfirmPopover
+											trigger={
+												<Button
+													size="sm"
+													variant="outline"
+													className="ml-2 h-7 text-destructive hover:bg-destructive/10"
+													disabled={remove.isPending}
+												>
+													<IconTrash className="size-3.5" />
+												</Button>
+											}
+											title={`Delete "${group.name}"?`}
+											description="Members lose these permissions immediately. This cannot be undone."
+											confirmLabel="Delete"
+											variant="destructive"
+											loading={remove.isPending}
+											onConfirm={() => remove.mutate(group.id)}
+										/>
 									</TableCell>
 								</TableRow>
 							))

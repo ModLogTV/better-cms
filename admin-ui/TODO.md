@@ -12,10 +12,10 @@
 - [x] Fix media uploads (broken for all files, not just `.icon`) and show actionable error messages
 - [x] Fix browser console warning: "[DOM] Password field is not contained in a form"
 - [ ] Use TanStack Form for forms and TanStack Query for API calls throughout
-- [ ] add confirmation popover for deleting a group
-- [ ] make the actions popover for the users data table wider (because "Manage Access" warps into two lines)
-- [ ] the users table needs filter options above the table (e.g. for permissions, searching a user id or name, etc.)
-- [ ] add a confirmation popover for setting the default locale
-- [ ] the "Search common locales..." select popover content isnt scrollable (bug)
-- [ ] redesing the add locale dialog: tab switcher at the top (consisting of two cards; the selected one becomes the primary color for border and text) "Use common preset" or "Custom configuration". Use common preset shows the select component with the country presets and flags, custom configuration shows the code and name input fields
-- [ ] make sure all checkboxes used get a shadcn checkbox component (for example in the "Set as default" option in the add locale dialog) that is styled like the rest of our components
+- [x] add confirmation popover for deleting a group
+- [x] make the actions popover for the users data table wider (because "Manage Access" warps into two lines)
+- [x] the users table needs filter options above the table (e.g. for permissions, searching a user id or name, etc.)
+- [x] add a confirmation popover for setting the default locale
+- [x] the "Search common locales..." select popover content isnt scrollable (bug)
+- [x] redesing the add locale dialog: tab switcher at the top (consisting of two cards; the selected one becomes the primary color for border and text) "Use common preset" or "Custom configuration". Use common preset shows the select component with the country presets and flags, custom configuration shows the code and name input fields
+- [x] make sure all checkboxes used get a shadcn checkbox component (for example in the "Set as default" option in the add locale dialog) that is styled like the rest of our components
