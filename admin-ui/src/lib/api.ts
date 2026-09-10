@@ -195,6 +195,22 @@ export interface MediaAsset {
 	createdAt: string;
 	status: PageStatus;
 	metadata: Record<string, unknown>;
+	tagIds: string[];
+}
+
+export interface Tag {
+	id: string;
+	name: string;
+	createdAt: string;
+}
+
+export interface SavedView {
+	id: string;
+	name: string;
+	ownerId: string | null;
+	operator: "AND" | "OR";
+	tagIds: string[];
+	createdAt: string;
 }
 
 export interface MediaVersionSummary {
@@ -309,7 +325,15 @@ export const api = {
 	},
 
 	media: {
-		list: () => get<MediaAsset[]>("/media"),
+		list: (filter?: { tagIds?: string[]; tagOperator?: "AND" | "OR" }) => {
+			const search = new URLSearchParams();
+			if (filter?.tagIds && filter.tagIds.length > 0) {
+				search.set("tagIds", filter.tagIds.join(","));
+				if (filter.tagOperator) search.set("tagOperator", filter.tagOperator);
+			}
+			const qs = search.toString();
+			return get<MediaAsset[]>(`/media${qs ? `?${qs}` : ""}`);
+		},
 		presign: (opts: { filename: string; mimeType: string; size: number }) =>
 			post<{ uploadUrl: string; publicUrl: string; assetId: string }>(
 				"/media/presign",
@@ -383,6 +407,22 @@ export const api = {
 			list: (id: string) => get<MediaVersionSummary[]>(`/media/${id}/versions`),
 			get: (versionId: string) =>
 				get<MediaVersion>(`/media/versions/${versionId}`),
+		},
+		setTags: (id: string, tagIds: string[]) =>
+			put(`/media/${id}/tags`, { tagIds }),
+		tags: {
+			list: () => get<Tag[]>("/media/tags"),
+			create: (name: string) => post<Tag>("/media/tags", { name }),
+			delete: (id: string) => del(`/media/tags/${id}`),
+		},
+		views: {
+			list: () => get<SavedView[]>("/media/views"),
+			create: (view: {
+				name: string;
+				operator: "AND" | "OR";
+				tagIds: string[];
+			}) => post<SavedView>("/media/views", view),
+			delete: (id: string) => del(`/media/views/${id}`),
 		},
 	},
 

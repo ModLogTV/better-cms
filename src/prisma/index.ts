@@ -15,6 +15,8 @@ import type {
 	PageVersionRetention,
 	PageVersionSummary,
 	RawBlock,
+	SavedView,
+	Tag,
 } from "../core/adapter";
 
 interface PrismaPageNodeRow {
@@ -68,6 +70,7 @@ interface PrismaMediaAssetRow {
 interface PrismaMediaAssetWithVersionsRow extends PrismaMediaAssetRow {
 	/** Latest version only, when fetched with `include.versions` (take 1, desc). */
 	versions: PrismaMediaVersionRow[];
+	tags: PrismaMediaAssetTagRow[];
 }
 
 interface PrismaMediaVersionRow {
@@ -83,6 +86,26 @@ interface PrismaMediaVersionRow {
 	createdAt: Date;
 	publishedAt: Date | null;
 	createdBy: string | null;
+}
+
+interface PrismaTagRow {
+	id: string;
+	name: string;
+	createdAt: Date;
+}
+
+interface PrismaSavedViewRow {
+	id: string;
+	name: string;
+	ownerId: string | null;
+	operator: string;
+	tagIds: unknown;
+	createdAt: Date;
+}
+
+interface PrismaMediaAssetTagRow {
+	assetId: string;
+	tagId: string;
 }
 
 interface PrismaClient {
@@ -218,6 +241,7 @@ interface PrismaClient {
 		findMany(args?: {
 			include?: {
 				versions: { orderBy: Record<string, "asc" | "desc">[]; take: number };
+				tags: true;
 			};
 		}): Promise<PrismaMediaAssetWithVersionsRow[]>;
 		deleteMany(args: { where: { id: string } }): Promise<unknown>;
@@ -255,6 +279,33 @@ interface PrismaClient {
 			take?: number;
 		}): Promise<PrismaMediaVersionRow[]>;
 	};
+	tag: {
+		create(args: { data: { id: string; name: string } }): Promise<PrismaTagRow>;
+		findMany(): Promise<PrismaTagRow[]>;
+		delete(args: { where: { id: string } }): Promise<unknown>;
+	};
+	mediaAssetTag: {
+		findMany(args: {
+			where: { assetId: string };
+		}): Promise<PrismaMediaAssetTagRow[]>;
+		deleteMany(args: { where: { assetId: string } }): Promise<unknown>;
+		createMany(args: {
+			data: { assetId: string; tagId: string }[];
+		}): Promise<unknown>;
+	};
+	savedView: {
+		create(args: {
+			data: {
+				id: string;
+				name: string;
+				ownerId?: string;
+				operator: string;
+				tagIds: unknown;
+			};
+		}): Promise<PrismaSavedViewRow>;
+		findMany(): Promise<PrismaSavedViewRow[]>;
+		delete(args: { where: { id: string } }): Promise<unknown>;
+	};
 }
 
 function deriveStatus(
@@ -280,8 +331,11 @@ function toPageVersionSummary(row: PrismaPageVersionRow): PageVersionSummary {
 function toMediaAsset(
 	asset: PrismaMediaAssetRow,
 	version: PrismaMediaVersionRow,
-	/** Pass when `version` isn't necessarily the latest (e.g. the published snapshot). */
-	latestVersionIdOverride?: string,
+	opts?: {
+		/** Pass when `version` isn't necessarily the latest (e.g. the published snapshot). */
+		latestVersionIdOverride?: string;
+		tagIds?: string[];
+	},
 ): MediaAsset {
 	return {
 		id: asset.id,
@@ -295,10 +349,34 @@ function toMediaAsset(
 		createdAt: asset.createdAt,
 		status: deriveStatus(
 			asset.publishedVersionId,
-			latestVersionIdOverride ?? version.id,
+			opts?.latestVersionIdOverride ?? version.id,
 		),
 		metadata: (version.metadata as Record<string, unknown>) ?? {},
+		tagIds: opts?.tagIds ?? [],
 	};
+}
+
+function toTag(row: PrismaTagRow): Tag {
+	return { id: row.id, name: row.name, createdAt: row.createdAt };
+}
+
+function toSavedView(row: PrismaSavedViewRow): SavedView {
+	return {
+		id: row.id,
+		name: row.name,
+		ownerId: row.ownerId,
+		operator: row.operator as "AND" | "OR",
+		tagIds: (row.tagIds as string[]) ?? [],
+		createdAt: row.createdAt,
+	};
+}
+
+async function assetTagIds(
+	prisma: PrismaClient,
+	assetId: string,
+): Promise<string[]> {
+	const rows = await prisma.mediaAssetTag.findMany({ where: { assetId } });
+	return rows.map((r) => r.tagId);
 }
 
 function toMediaVersionSummary(
@@ -996,13 +1074,31 @@ export function prismaAdapter(
 			});
 		},
 
-		async listMediaAssets() {
+		async listMediaAssets(opts) {
 			const rows = await prisma.mediaAsset.findMany({
-				include: { versions: { orderBy: [{ seq: "desc" }], take: 1 } },
+				include: {
+					versions: { orderBy: [{ seq: "desc" }], take: 1 },
+					tags: true,
+				},
 			});
-			return rows
+			let assets = rows
 				.filter((r) => r.versions[0])
-				.map((r) => toMediaAsset(r, r.versions[0]));
+				.map((r) =>
+					toMediaAsset(r, r.versions[0], {
+						tagIds: r.tags.map((t) => t.tagId),
+					}),
+				);
+
+			if (opts?.tagIds && opts.tagIds.length > 0) {
+				const wanted = new Set(opts.tagIds);
+				assets =
+					opts.tagOperator === "OR"
+						? assets.filter((a) => a.tagIds.some((t) => wanted.has(t)))
+						: assets.filter((a) =>
+								opts.tagIds?.every((t) => a.tagIds.includes(t)),
+							);
+			}
+			return assets;
 		},
 
 		async deleteMediaAsset({ key }) {
@@ -1058,7 +1154,9 @@ export function prismaAdapter(
 					createdBy,
 				},
 			});
-			return toMediaAsset(asset, version);
+			return toMediaAsset(asset, version, {
+				tagIds: await assetTagIds(prisma, id),
+			});
 		},
 
 		async listMediaVersions({ id }) {
@@ -1113,7 +1211,9 @@ export function prismaAdapter(
 					metadata: source.metadata,
 				},
 			});
-			return toMediaAsset(asset, restored);
+			return toMediaAsset(asset, restored, {
+				tagIds: await assetTagIds(prisma, id),
+			});
 		},
 
 		async getPublishedMediaAsset({ key }) {
@@ -1135,7 +1235,49 @@ export function prismaAdapter(
 			});
 			if (!published) return null;
 			const latest = await mediaLatestVersion(prisma, asset.id);
-			return toMediaAsset(asset, published, latest?.id);
+			return toMediaAsset(asset, published, {
+				latestVersionIdOverride: latest?.id,
+				tagIds: await assetTagIds(prisma, asset.id),
+			});
+		},
+
+		async listTags() {
+			const rows = await prisma.tag.findMany();
+			return rows.map(toTag);
+		},
+
+		async createTag({ id, name }) {
+			const row = await prisma.tag.create({ data: { id, name } });
+			return toTag(row);
+		},
+
+		async deleteTag({ id }) {
+			await prisma.tag.delete({ where: { id } });
+		},
+
+		async setAssetTags({ assetId, tagIds }) {
+			await prisma.mediaAssetTag.deleteMany({ where: { assetId } });
+			if (tagIds.length > 0) {
+				await prisma.mediaAssetTag.createMany({
+					data: tagIds.map((tagId) => ({ assetId, tagId })),
+				});
+			}
+		},
+
+		async listSavedViews() {
+			const rows = await prisma.savedView.findMany();
+			return rows.map(toSavedView);
+		},
+
+		async createSavedView({ id, name, ownerId, operator, tagIds }) {
+			const row = await prisma.savedView.create({
+				data: { id, name, ownerId, operator, tagIds },
+			});
+			return toSavedView(row);
+		},
+
+		async deleteSavedView({ id }) {
+			await prisma.savedView.delete({ where: { id } });
 		},
 	};
 }

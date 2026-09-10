@@ -30,8 +30,29 @@ export function mediaRoutes(ctx: CMSContext) {
 				permissions: [CMS_PERMISSIONS.ADMIN_READ],
 			}),
 		)
-		.get("/media", async ({ cmsUserId: _u }) => {
-			return ctx.adapter.listMediaAssets();
+		.get(
+			"/media",
+			async ({ query }) => {
+				const tagIds = query.tagIds
+					? query.tagIds.split(",").filter(Boolean)
+					: undefined;
+				return ctx.adapter.listMediaAssets({
+					tagIds,
+					tagOperator: query.tagOperator === "OR" ? "OR" : "AND",
+				});
+			},
+			{
+				query: t.Object({
+					tagIds: t.Optional(t.String()),
+					tagOperator: t.Optional(t.String()),
+				}),
+			},
+		)
+		.get("/media/tags", async () => {
+			return ctx.adapter.listTags();
+		})
+		.get("/media/views", async () => {
+			return ctx.adapter.listSavedViews();
 		})
 		.get(
 			// `:id` here is a storage key (named to match the other single-resource
@@ -131,6 +152,60 @@ export function mediaRoutes(ctx: CMSContext) {
 				params: t.Object({ id: t.String() }),
 				body: t.Object({ versionId: t.String() }),
 			},
+		)
+		.put(
+			"/media/:id/tags",
+			async ({ params, body }) => {
+				await ctx.adapter.setAssetTags({
+					assetId: params.id,
+					tagIds: body.tagIds,
+				});
+				return { ok: true };
+			},
+			{
+				params: t.Object({ id: t.String() }),
+				body: t.Object({ tagIds: t.Array(t.String()) }),
+			},
+		)
+		.post(
+			"/media/tags",
+			async ({ body }) => {
+				return ctx.adapter.createTag({ id: crypto.randomUUID(), ...body });
+			},
+			{ body: t.Object({ name: t.String() }) },
+		)
+		.delete(
+			"/media/tags/:id",
+			async ({ params }) => {
+				await ctx.adapter.deleteTag({ id: params.id });
+				return { ok: true };
+			},
+			{ params: t.Object({ id: t.String() }) },
+		)
+		.post(
+			"/media/views",
+			async ({ body, cmsUserId }) => {
+				return ctx.adapter.createSavedView({
+					id: crypto.randomUUID(),
+					ownerId: cmsUserId,
+					...body,
+				});
+			},
+			{
+				body: t.Object({
+					name: t.String(),
+					operator: t.Union([t.Literal("AND"), t.Literal("OR")]),
+					tagIds: t.Array(t.String()),
+				}),
+			},
+		)
+		.delete(
+			"/media/views/:id",
+			async ({ params }) => {
+				await ctx.adapter.deleteSavedView({ id: params.id });
+				return { ok: true };
+			},
+			{ params: t.Object({ id: t.String() }) },
 		);
 
 	const uploadRoutes = new Elysia()

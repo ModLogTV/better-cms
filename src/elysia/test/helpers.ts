@@ -10,6 +10,8 @@ import type {
 	PageSummary,
 	PageTreeNode,
 	PageVersionSummary,
+	SavedView,
+	Tag,
 } from "../../core/adapter";
 import { createCMS } from "../../core/index";
 import { key, vars } from "../../i18n/markers";
@@ -39,6 +41,7 @@ export function makeMediaAsset(
 		confirmedAt: null,
 		createdAt: new Date("2024-01-01"),
 		status: "draft",
+		tagIds: [],
 		metadata: {},
 		...overrides,
 	};
@@ -96,6 +99,24 @@ export function makeAdapter(overrides: Partial<CMSAdapter> = {}): CMSAdapter {
 		getMediaVersion: mock(async () => null),
 		restoreMediaVersion: mock(async (opts) => makeMediaAsset({ id: opts.id })),
 		getPublishedMediaAsset: mock(async () => null),
+		listTags: mock(async () => [] as Tag[]),
+		createTag: mock(async (opts) => ({
+			id: opts.id,
+			name: opts.name,
+			createdAt: new Date(),
+		})),
+		deleteTag: mock(async () => {}),
+		setAssetTags: mock(async () => {}),
+		listSavedViews: mock(async () => [] as SavedView[]),
+		createSavedView: mock(async (opts) => ({
+			id: opts.id,
+			name: opts.name,
+			ownerId: opts.ownerId ?? null,
+			operator: opts.operator,
+			tagIds: opts.tagIds,
+			createdAt: new Date(),
+		})),
+		deleteSavedView: mock(async () => {}),
 		...overrides,
 	};
 }

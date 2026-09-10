@@ -82,6 +82,7 @@ const mockAdapter: CMSAdapter = {
 		createdAt: new Date(),
 		status: "draft" as const,
 		metadata: {},
+		tagIds: [],
 	})),
 	confirmMediaAsset: mock(async () => {}),
 	listMediaAssets: mock(async () => []),
@@ -98,6 +99,7 @@ const mockAdapter: CMSAdapter = {
 		createdAt: new Date(),
 		status: "draft" as const,
 		metadata: {},
+		tagIds: [],
 	})),
 	listMediaVersions: mock(async () => []),
 	getMediaVersion: mock(async () => null),
@@ -112,8 +114,27 @@ const mockAdapter: CMSAdapter = {
 		createdAt: new Date(),
 		status: "draft" as const,
 		metadata: {},
+		tagIds: [],
 	})),
 	getPublishedMediaAsset: mock(async () => null),
+	listTags: mock(async () => []),
+	createTag: mock(async ({ id, name }) => ({
+		id,
+		name,
+		createdAt: new Date(),
+	})),
+	deleteTag: mock(async () => {}),
+	setAssetTags: mock(async () => {}),
+	listSavedViews: mock(async () => []),
+	createSavedView: mock(async ({ id, name, ownerId, operator, tagIds }) => ({
+		id,
+		name,
+		ownerId: ownerId ?? null,
+		operator,
+		tagIds,
+		createdAt: new Date(),
+	})),
+	deleteSavedView: mock(async () => {}),
 };
 
 const ns = defineNamespace({

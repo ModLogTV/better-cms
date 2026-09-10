@@ -125,6 +125,8 @@ export type {
 	PageVersionRetention,
 	PageVersionSummary,
 	RawBlock,
+	SavedView,
+	Tag,
 } from "./adapter";
 export type { CMSConfig } from "./config";
 export { CMSEventEmitter } from "./events";

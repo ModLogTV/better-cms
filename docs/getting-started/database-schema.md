@@ -124,6 +124,40 @@ model MediaAsset {
   publishedVersionId String?
 
   versions MediaVersion[]
+  tags     MediaAssetTag[]
+}
+
+// Flat tags - no hierarchy/folders. Name is the admin-facing identity; `id`
+// is what grants and asset associations reference.
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  assets MediaAssetTag[]
+}
+
+model MediaAssetTag {
+  assetId String
+  tagId   String
+
+  asset MediaAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  tag   Tag        @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([assetId, tagId])
+  @@index([tagId])
+}
+
+// A saved tag-filter combination (Paperless-ngx style), listed for quick
+// re-selection. `tagIds`/`operator` together are the filter: AND = every
+// tag must be present, OR = any one of them.
+model SavedView {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String?
+  operator  String
+  tagIds    Json  // array of tag ids - no @default, see Model notes
+  createdAt DateTime @default(now())
 }
 
 // Append-only. One row per metadata edit and per file replacement (the

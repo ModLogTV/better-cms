@@ -25,6 +25,24 @@ export interface MediaAsset {
 	status: "draft" | "published" | "modified";
 	/** Arbitrary metadata snapshot from the latest version (alt/caption/custom fields, extracted dimensions/duration). */
 	metadata: Record<string, unknown>;
+	tagIds: string[];
+}
+
+/** A flat (non-hierarchical) label media assets can be tagged with. */
+export interface Tag {
+	id: string;
+	name: string;
+	createdAt: Date;
+}
+
+/** A saved tag-filter combination, listed for quick re-selection. */
+export interface SavedView {
+	id: string;
+	name: string;
+	ownerId: string | null;
+	operator: "AND" | "OR";
+	tagIds: string[];
+	createdAt: Date;
 }
 
 /** One entry in a media asset's append-only version history. */
@@ -267,7 +285,15 @@ export interface CMSAdapter {
 		uploadedBy?: string;
 	}): Promise<MediaAsset>;
 	confirmMediaAsset(opts: { id: string }): Promise<void>;
-	listMediaAssets(): Promise<MediaAsset[]>;
+	/**
+	 * Lists media assets. `tagIds` narrows to assets carrying at least one
+	 * (OR) or all (AND, the default) of the given tags - an asset with
+	 * multiple tags matches on any one of them under OR. Omit to list all.
+	 */
+	listMediaAssets(opts?: {
+		tagIds?: string[];
+		tagOperator?: "AND" | "OR";
+	}): Promise<MediaAsset[]>;
 	deleteMediaAsset(opts: { key: string }): Promise<void>;
 	/** Marks the asset's latest version as published (creates a metadata-only version first if none exists). */
 	publishMediaAsset(opts: { id: string }): Promise<void>;
@@ -297,4 +323,18 @@ export interface CMSAdapter {
 	}): Promise<MediaAsset>;
 	/** Published-only lookup by key - the public-facing counterpart to the admin `listMediaAssets`/`:key/url` routes. Null if not found or not published. */
 	getPublishedMediaAsset(opts: { key: string }): Promise<MediaAsset | null>;
+	listTags(): Promise<Tag[]>;
+	createTag(opts: { id: string; name: string }): Promise<Tag>;
+	deleteTag(opts: { id: string }): Promise<void>;
+	/** Replaces an asset's full tag set. */
+	setAssetTags(opts: { assetId: string; tagIds: string[] }): Promise<void>;
+	listSavedViews(): Promise<SavedView[]>;
+	createSavedView(opts: {
+		id: string;
+		name: string;
+		ownerId?: string;
+		operator: "AND" | "OR";
+		tagIds: string[];
+	}): Promise<SavedView>;
+	deleteSavedView(opts: { id: string }): Promise<void>;
 }

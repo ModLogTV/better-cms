@@ -368,6 +368,149 @@ describe("media routes - public", () => {
 	});
 });
 
+describe("media routes - tags and saved views", () => {
+	test("GET /cms/media?tagIds=a,b filters assets (AND by default)", async () => {
+		const listMediaAssets = mock(async () => []);
+		const adapter = makeAdapter({ listMediaAssets });
+		const app = makeApp(adapter, [makePlugin()]);
+		const res = await app.handle(req("/cms/media?tagIds=a,b"));
+		expect(res.status).toBe(200);
+		expect(listMediaAssets).toHaveBeenCalledWith({
+			tagIds: ["a", "b"],
+			tagOperator: "AND",
+		});
+	});
+
+	test("GET /cms/media?tagIds=a,b&tagOperator=OR passes OR through", async () => {
+		const listMediaAssets = mock(async () => []);
+		const adapter = makeAdapter({ listMediaAssets });
+		const app = makeApp(adapter, [makePlugin()]);
+		await app.handle(req("/cms/media?tagIds=a,b&tagOperator=OR"));
+		expect(listMediaAssets).toHaveBeenCalledWith({
+			tagIds: ["a", "b"],
+			tagOperator: "OR",
+		});
+	});
+
+	test("GET /cms/media/tags lists tags", async () => {
+		const tag = { id: "t1", name: "hero", createdAt: new Date() };
+		const adapter = makeAdapter({ listTags: mock(async () => [tag]) });
+		const app = makeApp(adapter, [makePlugin()]);
+		const res = await app.handle(req("/cms/media/tags"));
+		expect(res.status).toBe(200);
+		const body = await res.json();
+		expect(body).toHaveLength(1);
+		expect(body[0].name).toBe("hero");
+	});
+
+	test("POST /cms/media/tags creates a tag", async () => {
+		const createTag = mock(
+			async ({ id, name }: { id: string; name: string }) => ({
+				id,
+				name,
+				createdAt: new Date(),
+			}),
+		);
+		const adapter = makeAdapter({ createTag });
+		const app = makeApp(adapter, [makePlugin()]);
+		const res = await app.handle(
+			req("/cms/media/tags", {
+				method: "POST",
+				body: JSON.stringify({ name: "banner" }),
+			}),
+		);
+		expect(res.status).toBe(200);
+		expect(createTag).toHaveBeenCalledWith(
+			expect.objectContaining({ name: "banner" }),
+		);
+	});
+
+	test("DELETE /cms/media/tags/:id removes a tag", async () => {
+		const deleteTag = mock(async () => {});
+		const adapter = makeAdapter({ deleteTag });
+		const app = makeApp(adapter, [makePlugin()]);
+		const res = await app.handle(
+			req("/cms/media/tags/t1", { method: "DELETE" }),
+		);
+		expect(res.status).toBe(200);
+		expect(deleteTag).toHaveBeenCalledWith({ id: "t1" });
+	});
+
+	test("PUT /cms/media/:id/tags replaces an asset's tag set", async () => {
+		const setAssetTags = mock(async () => {});
+		const adapter = makeAdapter({ setAssetTags });
+		const app = makeApp(adapter, [makePlugin()]);
+		const res = await app.handle(
+			req("/cms/media/asset-1/tags", {
+				method: "PUT",
+				body: JSON.stringify({ tagIds: ["t1", "t2"] }),
+			}),
+		);
+		expect(res.status).toBe(200);
+		expect(setAssetTags).toHaveBeenCalledWith({
+			assetId: "asset-1",
+			tagIds: ["t1", "t2"],
+		});
+	});
+
+	test("GET /cms/media/views lists saved views", async () => {
+		const view = {
+			id: "v1",
+			name: "Banners",
+			ownerId: null,
+			operator: "OR" as const,
+			tagIds: ["t1"],
+			createdAt: new Date(),
+		};
+		const adapter = makeAdapter({ listSavedViews: mock(async () => [view]) });
+		const app = makeApp(adapter, [makePlugin()]);
+		const res = await app.handle(req("/cms/media/views"));
+		expect(res.status).toBe(200);
+		const body = await res.json();
+		expect(body[0].name).toBe("Banners");
+	});
+
+	test("POST /cms/media/views creates a saved view", async () => {
+		const createSavedView = mock(
+			async (opts: { id: string; name: string }) => ({
+				id: opts.id,
+				name: opts.name,
+				ownerId: null,
+				operator: "AND" as const,
+				tagIds: ["t1"],
+				createdAt: new Date(),
+			}),
+		);
+		const adapter = makeAdapter({ createSavedView });
+		const app = makeApp(adapter, [makePlugin()]);
+		const res = await app.handle(
+			req("/cms/media/views", {
+				method: "POST",
+				body: JSON.stringify({
+					name: "Banners",
+					operator: "AND",
+					tagIds: ["t1"],
+				}),
+			}),
+		);
+		expect(res.status).toBe(200);
+		expect(createSavedView).toHaveBeenCalledWith(
+			expect.objectContaining({ name: "Banners", operator: "AND" }),
+		);
+	});
+
+	test("DELETE /cms/media/views/:id removes a saved view", async () => {
+		const deleteSavedView = mock(async () => {});
+		const adapter = makeAdapter({ deleteSavedView });
+		const app = makeApp(adapter, [makePlugin()]);
+		const res = await app.handle(
+			req("/cms/media/views/v1", { method: "DELETE" }),
+		);
+		expect(res.status).toBe(200);
+		expect(deleteSavedView).toHaveBeenCalledWith({ id: "v1" });
+	});
+});
+
 function makePlugin() {
 	return mediaPlugin({ storage: makeStorage() });
 }

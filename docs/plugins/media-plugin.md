@@ -54,6 +54,35 @@ const cms = createCMS({
 | `PATCH` | `/cms/media/:id` | `cms:media:upload` | Metadata edit - creates a new version (`{ metadata }`) |
 | `POST` | `/cms/media/:id/restore` | `cms:media:upload` | Copies a past version into a new draft version (`{ versionId }`) |
 | `GET` | `/cms/media/public/:key` | none | Redirects to the file **only if published** - the public-facing counterpart to the admin routes above |
+| `GET` | `/cms/media?tagIds=a,b&tagOperator=AND\|OR` | `cms:admin:read` | List assets, optionally filtered by tags (`AND` = every tag, `OR` = any one - default `AND`) |
+| `GET` | `/cms/media/tags` | `cms:admin:read` | List all tags |
+| `POST` | `/cms/media/tags` | `cms:media:upload` | Create a tag (`{ name }`) |
+| `DELETE` | `/cms/media/tags/:id` | `cms:media:upload` | Delete a tag |
+| `PUT` | `/cms/media/:id/tags` | `cms:media:upload` | Replace an asset's full tag set (`{ tagIds }`) |
+| `GET` | `/cms/media/views` | `cms:admin:read` | List saved tag-filter views |
+| `POST` | `/cms/media/views` | `cms:media:upload` | Save a tag-filter combination (`{ name, operator, tagIds }`) |
+| `DELETE` | `/cms/media/views/:id` | `cms:media:upload` | Delete a saved view |
+
+## Tags and saved views
+
+Media uses flat tags (no folders/hierarchy) - an asset can carry any number of them. The admin UI's media library filters by one or more tags (AND/OR), and a chosen combination can be saved as a named, shareable view for quick re-selection, similar to Paperless-ngx.
+
+```ts
+interface Tag {
+  id: string;
+  name: string;
+  createdAt: Date;
+}
+
+interface SavedView {
+  id: string;
+  name: string;
+  ownerId: string | null;
+  operator: "AND" | "OR";
+  tagIds: string[];
+  createdAt: Date;
+}
+```
 
 ## Publishing and version history
 
@@ -90,6 +119,7 @@ interface MediaAsset {
   createdAt: Date;
   status: "draft" | "published" | "modified"; // derived from version history
   metadata: Record<string, unknown>; // latest version's metadata snapshot
+  tagIds: string[];
 }
 ```
 
