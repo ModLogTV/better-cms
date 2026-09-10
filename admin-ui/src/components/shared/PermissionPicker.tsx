@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 
@@ -97,46 +98,52 @@ export function PermissionPicker({
 				</Label>
 			</div>
 
-			<div
-				className={hasWildcard ? "space-y-4 opacity-50" : "space-y-4"}
+			<ScrollArea
+				className={
+					hasWildcard
+						? "h-56 rounded-md border opacity-50"
+						: "h-56 rounded-md border"
+				}
 				inert={hasWildcard || undefined}
 			>
-				{Array.from(groups.entries()).map(([resource, entries]) => (
-					<div key={resource} className="space-y-1.5">
-						<p className="text-xs font-medium text-muted-foreground">
-							{resource}
-						</p>
-						<div className="grid gap-1.5 sm:grid-cols-2">
-							{entries.map((entry) => {
-								const id = `permission-${entry.value}`;
-								return (
-									<div
-										key={entry.value}
-										className="flex items-start gap-2 rounded-md border p-2"
-									>
-										<Checkbox
-											id={id}
-											checked={value.includes(entry.value)}
-											onCheckedChange={(checked) =>
-												toggle(entry.value, checked === true)
-											}
-										/>
-										<Label
-											htmlFor={id}
-											className="grid gap-0.5 font-normal leading-none"
+				<div className="space-y-4 p-3">
+					{Array.from(groups.entries()).map(([resource, entries]) => (
+						<div key={resource} className="space-y-1.5">
+							<p className="text-xs font-medium text-muted-foreground">
+								{resource}
+							</p>
+							<div className="grid gap-1.5 sm:grid-cols-2">
+								{entries.map((entry) => {
+									const id = `permission-${entry.value}`;
+									return (
+										<div
+											key={entry.value}
+											className="flex items-start gap-2 rounded-md border p-2"
 										>
-											<span className="text-sm">{entry.description}</span>
-											<code className="text-[10px] text-muted-foreground">
-												{entry.value}
-											</code>
-										</Label>
-									</div>
-								);
-							})}
+											<Checkbox
+												id={id}
+												checked={value.includes(entry.value)}
+												onCheckedChange={(checked) =>
+													toggle(entry.value, checked === true)
+												}
+											/>
+											<Label
+												htmlFor={id}
+												className="grid gap-0.5 font-normal leading-none"
+											>
+												<span className="text-sm">{entry.description}</span>
+												<code className="text-[10px] text-muted-foreground">
+													{entry.value}
+												</code>
+											</Label>
+										</div>
+									);
+								})}
+							</div>
 						</div>
-					</div>
-				))}
-			</div>
+					))}
+				</div>
+			</ScrollArea>
 
 			<div className="space-y-1.5">
 				<Label className="text-xs text-muted-foreground">
