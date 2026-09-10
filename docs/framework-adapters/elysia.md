@@ -55,7 +55,7 @@ Requests without a valid token for the given route receive `401 Unauthorized`.
 `toElysiaPlugin` uses `/cms` prefix. To change it, wrap the plugin and re-apply a prefix on your Elysia instance:
 
 ```ts
-// Not directly supported — use Elysia's group() if you need a different prefix
+// Not directly supported - use Elysia's group() if you need a different prefix
 const app = new Elysia()
   .group("/api", (app) => app.use(toElysiaPlugin(cms)))
   .listen(3001);

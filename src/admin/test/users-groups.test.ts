@@ -208,7 +208,7 @@ describe("admin.groups.delete", () => {
 // Auth header
 // ---------------------------------------------------------------------------
 
-describe("admin client – auth header", () => {
+describe("admin client - auth header", () => {
 	test("sends x-internal-token on all requests", async () => {
 		const spy = mockFetch((_, init) => {
 			const headers = init.headers as Record<string, string>;
@@ -224,7 +224,7 @@ describe("admin client – auth header", () => {
 // Error handling
 // ---------------------------------------------------------------------------
 
-describe("admin client – error handling", () => {
+describe("admin client - error handling", () => {
 	test("throws CMSError on 403 response", async () => {
 		const spy = mockFetch(() => new Response("Forbidden", { status: 403 }));
 		const { CMSError } = await import("../index");

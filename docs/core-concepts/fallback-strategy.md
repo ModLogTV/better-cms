@@ -28,7 +28,7 @@ Translations are resolved through a 4-tier chain. The goal: your UI never breaks
 
 Every successful API response is stored in a global `Map` with a 60-second TTL. Subsequent calls for the same namespace + locale within the TTL skip the network entirely.
 
-The cache is a module-level singleton — it is shared across all concurrent SSR requests for the lifetime of the Node.js process. This is intentional: it acts as a warm process cache that avoids redundant fetches when many requests arrive simultaneously.
+The cache is a module-level singleton - it is shared across all concurrent SSR requests for the lifetime of the Node.js process. This is intentional: it acts as a warm process cache that avoids redundant fetches when many requests arrive simultaneously.
 
 Cache entries can be manually invalidated:
 
@@ -109,7 +109,7 @@ export async function register() {
 }
 ```
 
-The initial sync is `await`ed — Next.js won't serve any requests until fallback files exist. See [Fallback Sync Plugin](../plugins/fallback-sync-plugin.md).
+The initial sync is `await`ed - Next.js won't serve any requests until fallback files exist. See [Fallback Sync Plugin](../plugins/fallback-sync-plugin.md).
 
 ## Why this matters
 

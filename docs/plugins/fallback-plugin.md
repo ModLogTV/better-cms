@@ -12,7 +12,7 @@ Writes translation snapshots to the local filesystem on every update. Used by th
 
 ## When to use this plugin
 
-Use `fallbackPlugin` when your CMS API and frontend share a disk — i.e., the same container or the same monorepo on the same machine. If they run in separate containers, use [Fallback Sync Plugin](./fallback-sync-plugin.md) instead.
+Use `fallbackPlugin` when your CMS API and frontend share a disk - i.e., the same container or the same monorepo on the same machine. If they run in separate containers, use [Fallback Sync Plugin](./fallback-sync-plugin.md) instead.
 
 ## Registration
 
@@ -84,7 +84,7 @@ configureCMSClient({
 });
 ```
 
-The dynamic `import()` path must match `outputDir` relative to where the `cms-client.ts` file lives. Bundlers resolve these paths statically — the files must exist at build time for bundler-based dynamic imports to work.
+The dynamic `import()` path must match `outputDir` relative to where the `cms-client.ts` file lives. Bundlers resolve these paths statically - the files must exist at build time for bundler-based dynamic imports to work.
 
 ## Limitations
 

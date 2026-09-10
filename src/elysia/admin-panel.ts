@@ -66,7 +66,7 @@ export function adminPanelPlugin(opts: AdminPanelOptions = {}) {
 		// "/admin" (no trailing slash) makes the browser resolve those relative
 		// paths one directory too high (e.g. "/assets/x.js" instead of
 		// "/admin/assets/x.js"), 404ing every asset. <base> must be inserted right
-		// after the opening <head> tag, not before </head> — per spec it only
+		// after the opening <head> tag, not before </head> - per spec it only
 		// affects elements parsed after it, and Vite's own <script src="./assets/...">
 		// and <link href="./assets/..."> tags are earlier in <head> than that.
 		return html

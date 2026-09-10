@@ -82,7 +82,7 @@ import {
 } from "better-cms/auth"
 ```
 
-The `"cms:*"` wildcard is always checked first — a user with `["cms:*"]` satisfies every `hasPermission` call.
+The `"cms:*"` wildcard is always checked first - a user with `["cms:*"]` satisfies every `hasPermission` call.
 
 ---
 

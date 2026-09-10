@@ -29,7 +29,7 @@ interface CMSClientConfig {
 
 // tsup builds each subpath entry (client/, next/, react/, next/client, ...)
 // as an independent bundle (splitting: false), so this module's code is
-// physically duplicated into every one of them — a plain module-level `let`
+// physically duplicated into every one of them - a plain module-level `let`
 // would give each subpath its own private, independent copy, silently
 // breaking the "call configureCMSClient() once" contract the moment an app
 // uses more than one subpath (e.g. /react for hooks + /next for RSC, which

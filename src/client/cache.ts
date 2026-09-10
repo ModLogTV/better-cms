@@ -1,4 +1,4 @@
-// See the comment in client/config.ts — this module is duplicated across every
+// See the comment in client/config.ts - this module is duplicated across every
 // subpath bundle (splitting: false), so its state is keyed off `globalThis`
 // rather than module-level `let`s, or the cache (and the enabled flag) would
 // silently stop being shared the moment an app uses more than one subpath.

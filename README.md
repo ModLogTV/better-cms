@@ -48,14 +48,14 @@ bun add @modlog/better-cms
 ## Framework Compatibility
 
 ### Frontend & Fullstack
-- **React** `Frontend` — Hooks and Context for client-side translation and page rendering.
-- **Next.js** `Fullstack` — Optimized handlers for RSC, App Router, and edge-ready API proxies.
-- **TanStack Start** `Fullstack` — Typed server function wrappers for modern React fullstack apps.
+- **React** `Frontend` - Hooks and Context for client-side translation and page rendering.
+- **Next.js** `Fullstack` - Optimized handlers for RSC, App Router, and edge-ready API proxies.
+- **TanStack Start** `Fullstack` - Typed server function wrappers for modern React fullstack apps.
 
 ### Backend & Database
-- **Elysia** `Backend` — High-performance API routes and middleware for Bun environments.
-- **Prisma** `ORM` — Robust database adapter for type-safe content persistence.
-- **Drizzle** `ORM` — Lightweight database adapter (initial implementation in roadmap).
+- **Elysia** `Backend` - High-performance API routes and middleware for Bun environments.
+- **Prisma** `ORM` - Robust database adapter for type-safe content persistence.
+- **Drizzle** `ORM` - Lightweight database adapter (initial implementation in roadmap).
 
 ## Roadmap
 
@@ -72,6 +72,7 @@ The following features are prioritized by architectural dependency and implement
 | 🔘    | **Data Interceptors**             | Framework   | Middleware to programmatically validate or transform content before saving.                       |
 | 🔘    | **Distributed Fallback**          | Reliability | Prioritize local JSON files if API latency exceeds a specific threshold.                          |
 | 🔘    | **Smart Preview Logic**           | DX          | Standardized context to toggle between "Published" and "Latest Draft" in hooks.                   |
+| 🔘    | **Standard Blocks Plugin**        | DX          | Modular plugin providing ready-made page blocks (hero, CTA, rich text, gallery, FAQ, etc.).        |
 | 🔘    | **Custom Statuses**               | Primitives  | User-defined states (e.g. "Archived") with built-in data fetcher filtering.                       |
 | 🔘    | **Multi-Instance Support**        | Enterprise  | Native pattern for isolating data by `siteId` or `tenantId` in shared tables.                     |
 | 🔘    | **Audit Event Stream**            | Primitives  | Global lifecycle hooks to pipe CMS actions to user-defined audit tables.                          |

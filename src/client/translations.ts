@@ -4,7 +4,7 @@ import { cmsEvents } from "./events";
 
 const TTL_MS = 60_000;
 
-/** In-flight request dedup — prevents multiple concurrent calls for the same key from all hitting the network */
+/** In-flight request dedup - prevents multiple concurrent calls for the same key from all hitting the network */
 const inflight = new Map<string, Promise<Record<string, string>>>();
 
 /**
@@ -12,7 +12,7 @@ const inflight = new Map<string, Promise<Record<string, string>>>();
  * 1. In-memory cache (TTL 60s)
  * 2. GET /cms/translations/:namespace/:locale
  * 3. `config.fallback({ namespace, locale })` if provided
- * 4. {} — t() returns the key string
+ * 4. {} - t() returns the key string
  */
 export async function loadTranslations(opts: {
 	namespace: string;

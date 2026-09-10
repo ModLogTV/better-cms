@@ -82,7 +82,7 @@ const adminReq = (path: string, init?: RequestInit) =>
 // No management → routes not registered
 // ---------------------------------------------------------------------------
 
-describe("user routes – no management adapter", () => {
+describe("user routes - no management adapter", () => {
 	test("GET /cms/admin/users returns 404 when management not set", async () => {
 		const app = makeAppWithoutManagement();
 		const res = await app.handle(adminReq("/cms/admin/users"));
@@ -100,7 +100,7 @@ describe("user routes – no management adapter", () => {
 // Auth enforcement
 // ---------------------------------------------------------------------------
 
-describe("user routes – auth enforcement", () => {
+describe("user routes - auth enforcement", () => {
 	test("GET /cms/admin/users returns 401 without token", async () => {
 		const app = makeAppWithManagement(makeManagement());
 		const res = await app.handle(req("/cms/admin/users", { token: "bad" }));

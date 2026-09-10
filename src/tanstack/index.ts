@@ -3,7 +3,7 @@ import type { RawBlock } from "../core/adapter";
 
 /**
  * Wraps AdminClient methods as TanStack Start server functions.
- * Returns plain async functions — caller wraps with createServerFn() in their app.
+ * Returns plain async functions - caller wraps with createServerFn() in their app.
  *
  * @example
  * ```ts

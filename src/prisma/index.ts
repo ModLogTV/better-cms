@@ -204,7 +204,7 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 		},
 
 		async upsertLocale({ code, name, isDefault = false }) {
-			// Only one locale may be default — docs/getting-started/database-schema.md
+			// Only one locale may be default - docs/getting-started/database-schema.md
 			// already documented this as unenforced; enforce it here instead of
 			// leaving it as a silent data-integrity trap for admin UI callers.
 			if (isDefault) {

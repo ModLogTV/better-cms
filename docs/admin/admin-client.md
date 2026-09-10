@@ -35,7 +35,7 @@
   - [`admin.groups.delete({ id })`](#admingroupsdelete-id)
 - [Error handling](#error-handling)
 
-`createAdminClient` returns a typed HTTP client for all CMS write operations. Use it on the server (SSR loaders, server functions, API routes) — never expose the admin token to the browser.
+`createAdminClient` returns a typed HTTP client for all CMS write operations. Use it on the server (SSR loaders, server functions, API routes) - never expose the admin token to the browser.
 
 ## Setup
 
@@ -198,7 +198,7 @@ await admin.media.delete({ key: "1234567890-hero.png" });
 
 ### `admin.media.presign({ filename, mimeType, size })`
 
-Low-level method — returns the presigned upload URL and registers an unconfirmed asset. Call `POST /cms/media/:assetId/confirm` after the upload completes.
+Low-level method - returns the presigned upload URL and registers an unconfirmed asset. Call `POST /cms/media/:assetId/confirm` after the upload completes.
 
 ```ts
 const { uploadUrl, publicUrl, assetId } = await admin.media.presign({
@@ -245,7 +245,7 @@ const users = await admin.users.list();
 
 ### `admin.users.getPermissions({ userId })`
 
-Returns the resolved permission set — direct permissions merged with all group permissions.
+Returns the resolved permission set - direct permissions merged with all group permissions.
 
 ```ts
 const perms = await admin.users.getPermissions({ userId: "user-1" });

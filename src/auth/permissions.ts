@@ -24,7 +24,7 @@ export const ALL_CMS_PERMISSIONS: CMSPermission[] =
 /** Wildcard that grants every CMS permission. */
 export const CMS_WILDCARD_PERMISSION = "cms:*" as const;
 
-/** Human-readable description per permission — powers the admin UI's permission picker. */
+/** Human-readable description per permission - powers the admin UI's permission picker. */
 export const CMS_PERMISSION_DESCRIPTIONS: Record<CMSPermission, string> = {
 	[CMS_PERMISSIONS.TRANSLATIONS_READ]: "View translation values",
 	[CMS_PERMISSIONS.TRANSLATIONS_WRITE]: "Edit translation values",

@@ -12,3 +12,5 @@
 - [ ] Fix media uploads (broken for all files, not just `.icon`) and show actionable error messages
 - [x] Fix browser console warning: "[DOM] Password field is not contained in a form"
 - [ ] Use TanStack Form for forms and TanStack Query for API calls throughout
+- [ ] add confirmation popover for deleting a group
+- [ ] make the actions popover for the users data table wider (because "Manage Access" warps into two lines)

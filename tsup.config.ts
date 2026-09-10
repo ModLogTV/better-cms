@@ -2,7 +2,7 @@ import { defineConfig } from "tsup";
 
 // NOTE: production usage right now intentionally pins Prisma + Elysia + React/Next
 // as the supported adapter/framework set. Drizzle, TanStack Start, and the storage
-// adapters build alongside them but are not the active target — see the roadmap
+// adapters build alongside them but are not the active target - see the roadmap
 // audit's build-isolation finding (all "node platform" entries below share one
 // tsup build config; a broken/missing entry currently fails the whole group).
 
@@ -41,7 +41,7 @@ export default defineConfig([
 		},
 	},
 
-	// Node-only — uses node:fs, node:path, node:events, Elysia, Prisma, AWS SDK
+	// Node-only - uses node:fs, node:path, node:events, Elysia, Prisma, AWS SDK
 	{
 		...shared,
 		platform: "node",
@@ -64,7 +64,7 @@ export default defineConfig([
 		},
 	},
 
-	// React — neutral platform (runs in SSR + browser), no "use client"
+	// React - neutral platform (runs in SSR + browser), no "use client"
 	{
 		...shared,
 		platform: "neutral",
@@ -75,20 +75,20 @@ export default defineConfig([
 		},
 	},
 
-	// next/client — browser only, ESM only, "use client" banner
+	// next/client - browser only, ESM only, "use client" banner
 	// Separate from react/ so RSC never accidentally imports hooks
 	{
 		...shared,
 		format: ["esm"],
 		platform: "browser",
 		external: ["react", "@tanstack/react-query"],
-		// NOT using tsup's `banner` option here — verified it silently produces no
+		// NOT using tsup's `banner` option here - verified it silently produces no
 		// output at all for this entry (esbuild logs "use client" was ignored" for
 		// the source file's own directive when bundling, and tsup's banner never
 		// gets injected either; confirmed via `grep -n "use client" dist/next-client/index.mjs`
 		// finding nothing after a build with `banner` set). Without it Next.js's RSC
 		// compiler rejects this entire module the moment anything imports it, which
-		// breaks Next.js — the flagship, documented integration — for every consumer.
+		// breaks Next.js - the flagship, documented integration - for every consumer.
 		// Patching the built file directly after the fact is the only thing that
 		// reliably survives esbuild's bundling here.
 		async onSuccess() {

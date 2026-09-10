@@ -73,7 +73,7 @@ export default async function Layout({ children }) {
 }
 ```
 
-`useTranslations(commonNamespace)` in any child component will read from context immediately — no `useEffect` fetch, no hydration delay.
+`useTranslations(commonNamespace)` in any child component will read from context immediately - no `useEffect` fetch, no hydration delay.
 
 ## Background polling
 
@@ -109,7 +109,7 @@ In-memory hit        → return (no network, no fallback)
 In-memory miss       → HTTP fetch
   HTTP success       → store in memory, return
   HTTP failure       → call fallback loader
-    Fallback success → return (does NOT store in memory — fallback is stale by definition)
+    Fallback success → return (does NOT store in memory - fallback is stale by definition)
     Fallback failure → return raw key string
 ```
 

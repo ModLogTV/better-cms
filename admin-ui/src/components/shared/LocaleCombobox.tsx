@@ -53,7 +53,7 @@ export function LocaleCombobox({
 					<CommandInput placeholder="Search language or country…" />
 					<CommandList>
 						<CommandEmpty>
-							No match — you can still type a custom code below.
+							No match - you can still type a custom code below.
 						</CommandEmpty>
 						<CommandGroup>
 							{CURATED_LOCALES.map((locale) => (

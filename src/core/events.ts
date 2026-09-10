@@ -22,7 +22,7 @@ interface EventMap {
 	};
 }
 
-/** Minimal typed event emitter — no Node.js EventEmitter dependency. */
+/** Minimal typed event emitter - no Node.js EventEmitter dependency. */
 export class CMSEventEmitter {
 	private handlers: { [K in keyof EventMap]?: Handler<EventMap[K]>[] } = {};
 

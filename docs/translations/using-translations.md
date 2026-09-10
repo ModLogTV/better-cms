@@ -5,8 +5,8 @@
   - [Pre-seeding to avoid flash](#pre-seeding-to-avoid-flash)
 - [Server components (RSC)](#server-components-rsc)
 - [Translator functions](#translator-functions)
-  - [`t(key, vars?)` — plain and vars keys](#tkey-vars-plain-and-vars-keys)
-  - [`tRich(key, tags)` — rich text keys](#trichkey-tags-rich-text-keys)
+  - [`t(key, vars?)` - plain and vars keys](#tkey-vars-plain-and-vars-keys)
+  - [`tRich(key, tags)` - rich text keys](#trichkey-tags-rich-text-keys)
 - [Pluralization detail](#pluralization-detail)
 - [Locale switching](#locale-switching)
 - [Background refresh](#background-refresh)
@@ -44,9 +44,9 @@ export function SubmitButton() {
 
 ### How `useTranslations` works
 
-1. Checks `CMSProvider` context for the namespace — if pre-loaded server-side, returns immediately (no fetch)
+1. Checks `CMSProvider` context for the namespace - if pre-loaded server-side, returns immediately (no fetch)
 2. If missing, calls `loadTranslations({ namespace: ns.name, locale })` in a `useEffect`
-3. Returns `{ t, tRich, isLoading, error }` — both functions are typed to your namespace definition
+3. Returns `{ t, tRich, isLoading, error }` - both functions are typed to your namespace definition
 
 The hook never suspends. While `isLoading` is true, `t("submit")` returns `""`. Pre-seeding via `initialTranslations` avoids this.
 
@@ -115,11 +115,11 @@ const data = await loadTranslations({ namespace: ns.name, locale });
 const t = createTranslator({ ns, translations: data, locale });
 ```
 
-`loadTranslations` respects the in-memory cache — if the layout already fetched `common/en`, this call returns immediately.
+`loadTranslations` respects the in-memory cache - if the layout already fetched `common/en`, this call returns immediately.
 
 ## Translator functions
 
-### `t(key, vars?)` — plain and vars keys
+### `t(key, vars?)` - plain and vars keys
 
 ```ts
 const t = createTranslator({ ns, translations, locale: "en" });
@@ -133,9 +133,9 @@ t("nonExistentKey")                   // "nonExistentKey" (raw key fallback)
 TypeScript enforces:
 - Key exists in the namespace
 - Correct vars shape for `vars<T>()` and `plural<T>()` keys
-- `rich<>()` keys are excluded — use `tRich` for those
+- `rich<>()` keys are excluded - use `tRich` for those
 
-### `tRich(key, tags)` — rich text keys
+### `tRich(key, tags)` - rich text keys
 
 ```ts
 const tRich = createRichTranslator({ ns, translations, locale: "en" });
@@ -184,7 +184,7 @@ export function LocaleSwitcher() {
 }
 ```
 
-`setLocale` updates the context locale and persists the choice in a cookie. The `CMSProvider` does not automatically re-fetch translations on locale change — pair it with `router.refresh()` or a page reload.
+`setLocale` updates the context locale and persists the choice in a cookie. The `CMSProvider` does not automatically re-fetch translations on locale change - pair it with `router.refresh()` or a page reload.
 
 ## Background refresh
 

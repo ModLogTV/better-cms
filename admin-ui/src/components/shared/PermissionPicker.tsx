@@ -111,7 +111,7 @@ export function PermissionPicker({
 					</span>
 					<span className="text-xs text-muted-foreground">
 						{wildcardLocked
-							? "This is your own account — you can't revoke your own admin access."
+							? "This is your own account - you can't revoke your own admin access."
 							: catalog?.find((p) => p.value === WILDCARD)?.description}
 					</span>
 				</Label>

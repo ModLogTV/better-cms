@@ -62,15 +62,15 @@ bunx prisma migrate dev --name init-cms
 
 ## How the adapter works
 
-The Prisma adapter implements the `CMSAdapter` interface using Prisma's generated client. It does not import from `@prisma/client` directly — it accepts any object that matches the expected shape. This means:
+The Prisma adapter implements the `CMSAdapter` interface using Prisma's generated client. It does not import from `@prisma/client` directly - it accepts any object that matches the expected shape. This means:
 
 - You can use a Prisma client from any package in your monorepo
 - You avoid version conflicts between the adapter's `@prisma/client` and yours
-- The adapter uses structural typing — if your Prisma client exposes `.translationNamespace`, `.page`, and `.locale` with the right methods, it works
+- The adapter uses structural typing - if your Prisma client exposes `.translationNamespace`, `.page`, and `.locale` with the right methods, it works
 
 ## Data shape
 
-**Translations** are stored as `Json` under the composite key `(name, locale)`. The `values` field is `Record<string, string>` — flat dot-notation keys to string values:
+**Translations** are stored as `Json` under the composite key `(name, locale)`. The `values` field is `Record<string, string>` - flat dot-notation keys to string values:
 
 ```json
 {
@@ -80,7 +80,7 @@ The Prisma adapter implements the `CMSAdapter` interface using Prisma's generate
 }
 ```
 
-**Pages** store blocks as `Json`. The adapter casts this to `RawBlock[]` — `{ type: string, data: unknown }[]`. Type validation happens in the API layer (Zod schemas in `pagesPlugin`), not in the adapter.
+**Pages** store blocks as `Json`. The adapter casts this to `RawBlock[]` - `{ type: string, data: unknown }[]`. Type validation happens in the API layer (Zod schemas in `pagesPlugin`), not in the adapter.
 
 **Locales** are stored as simple rows with `code` as primary key.
 

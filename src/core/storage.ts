@@ -5,9 +5,9 @@ export interface CMSStorageAdapter {
 		size: number;
 		ttl?: number;
 	}): Promise<{
-		/** Presigned PUT URL — browser uploads direct, never proxied through cms-api */
+		/** Presigned PUT URL - browser uploads direct, never proxied through cms-api */
 		uploadUrl: string;
-		/** {cdnUrl}/{key} — persisted in DB, used in block data */
+		/** {cdnUrl}/{key} - persisted in DB, used in block data */
 		publicUrl: string;
 	}>;
 
@@ -16,7 +16,7 @@ export interface CMSStorageAdapter {
 
 	/**
 	 * Generates a short-lived presigned GET URL for private buckets.
-	 * Optional — only needed when the bucket is not publicly readable.
+	 * Optional - only needed when the bucket is not publicly readable.
 	 * Falls back to the stored `publicUrl` when not implemented.
 	 */
 	presignRead?(opts: { key: string; ttl?: number }): Promise<{ url: string }>;

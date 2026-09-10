@@ -53,7 +53,7 @@ function parseRich(opts: {
  * - Plain keys: `t("key")` → string
  * - Vars keys: `t("key", { name: "Ada" })` → string
  * - Plural keys: `t("key", { count: 3 })` → string (selects suffix like _one, _other)
- * - Rich keys are excluded — TS error if attempted; use `createRichTranslator` for those.
+ * - Rich keys are excluded - TS error if attempted; use `createRichTranslator` for those.
  *
  * Falls back to the key string itself if a translation is missing.
  */
@@ -95,7 +95,7 @@ export function createTranslator<T extends NamespaceDefinition>(opts: {
 /**
  * Returns a fully typed `tRich()` function for rich-text keys.
  * Accepts a tag-render map and returns a `ReactNode`.
- * Only keys declared with `rich<Tags>()` are accepted — TS error otherwise.
+ * Only keys declared with `rich<Tags>()` are accepted - TS error otherwise.
  *
  * @example
  * ```tsx

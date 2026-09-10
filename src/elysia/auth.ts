@@ -1,7 +1,7 @@
 import { Elysia } from "elysia";
 import type { CMSAuthAdapter } from "../auth/adapter";
-import { hasPermission } from "../auth/permissions";
 import type { CMSPermission } from "../auth/permissions";
+import { hasPermission } from "../auth/permissions";
 
 interface WithAuth {
 	auth: CMSAuthAdapter;

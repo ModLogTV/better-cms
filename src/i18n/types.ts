@@ -75,10 +75,10 @@ type RichTagsAt<T, K extends string> =
 
 /**
  * Typed translator for plain and interpolated keys.
- * - `t("plain.key")` — no extra args
- * - `t("vars.key", { name: "Ada" })` — vars object required
- * - `t("plural.key", { count: 3 })` — count object required
- * - Rich keys are excluded — use `tRich()` for those.
+ * - `t("plain.key")` - no extra args
+ * - `t("vars.key", { name: "Ada" })` - vars object required
+ * - `t("plural.key", { count: 3 })` - count object required
+ * - Rich keys are excluded - use `tRich()` for those.
  */
 export type TranslatorFn<T extends NamespaceDefinition> = <
 	K extends PlainFlatKeys<T>,
@@ -89,7 +89,7 @@ export type TranslatorFn<T extends NamespaceDefinition> = <
 
 /**
  * Typed translator for rich-text keys with JSX tag injection.
- * `tags` must cover every tag name declared in the `rich<Tags>()` marker — no more, no less.
+ * `tags` must cover every tag name declared in the `rich<Tags>()` marker - no more, no less.
  *
  * @example
  * ```tsx

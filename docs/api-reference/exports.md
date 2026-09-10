@@ -26,7 +26,7 @@ Complete list of all exports from each subpath.
 
 ## `@modlog/better-cms`
 
-Core — backend only (Node.js).
+Core - backend only (Node.js).
 
 | Export | Type | Description |
 |--------|------|-------------|
@@ -47,7 +47,7 @@ Core — backend only (Node.js).
 
 ## `@modlog/better-cms/i18n`
 
-Translation utilities — platform neutral.
+Translation utilities - platform neutral.
 
 | Export | Type | Description |
 |--------|------|-------------|
@@ -70,7 +70,7 @@ Translation utilities — platform neutral.
 
 ## `@modlog/better-cms/client`
 
-Frontend data fetching — platform neutral.
+Frontend data fetching - platform neutral.
 
 | Export | Type | Description |
 |--------|------|-------------|
@@ -88,7 +88,7 @@ Frontend data fetching — platform neutral.
 
 ## `@modlog/better-cms/react`
 
-React hooks and provider — browser.
+React hooks and provider - browser.
 
 | Export | Type | Description |
 |--------|------|-------------|
@@ -102,7 +102,7 @@ React hooks and provider — browser.
 
 ## `@modlog/better-cms/elysia`
 
-Elysia integration — Node.js.
+Elysia integration - Node.js.
 
 | Export | Type | Description |
 |--------|------|-------------|
@@ -112,7 +112,7 @@ Elysia integration — Node.js.
 
 ## `@modlog/better-cms/next`
 
-Next.js integration — Node.js.
+Next.js integration - Node.js.
 
 | Export | Type | Description |
 |--------|------|-------------|
@@ -124,7 +124,7 @@ Next.js integration — Node.js.
 
 ## `@modlog/better-cms/tanstack-start`
 
-TanStack Start integration — Node.js.
+TanStack Start integration - Node.js.
 
 | Export | Type | Description |
 |--------|------|-------------|
@@ -134,7 +134,7 @@ TanStack Start integration — Node.js.
 
 ## `@modlog/better-cms/prisma`
 
-Prisma database adapter — Node.js.
+Prisma database adapter - Node.js.
 
 | Export | Type | Description |
 |--------|------|-------------|
@@ -144,7 +144,7 @@ Prisma database adapter — Node.js.
 
 ## `@modlog/better-cms/admin`
 
-Admin client — Node.js / server-side only.
+Admin client - Node.js / server-side only.
 
 | Export | Type | Description |
 |--------|------|-------------|
@@ -160,7 +160,7 @@ Admin client — Node.js / server-side only.
 
 ## `@modlog/better-cms/admin/react`
 
-Admin React hooks — browser.
+Admin React hooks - browser.
 
 | Export | Type | Description |
 |--------|------|-------------|
@@ -171,7 +171,7 @@ Admin React hooks — browser.
 
 ## `@modlog/better-cms/plugins/pages`
 
-Pages plugin — Node.js.
+Pages plugin - Node.js.
 
 | Export | Type | Description |
 |--------|------|-------------|
@@ -185,7 +185,7 @@ Pages plugin — Node.js.
 
 ## `@modlog/better-cms/plugins/media`
 
-Media plugin — Node.js.
+Media plugin - Node.js.
 
 | Export | Type | Description |
 |--------|------|-------------|
@@ -195,7 +195,7 @@ Media plugin — Node.js.
 
 ## `@modlog/better-cms/plugins/fallback`
 
-Fallback plugin — Node.js.
+Fallback plugin - Node.js.
 
 | Export | Type | Description |
 |--------|------|-------------|
@@ -205,7 +205,7 @@ Fallback plugin — Node.js.
 
 ## `@modlog/better-cms/plugins/fallback-sync`
 
-Fallback sync — Node.js.
+Fallback sync - Node.js.
 
 | Export | Type | Description |
 |--------|------|-------------|

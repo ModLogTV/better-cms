@@ -12,9 +12,9 @@ import { CMSContext, type CMSContextValue } from "./context";
 
 interface CMSProviderProps {
 	initialLocale: string;
-	/** Pre-fetched translations keyed by namespace — avoids client fetch on first render */
+	/** Pre-fetched translations keyed by namespace - avoids client fetch on first render */
 	initialTranslations?: Record<string, Record<string, string>>;
-	/** Pre-fetched page content keyed by slug — avoids client fetch on first render */
+	/** Pre-fetched page content keyed by slug - avoids client fetch on first render */
 	initialContent?: Record<string, RawBlock[]>;
 	/** Background refetch interval in seconds. Default: off */
 	refetchInterval?: number;
@@ -54,7 +54,7 @@ export function CMSProvider({
 			values: Record<string, string>;
 		}) => {
 			// loadTranslations() resolves the same cached object reference on a
-			// TTL cache hit — skip the update so revalidation on every hook mount
+			// TTL cache hit - skip the update so revalidation on every hook mount
 			// doesn't churn context identity when nothing actually changed.
 			setAllTranslations((prev) =>
 				prev[namespace] === values ? prev : { ...prev, [namespace]: values },

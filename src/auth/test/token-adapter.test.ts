@@ -7,7 +7,7 @@ const ADMIN = "admin-secret";
 
 const adapter = tokenAuthAdapter({ readToken: READ, adminToken: ADMIN });
 
-describe("tokenAuthAdapter – verifyRequest", () => {
+describe("tokenAuthAdapter - verifyRequest", () => {
 	test("adminToken via x-cms-token grants wildcard", async () => {
 		const result = await adapter.verifyRequest({ "x-cms-token": ADMIN });
 		expect(result.authorized).toBe(true);
@@ -70,7 +70,7 @@ describe("tokenAuthAdapter – verifyRequest", () => {
 	});
 });
 
-describe("tokenAuthAdapter – construction", () => {
+describe("tokenAuthAdapter - construction", () => {
 	test("throws if readToken empty", () => {
 		expect(() => tokenAuthAdapter({ readToken: "", adminToken: "x" })).toThrow(
 			"readToken must not be empty",

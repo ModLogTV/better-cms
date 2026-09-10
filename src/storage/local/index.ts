@@ -10,7 +10,7 @@ interface LocalStorageOptions {
 }
 
 /**
- * Local filesystem storage adapter — dev only.
+ * Local filesystem storage adapter - dev only.
  * Files are written directly to disk; no presigning.
  * Never use in production.
  */

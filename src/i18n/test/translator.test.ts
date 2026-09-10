@@ -62,8 +62,8 @@ describe("createTranslator", () => {
 	});
 });
 
-// type errors — caught by tsc --noEmit, not executed at runtime
-// @ts-expect-error "topNav.terms" is a RichMarker — not in PlainFlatKeys
+// type errors - caught by tsc --noEmit, not executed at runtime
+// @ts-expect-error "topNav.terms" is a RichMarker - not in PlainFlatKeys
 t("topNav.terms");
 // @ts-expect-error not a valid key
 t("nonexistent.key");

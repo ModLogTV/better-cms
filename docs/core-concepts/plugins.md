@@ -108,7 +108,7 @@ Routes added this way are automatically included by `toElysiaPlugin(cms)`.
 
 ## Type inference extension
 
-Plugins can extend `cms.$Infer` to expose types to consumers. The `pagesPlugin` uses this to provide `cms.$Infer.PageBlocks` — a discriminated union of all registered block types:
+Plugins can extend `cms.$Infer` to expose types to consumers. The `pagesPlugin` uses this to provide `cms.$Infer.PageBlocks` - a discriminated union of all registered block types:
 
 ```ts
 type Block = typeof cms.$Infer.PageBlocks;

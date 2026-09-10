@@ -7,11 +7,11 @@ export type PluralMarker<T> = { _type: "plural"; _vars: T };
 /** Rich-text key with typed JSX tag injection. `Tags` is a union of allowed tag names. */
 export type RichMarker<Tags extends string> = { _type: "rich"; _tags: Tags };
 
-/** Plain string key — `t("my.key")` returns a string. */
+/** Plain string key - `t("my.key")` returns a string. */
 export const key: KeyMarker = { _type: "key" };
 
 /**
- * Interpolated string key — `t("my.key", vars)` where `vars` matches `T`.
+ * Interpolated string key - `t("my.key", vars)` where `vars` matches `T`.
  * Pass the variable names explicitly so the admin UI can display them.
  *
  * @example
@@ -27,7 +27,7 @@ export const vars = <T>(...varNames: (keyof T & string)[]): VarsMarker<T> => ({
 });
 
 /**
- * Plural key — `t("my.key", { count })` selects the correct plural form.
+ * Plural key - `t("my.key", { count })` selects the correct plural form.
  *
  * @example
  * ```ts
@@ -41,7 +41,7 @@ export const plural = <T>(): PluralMarker<T> => ({
 });
 
 /**
- * Rich-text key — `tRich("my.key", { b: (chunks) => <b>{chunks}</b> })` returns a `ReactNode`.
+ * Rich-text key - `tRich("my.key", { b: (chunks) => <b>{chunks}</b> })` returns a `ReactNode`.
  * Pass tag names as rest args; TypeScript infers `Tags` from them automatically.
  *
  * @example

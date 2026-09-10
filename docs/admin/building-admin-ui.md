@@ -16,10 +16,10 @@ better-cms provides no pre-built admin dashboard. This page explains what you ne
 
 A minimal admin UI needs:
 
-1. **Locale selector** — add/remove/list locales
-2. **Translation editor** — list namespaces, edit key values per locale
-3. **Page editor** — create/edit page blocks, publish pages
-4. **Media uploader** — upload images/files linked to storage
+1. **Locale selector** - add/remove/list locales
+2. **Translation editor** - list namespaces, edit key values per locale
+3. **Page editor** - create/edit page blocks, publish pages
+4. **Media uploader** - upload images/files linked to storage
 
 ## Setup
 
@@ -180,7 +180,7 @@ function LocaleManager() {
     <div>
       {locales?.map((locale) => (
         <div key={locale.code}>
-          {locale.code} — {locale.name}
+          {locale.code} - {locale.name}
           {locale.isDefault && " (default)"}
           <button onClick={() => remove({ code: locale.code })}>Remove</button>
         </div>
@@ -197,9 +197,9 @@ function LocaleManager() {
 
 The admin token (`CMS_ADMIN_TOKEN`) must never reach the browser. Options:
 
-1. **Separate admin app** on a private network — server-side only, token never exposed
-2. **Next.js API route proxy** — frontend calls `/api/cms/*`, route handler adds the token server-side
-3. **TanStack Start server functions** — token stays on the server
+1. **Separate admin app** on a private network - server-side only, token never exposed
+2. **Next.js API route proxy** - frontend calls `/api/cms/*`, route handler adds the token server-side
+3. **TanStack Start server functions** - token stays on the server
 
 Avoid: embedding `CMS_ADMIN_TOKEN` in `NEXT_PUBLIC_*` env vars or client bundles.
 

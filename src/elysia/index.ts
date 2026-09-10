@@ -4,6 +4,7 @@ import { adminRoutes } from "./routes/admin";
 import { translationRoutes } from "./routes/translations";
 import { userRoutes } from "./routes/users";
 
+export type { AdminPanelOptions } from "./admin-panel";
 /**
  * Mounts all CMS routes onto an Elysia app.
  * Translation routes are included by default.
@@ -16,7 +17,6 @@ import { userRoutes } from "./routes/users";
  * ```
  */
 export { adminPanelPlugin } from "./admin-panel";
-export type { AdminPanelOptions } from "./admin-panel";
 
 export function toElysiaPlugin(cms: CMSInstance) {
 	const app = new Elysia({ prefix: "/cms" })
@@ -24,7 +24,7 @@ export function toElysiaPlugin(cms: CMSInstance) {
 		.use(adminRoutes(cms))
 		.use(userRoutes(cms));
 
-	// Apply plugin-queued route mounts (pagesPlugin, mediaPlugin) — these were
+	// Apply plugin-queued route mounts (pagesPlugin, mediaPlugin) - these were
 	// recorded by core's dependency-free ElysiaMountQueue, not a real Elysia
 	// instance. This is the one place they're materialized against a real app.
 	for (const mount of cms.elysiaApp.mounts) {

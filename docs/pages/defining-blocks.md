@@ -11,7 +11,7 @@
 
 ## What is a page block?
 
-A page block is a typed unit of page content. Each block has a `type` string and a Zod-validated `data` shape. Pages are stored as an ordered array of blocks — the frontend renders them by type.
+A page block is a typed unit of page content. Each block has a `type` string and a Zod-validated `data` shape. Pages are stored as an ordered array of blocks - the frontend renders them by type.
 
 This is **not** a WYSIWYG editor. Blocks are data-first: you define the schema, the admin UI saves values, and your components render them. Think of it as "data-driven components."
 
@@ -142,7 +142,7 @@ Pages are stored as `JSON` in the database:
 ]
 ```
 
-The `data` field is untyped in the DB — validation only happens on write via the Zod schema.
+The `data` field is untyped in the DB - validation only happens on write via the Zod schema.
 
 
 ---

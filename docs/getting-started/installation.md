@@ -32,13 +32,13 @@ npm install @modlog/better-cms
 In a monorepo, install in every relevant workspace:
 
 ```bash
-# Shared config package — defines namespaces and blocks
+# Shared config package - defines namespaces and blocks
 bun add @modlog/better-cms --filter @repo/cms-config
 
-# API app — runs the CMS backend
+# API app - runs the CMS backend
 bun add @modlog/better-cms --filter @repo/api
 
-# Web app — consumes translations and page content
+# Web app - consumes translations and page content
 bun add @modlog/better-cms --filter @repo/web
 ```
 

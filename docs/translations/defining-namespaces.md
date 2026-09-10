@@ -3,10 +3,10 @@
 - [The shared config package pattern](#the-shared-config-package-pattern)
 - [defineNamespace](#definenamespace)
 - [Marker reference](#marker-reference)
-  - [`key` — static string](#key-static-string)
-  - [`vars<T>()` — interpolated string](#varst-interpolated-string)
-  - [`plural<T>()` — count-based pluralization](#pluralt-count-based-pluralization)
-  - [`rich<Tags>()` — JSX rich text](#richtags-jsx-rich-text)
+  - [`key` - static string](#key-static-string)
+  - [`vars<T>()` - interpolated string](#varst-interpolated-string)
+  - [`plural<T>()` - count-based pluralization](#pluralt-count-based-pluralization)
+  - [`rich<Tags>()` - JSX rich text](#richtags-jsx-rich-text)
 - [Nested keys](#nested-keys)
 - [Registering namespaces](#registering-namespaces)
 - [Describing a namespace](#describing-a-namespace)
@@ -29,14 +29,14 @@ import { defineNamespace } from "@modlog/better-cms/i18n";
 export const ns = defineNamespace({ name, definition });
 ```
 
-- `name`: unique string identifier — used in API URLs and fallback file paths
+- `name`: unique string identifier - used in API URLs and fallback file paths
 - `definition`: object of key → marker mappings (may be nested)
 
-Returns a `NamespaceDef<T>` — an object with `.name` and `.definition`. Pass this directly to `useTranslations`, `createTranslator`, and `ALL_NAMESPACES`.
+Returns a `NamespaceDef<T>` - an object with `.name` and `.definition`. Pass this directly to `useTranslations`, `createTranslator`, and `ALL_NAMESPACES`.
 
 ## Marker reference
 
-### `key` — static string
+### `key` - static string
 
 ```ts
 import { key } from "@modlog/better-cms/i18n";
@@ -52,7 +52,7 @@ const ns = defineNamespace({
 
 `t("submitButton")` → `string`. No variables. DB value: `"Submit"`.
 
-### `vars<T>()` — interpolated string
+### `vars<T>()` - interpolated string
 
 ```ts
 import { vars } from "@modlog/better-cms/i18n";
@@ -68,7 +68,7 @@ const ns = defineNamespace({
 
 `t("greeting", { name: "Alice" })` → `string`.
 
-DB value: `"Hello, {name}!"` — variables wrapped in `{curly braces}`.
+DB value: `"Hello, {name}!"` - variables wrapped in `{curly braces}`.
 
 TypeScript will error if you pass wrong or missing variables:
 
@@ -78,7 +78,7 @@ t("greeting", { name: 42 })      // ✗ TS error: name must be string
 t("greeting", { name: "Alice" }) // ✓
 ```
 
-### `plural<T>()` — count-based pluralization
+### `plural<T>()` - count-based pluralization
 
 ```ts
 import { plural } from "@modlog/better-cms/i18n";
@@ -105,11 +105,11 @@ DB stores suffixed keys:
 }
 ```
 
-Suffixes are determined by `Intl.PluralRules(locale).select(count)`. Available suffixes: `zero`, `one`, `two`, `few`, `many`, `other`. Which ones are used depends on the locale's CLDR rules — English uses `one` and `other`; Arabic uses all six.
+Suffixes are determined by `Intl.PluralRules(locale).select(count)`. Available suffixes: `zero`, `one`, `two`, `few`, `many`, `other`. Which ones are used depends on the locale's CLDR rules - English uses `one` and `other`; Arabic uses all six.
 
 If a specific suffix key is missing, falls back to `_other`.
 
-### `rich<Tags>()` — JSX rich text
+### `rich<Tags>()` - JSX rich text
 
 ```ts
 import { rich } from "@modlog/better-cms/i18n";
@@ -196,7 +196,7 @@ Unregistered namespaces can still be fetched from the DB (the API serves any nam
 
 ## Describing a namespace
 
-The admin API exposes a `describe` endpoint that returns metadata for each key — useful for building admin editor UIs:
+The admin API exposes a `describe` endpoint that returns metadata for each key - useful for building admin editor UIs:
 
 ```ts
 const meta = await admin.namespaces.describe({ namespace: "nav" });

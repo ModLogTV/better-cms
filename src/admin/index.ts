@@ -47,7 +47,7 @@ async function apiFetch<T>(opts: {
 
 /**
  * Creates a typed HTTP client for all CMS admin operations.
- * Use on the server (SSR loaders, server functions) — never expose the token to the browser
+ * Use on the server (SSR loaders, server functions) - never expose the token to the browser
  *
  * @example
  * ```ts

@@ -28,7 +28,7 @@ It is **not** a hosted service, not a WordPress alternative, and not a drop-in U
 | Concept               | Summary                                                                                          |
 | --------------------- | ------------------------------------------------------------------------------------------------ |
 | **Zero pre-built UI** | You build the admin. better-cms provides the typed API client and hooks.                         |
-| **Monorepo-first**    | Namespace and block definitions live in a shared package — both API and frontend import from it. |
+| **Monorepo-first**    | Namespace and block definitions live in a shared package - both API and frontend import from it. |
 | **Subpath exports**   | Each integration has its own import path. Only pay for what you use.                             |
 | **4-tier fallback**   | Translations always resolve: memory → API → local JSON → raw key.                                |
 | **Headless**          | No renderer, no schema enforcer for your UI. Just data.                                          |

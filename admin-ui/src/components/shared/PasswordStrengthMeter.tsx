@@ -6,7 +6,7 @@ export interface PasswordStrength {
 }
 
 /**
- * Lightweight local heuristic (no external dep) — not a substitute for
+ * Lightweight local heuristic (no external dep) - not a substitute for
  * server-side password policy enforcement, just UI feedback.
  */
 export function scorePassword(password: string): PasswordStrength {

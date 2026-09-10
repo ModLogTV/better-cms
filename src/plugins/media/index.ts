@@ -4,7 +4,7 @@ import { mediaRoutes } from "./routes";
 
 /**
  * Adds `POST /cms/media/presign` route and wires a storage adapter into CMSContext.
- * Browser uploads directly to the presigned URL — binary data never passes through cms-api.
+ * Browser uploads directly to the presigned URL - binary data never passes through cms-api.
  */
 export function mediaPlugin(opts: {
 	storage: CMSStorageAdapter;

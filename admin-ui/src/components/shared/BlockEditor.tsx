@@ -196,7 +196,7 @@ function BlockCard({
 				{useRawEditor && (
 					<span className="flex items-center gap-1 text-xs text-muted-foreground">
 						<IconCode className="size-3" />
-						raw JSON — no field metadata registered for this block type
+						raw JSON - no field metadata registered for this block type
 					</span>
 				)}
 				<Button

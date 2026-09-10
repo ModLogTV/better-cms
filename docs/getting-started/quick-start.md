@@ -200,7 +200,7 @@ configureCMSClient({
 **`apps/web/src/app/layout.tsx`**
 
 ```tsx
-import "./cms-client"; // side-effect import — must run before any data fetch
+import "./cms-client"; // side-effect import - must run before any data fetch
 import { CMSProvider } from "@modlog/better-cms/react";
 import { getLocale } from "@modlog/better-cms/next";
 
@@ -268,9 +268,9 @@ export default async function Page() {
 
 ## Next steps
 
-- [Defining Namespaces](../translations/defining-namespaces.md) — all marker types in depth
-- [Using Translations](../translations/using-translations.md) — SSR, client hooks, locale switching
-- [Plugins](../plugins/pages-plugin.md) — pages, media, fallback
+- [Defining Namespaces](../translations/defining-namespaces.md) - all marker types in depth
+- [Using Translations](../translations/using-translations.md) - SSR, client hooks, locale switching
+- [Plugins](../plugins/pages-plugin.md) - pages, media, fallback
 - [Building an Admin UI](../admin/building-admin-ui.md)
 
 

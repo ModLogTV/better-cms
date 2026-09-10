@@ -115,7 +115,7 @@ Query key: `["cms", "translations", namespace, locale]`
 
 ### `useUpdateTranslation()`
 
-Mutation with **optimistic updates** — updates the cache immediately, rolls back on error.
+Mutation with **optimistic updates** - updates the cache immediately, rolls back on error.
 
 ```tsx
 const { mutate, isPending } = useUpdateTranslation();

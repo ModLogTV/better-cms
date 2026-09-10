@@ -2,10 +2,10 @@
 
 - [What is a namespace?](#what-is-a-namespace)
 - [Markers](#markers)
-  - [`key` — plain string](#key-plain-string)
-  - [`vars<T>()` — interpolated string](#varst-interpolated-string)
-  - [`plural<T>()` — pluralization](#pluralt-pluralization)
-  - [`rich<Tags>()` — rich text with JSX](#richtags-rich-text-with-jsx)
+  - [`key` - plain string](#key-plain-string)
+  - [`vars<T>()` - interpolated string](#varst-interpolated-string)
+  - [`plural<T>()` - pluralization](#pluralt-pluralization)
+  - [`rich<Tags>()` - rich text with JSX](#richtags-rich-text-with-jsx)
 - [Nested namespaces](#nested-namespaces)
 - [Naming conventions](#naming-conventions)
 - [Registration](#registration)
@@ -32,7 +32,7 @@ The name `"common"` must be unique across your app. It is used as the URL segmen
 
 Markers are how you declare the _type_ of each translation key. TypeScript uses marker types to enforce correct call signatures on `t()` and `tRich()`.
 
-### `key` — plain string
+### `key` - plain string
 
 ```ts
 import { key } from "@modlog/better-cms/i18n";
@@ -50,7 +50,7 @@ t("submit") // → string
 
 No arguments. Value in DB: `"Submit"`.
 
-### `vars<T>()` — interpolated string
+### `vars<T>()` - interpolated string
 
 ```ts
 import { vars } from "@modlog/better-cms/i18n";
@@ -68,9 +68,9 @@ t("greeting", { name: "Alice" }) // → "Hello, Alice!"
 
 Value in DB uses `{varName}` tokens: `"Hello, {name}!"`.
 
-TypeScript enforces that `{ name: string }` is passed — missing or extra keys are compile errors.
+TypeScript enforces that `{ name: string }` is passed - missing or extra keys are compile errors.
 
-### `plural<T>()` — pluralization
+### `plural<T>()` - pluralization
 
 ```ts
 import { plural } from "@modlog/better-cms/i18n";
@@ -96,7 +96,7 @@ t("itemCount", { count: 5 }) // → "5 items"
 
 Supported suffixes depend on the locale's CLDR plural rules: `zero`, `one`, `two`, `few`, `many`, `other`. If a specific suffix is missing, it falls back to `_other`.
 
-### `rich<Tags>()` — rich text with JSX
+### `rich<Tags>()` - rich text with JSX
 
 ```ts
 import { rich } from "@modlog/better-cms/i18n";
@@ -117,7 +117,7 @@ tRich("terms", {
 // Returns: ReactNode
 ```
 
-`Tags` is a string union of allowed tag names. `tRich` is only available on keys declared with `rich<>()` — using it on a `key` or `vars` key is a TypeScript error.
+`Tags` is a string union of allowed tag names. `tRich` is only available on keys declared with `rich<>()` - using it on a `key` or `vars` key is a TypeScript error.
 
 Value in DB uses `<tagName>content</tagName>` syntax. Tags that are not in the `Tags` union are also TypeScript errors.
 

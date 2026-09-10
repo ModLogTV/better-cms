@@ -8,13 +8,13 @@ export function countryFromLocaleCode(code: string): string | null {
 export interface CuratedLocale {
 	code: string;
 	name: string;
-	/** ISO 3166-1 alpha-2 country code — picks the flag from country-flag-icons. */
+	/** ISO 3166-1 alpha-2 country code - picks the flag from country-flag-icons. */
 	country: string;
 }
 
 /**
  * Common BCP-47 locale codes with a representative region for flag display.
- * Not exhaustive — locales are dynamic/DB-managed (see CLAUDE.md), this is
+ * Not exhaustive - locales are dynamic/DB-managed (see CLAUDE.md), this is
  * just a curated set of suggestions for the "Add locale" combobox. Any code
  * can still be entered manually.
  */

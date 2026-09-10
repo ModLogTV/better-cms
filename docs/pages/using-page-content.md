@@ -54,7 +54,7 @@ const { data } = usePageContent({
 
 ### How `usePageContent` works
 
-1. Checks `CMSProvider` context for the slug — no fetch if pre-loaded
+1. Checks `CMSProvider` context for the slug - no fetch if pre-loaded
 2. If missing, calls `loadPageContent({ slug, locale })` in a `useEffect`
 3. Updates context so other components sharing the same slug don't fetch again
 

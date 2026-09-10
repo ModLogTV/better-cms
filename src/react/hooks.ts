@@ -39,7 +39,7 @@ export function useCMSClientEvents<
 
 /**
  * Returns typed `t()` and `tRich()` functions for the given namespace.
- * Reads from CMSProvider context — no fetch if namespace was pre-loaded server-side.
+ * Reads from CMSProvider context - no fetch if namespace was pre-loaded server-side.
  * Falls back to loadTranslations() if namespace is missing from context.
  */
 export function useTranslations<T extends NamespaceDefinition>(
@@ -63,13 +63,13 @@ export function useTranslations<T extends NamespaceDefinition>(
 	const [isLoading, setIsLoading] = useState(!existing);
 	const [error, setError] = useState<Error | null>(null);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: `existing` is intentionally excluded below — see comment before the dependency array
+	// biome-ignore lint/correctness/useExhaustiveDependencies: `existing` is intentionally excluded below - see comment before the dependency array
 	useEffect(() => {
 		let cancelled = false;
 		if (!existing) setIsLoading(true);
 
 		// Always revalidate against the module-level TTL cache (client/cache.ts),
-		// even when a value was already seeded into context — otherwise a
+		// even when a value was already seeded into context - otherwise a
 		// namespace seeded once (e.g. via initialTranslations) would never be
 		// refetched again for the lifetime of the provider, silently defeating
 		// the documented 60s cache TTL. loadTranslations() resolves instantly
@@ -95,7 +95,7 @@ export function useTranslations<T extends NamespaceDefinition>(
 		return () => {
 			cancelled = true;
 		};
-		// existing is intentionally excluded — it changes every time ctx.setTranslations
+		// existing is intentionally excluded - it changes every time ctx.setTranslations
 		// fires above, and depending on it here would re-trigger this effect in a loop.
 	}, [
 		ns.name,
@@ -113,7 +113,7 @@ export function useTranslations<T extends NamespaceDefinition>(
 
 /**
  * Returns page blocks for the given slug.
- * Reads from CMSProvider context — no fetch if slug was pre-loaded server-side.
+ * Reads from CMSProvider context - no fetch if slug was pre-loaded server-side.
  */
 export function usePageContent(opts: {
 	slug: string;
@@ -132,7 +132,7 @@ export function usePageContent(opts: {
 	const [isLoading, setIsLoading] = useState(!existing);
 	const [error, setError] = useState<Error | null>(null);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: `existing` is intentionally excluded below — see comment before the dependency array
+	// biome-ignore lint/correctness/useExhaustiveDependencies: `existing` is intentionally excluded below - see comment before the dependency array
 	useEffect(() => {
 		let cancelled = false;
 		if (!existing) setIsLoading(true);
@@ -160,7 +160,7 @@ export function usePageContent(opts: {
 		return () => {
 			cancelled = true;
 		};
-		// existing intentionally excluded — see useTranslations above.
+		// existing intentionally excluded - see useTranslations above.
 	}, [slug, ctx.locale, ctx.setContent, onSuccess, onError]);
 
 	return { data: blocks, isLoading, error };
@@ -168,7 +168,7 @@ export function usePageContent(opts: {
 
 /**
  * Returns the current locale and a setter that persists the choice in a cookie.
- * Calling `setLocale` sets `document.cookie` — wire up a page refresh or router.refresh() as needed.
+ * Calling `setLocale` sets `document.cookie` - wire up a page refresh or router.refresh() as needed.
  */
 export function useLocale(): {
 	locale: string;

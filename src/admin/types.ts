@@ -76,7 +76,7 @@ export interface AdminClient {
 		list(): Promise<PageSummary[]>;
 		/**
 		 * Fetches a single page's blocks by slug. Returns just the block array
-		 * (matching the underlying GET /pages/:slug route) — use `list()` for
+		 * (matching the underlying GET /pages/:slug route) - use `list()` for
 		 * status/id/updatedAt metadata.
 		 * @param draft If true, fetches the latest saved draft instead of the published version.
 		 */

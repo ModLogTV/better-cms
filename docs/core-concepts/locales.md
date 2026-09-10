@@ -13,7 +13,7 @@
 
 ## Dynamic locale management
 
-Locales are stored in the database (`Locale` model) and managed via the CMS API. There are no hardcoded locale lists — you add, update, and remove locales at runtime.
+Locales are stored in the database (`Locale` model) and managed via the CMS API. There are no hardcoded locale lists - you add, update, and remove locales at runtime.
 
 ## Locale model
 
@@ -67,7 +67,7 @@ await admin.locales.delete({ code: "fr" });
 
 ## Default locale
 
-At most one locale should have `isDefault: true`. The database adapter does not enforce uniqueness of `isDefault` — if you need enforcement, handle it in your admin UI logic.
+At most one locale should have `isDefault: true`. The database adapter does not enforce uniqueness of `isDefault` - if you need enforcement, handle it in your admin UI logic.
 
 The default locale is used by `createNextProxy` when no preference is detected from the cookie or `Accept-Language` header.
 

@@ -3,29 +3,29 @@
 - [Quick reference](#quick-reference)
 - [Core](#core)
   - [`CMS_URL`](#cms_url)
-- [Auth — token adapter](#auth-token-adapter)
+- [Auth - token adapter](#auth-token-adapter)
   - [`CMS_READ_TOKEN`](#cms_read_token)
   - [`CMS_ADMIN_TOKEN`](#cms_admin_token)
-- [Auth — better-auth](#auth-better-auth)
+- [Auth - better-auth](#auth-better-auth)
   - [`CMS_ADMIN_EMAIL`](#cms_admin_email)
   - [`CMS_ADMIN_PASSWORD`](#cms_admin_password)
   - [`CMS_SERVICE_TOKEN`](#cms_service_token)
 - [Frontend client](#frontend-client)
   - [`NEXT_PUBLIC_CMS_URL`](#next_public_cms_url)
   - [`NEXT_PUBLIC_CMS_READ_TOKEN`](#next_public_cms_read_token)
-- [Storage — AWS S3](#storage-aws-s3)
+- [Storage - AWS S3](#storage-aws-s3)
   - [`S3_BUCKET`](#s3_bucket)
   - [`S3_REGION`](#s3_region)
   - [`S3_ACCESS_KEY`](#s3_access_key)
   - [`S3_SECRET_KEY`](#s3_secret_key)
   - [`CDN_URL`](#cdn_url)
-- [Storage — Cloudflare R2](#storage-cloudflare-r2)
+- [Storage - Cloudflare R2](#storage-cloudflare-r2)
   - [`R2_BUCKET`](#r2_bucket)
   - [`R2_ACCOUNT_ID`](#r2_account_id)
   - [`R2_ACCESS_KEY`](#r2_access_key)
   - [`R2_SECRET_KEY`](#r2_secret_key)
   - [`R2_PUBLIC_URL`](#r2_public_url)
-- [Storage — Hetzner Object Storage](#storage-hetzner-object-storage)
+- [Storage - Hetzner Object Storage](#storage-hetzner-object-storage)
   - [`HETZNER_BUCKET`](#hetzner_bucket)
   - [`HETZNER_REGION`](#hetzner_region)
   - [`HETZNER_ACCESS_KEY`](#hetzner_access_key)
@@ -36,7 +36,7 @@
   - [`NEXT_RUNTIME`](#next_runtime)
 - [`.env` template](#env-template)
 
-better-cms does not read environment variables directly — all configuration is passed as function arguments. The variable names below are **conventions** used in the docs and examples. You can name them however you like.
+better-cms does not read environment variables directly - all configuration is passed as function arguments. The variable names below are **conventions** used in the docs and examples. You can name them however you like.
 
 ## Quick reference
 
@@ -78,7 +78,7 @@ CMS_URL=https://cms.internal.example.com
 
 ---
 
-## Auth — token adapter
+## Auth - token adapter
 
 Used with `tokenAuthAdapter`. Skip if you use `betterAuthCMSAdapter`.
 
@@ -111,7 +111,7 @@ CMS_ADMIN_TOKEN=<different-random-secret>
 
 ---
 
-## Auth — better-auth
+## Auth - better-auth
 
 Used with `betterAuthCMSAdapter`. Skip if you use `tokenAuthAdapter`.
 
@@ -135,7 +135,7 @@ CMS_ADMIN_PASSWORD=<strong-password>
 
 ### `CMS_SERVICE_TOKEN`
 
-Optional static token for server-to-server reads (e.g. Next.js RSC fetching translations without a user session). Grants read-only permissions — same set as `CMS_READ_TOKEN`.
+Optional static token for server-to-server reads (e.g. Next.js RSC fetching translations without a user session). Grants read-only permissions - same set as `CMS_READ_TOKEN`.
 
 Set the same value on both the API server and the frontend client:
 
@@ -188,7 +188,7 @@ NEXT_PUBLIC_CMS_READ_TOKEN=<same-value-as-CMS_READ_TOKEN>
 
 ---
 
-## Storage — AWS S3
+## Storage - AWS S3
 
 Used with `awsS3Adapter`. All five are required.
 
@@ -250,7 +250,7 @@ awsS3Adapter({
 
 ---
 
-## Storage — Cloudflare R2
+## Storage - Cloudflare R2
 
 Used with `cloudflareR2Adapter`. All five are required.
 
@@ -310,7 +310,7 @@ cloudflareR2Adapter({
 
 ---
 
-## Storage — Hetzner Object Storage
+## Storage - Hetzner Object Storage
 
 Used with `hetznerS3Adapter`. All five are required.
 

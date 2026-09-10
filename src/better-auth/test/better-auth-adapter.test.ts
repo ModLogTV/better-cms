@@ -4,7 +4,7 @@ import { betterAuthCMSAdapter } from "../index";
 
 type BetterAuthAdapter = ReturnType<typeof betterAuthCMSAdapter>;
 
-/** These tests always configure `management` — narrow it once instead of `!` at every call site. */
+/** These tests always configure `management` - narrow it once instead of `!` at every call site. */
 function requireManagement(adapter: BetterAuthAdapter) {
 	if (!adapter.management)
 		throw new Error("expected adapter.management to be defined");
@@ -121,7 +121,7 @@ function makeAuth(
 // verifyRequest
 // ---------------------------------------------------------------------------
 
-describe("betterAuthCMSAdapter – verifyRequest", () => {
+describe("betterAuthCMSAdapter - verifyRequest", () => {
 	test("resolves session and returns user permissions", async () => {
 		const prisma = makePrisma({
 			user: {
@@ -274,7 +274,7 @@ describe("betterAuthCMSAdapter – verifyRequest", () => {
 // upsertAdminUser
 // ---------------------------------------------------------------------------
 
-describe("betterAuthCMSAdapter – upsertAdminUser", () => {
+describe("betterAuthCMSAdapter - upsertAdminUser", () => {
 	test("creates user via signUpEmail when user does not exist", async () => {
 		let callCount = 0;
 		const prisma = makePrisma({
@@ -398,7 +398,7 @@ describe("betterAuthCMSAdapter – upsertAdminUser", () => {
 // management.listUsers
 // ---------------------------------------------------------------------------
 
-describe("betterAuthCMSAdapter – management.listUsers", () => {
+describe("betterAuthCMSAdapter - management.listUsers", () => {
 	test("maps user records to CMSUserSummary", async () => {
 		const prisma = makePrisma({
 			user: {
@@ -431,7 +431,7 @@ describe("betterAuthCMSAdapter – management.listUsers", () => {
 // management.getUserPermissions
 // ---------------------------------------------------------------------------
 
-describe("betterAuthCMSAdapter – management.getUserPermissions", () => {
+describe("betterAuthCMSAdapter - management.getUserPermissions", () => {
 	test("resolves merged permissions", async () => {
 		const prisma = makePrisma({
 			user: {
@@ -466,7 +466,7 @@ describe("betterAuthCMSAdapter – management.getUserPermissions", () => {
 // management.setUserPermissions
 // ---------------------------------------------------------------------------
 
-describe("betterAuthCMSAdapter – management.setUserPermissions", () => {
+describe("betterAuthCMSAdapter - management.setUserPermissions", () => {
 	test("calls prisma.user.update with new permissions", async () => {
 		const updateMock = mock(async () => makeUser());
 		const prisma = makePrisma({ user: { update: updateMock } });
@@ -494,7 +494,7 @@ describe("betterAuthCMSAdapter – management.setUserPermissions", () => {
 // management.getUserGroups
 // ---------------------------------------------------------------------------
 
-describe("betterAuthCMSAdapter – management.getUserGroups", () => {
+describe("betterAuthCMSAdapter - management.getUserGroups", () => {
 	test("returns groups from user record", async () => {
 		const prisma = makePrisma({
 			user: {
@@ -550,7 +550,7 @@ describe("betterAuthCMSAdapter – management.getUserGroups", () => {
 // management.addUserToGroup / removeUserFromGroup
 // ---------------------------------------------------------------------------
 
-describe("betterAuthCMSAdapter – management group membership", () => {
+describe("betterAuthCMSAdapter - management group membership", () => {
 	test("addUserToGroup calls cmsUserGroup.create with correct data", async () => {
 		const createMock = mock(async () => {});
 		const prisma = makePrisma({ cmsUserGroup: { create: createMock } });
@@ -596,7 +596,7 @@ describe("betterAuthCMSAdapter – management group membership", () => {
 // management groups CRUD
 // ---------------------------------------------------------------------------
 
-describe("betterAuthCMSAdapter – management groups CRUD", () => {
+describe("betterAuthCMSAdapter - management groups CRUD", () => {
 	test("listGroups returns mapped groups", async () => {
 		const prisma = makePrisma({
 			cmsGroup: {

@@ -5,7 +5,7 @@ import type { CMSContext, CMSInfer, ElysiaLike } from "./plugin";
 
 /**
  * Route-mount queue satisfying `ElysiaLike`. Core has no dependency on the
- * `elysia` package — plugins (pagesPlugin, mediaPlugin) queue their Elysia
+ * `elysia` package - plugins (pagesPlugin, mediaPlugin) queue their Elysia
  * route plugins here via `ctx.elysiaApp.use()`, and `toElysiaPlugin`
  * (`@modlog/better-cms/elysia`) is the only place that ever imports the real
  * `elysia` package and applies these queued mounts to a real instance.
@@ -64,7 +64,7 @@ export function createCMS(config: CMSConfig): CMSInstance {
 	if (config.initialAdminUser) {
 		if (!config.auth.upsertAdminUser) {
 			console.warn(
-				"[cms] initialAdminUser is set but the auth adapter does not implement upsertAdminUser — skipping.",
+				"[cms] initialAdminUser is set but the auth adapter does not implement upsertAdminUser - skipping.",
 			);
 		} else {
 			const adminUser = config.initialAdminUser;

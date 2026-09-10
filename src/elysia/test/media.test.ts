@@ -16,7 +16,7 @@ function makeStorage(
 	};
 }
 
-describe("media routes – presign", () => {
+describe("media routes - presign", () => {
 	test("POST /cms/media/presign returns uploadUrl, publicUrl, and assetId", async () => {
 		const storage = makeStorage();
 		const app = makeApp(makeAdapter(), [
@@ -118,7 +118,7 @@ describe("media routes – presign", () => {
 	});
 });
 
-describe("media routes – confirm", () => {
+describe("media routes - confirm", () => {
 	test("POST /cms/media/:assetId/confirm calls confirmMediaAsset", async () => {
 		const confirmMediaAsset = mock(async () => {});
 		const adapter = makeAdapter({ confirmMediaAsset });
@@ -135,7 +135,7 @@ describe("media routes – confirm", () => {
 	});
 });
 
-describe("media routes – list", () => {
+describe("media routes - list", () => {
 	test("GET /cms/media returns asset list", async () => {
 		const assets = [makeMediaAsset({ id: "a1", filename: "hero.jpg" })];
 		const adapter = makeAdapter({ listMediaAssets: mock(async () => assets) });
@@ -154,7 +154,7 @@ describe("media routes – list", () => {
 	});
 });
 
-describe("media routes – read URL", () => {
+describe("media routes - read URL", () => {
 	test("GET /cms/media/:key/url returns publicUrl when presignRead absent", async () => {
 		const asset = makeMediaAsset({
 			key: "my-file.jpg",
@@ -194,7 +194,7 @@ describe("media routes – read URL", () => {
 	});
 });
 
-describe("media routes – delete", () => {
+describe("media routes - delete", () => {
 	test("DELETE /cms/media/:key calls storage.delete and adapter.deleteMediaAsset", async () => {
 		let deletedKey = "";
 		const deleteMediaAsset = mock(async () => {});

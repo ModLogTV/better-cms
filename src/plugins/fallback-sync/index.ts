@@ -24,7 +24,7 @@ async function runSync(opts: FallbackSyncOptions): Promise<void> {
 
 	if (!namespacesRes.ok || !localesRes.ok) {
 		throw new Error(
-			`better-cms: fallback sync failed — namespaces=${namespacesRes.status} locales=${localesRes.status}`,
+			`better-cms: fallback sync failed - namespaces=${namespacesRes.status} locales=${localesRes.status}`,
 		);
 	}
 

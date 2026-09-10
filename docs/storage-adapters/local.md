@@ -29,7 +29,7 @@ localStorageAdapter({
 
 ## How it works
 
-The adapter writes files directly to `dir/{key}` and returns `baseUrl/{key}` as the `publicUrl`. Unlike cloud adapters, there is no real presigned URL — the `uploadUrl` is a local endpoint.
+The adapter writes files directly to `dir/{key}` and returns `baseUrl/{key}` as the `publicUrl`. Unlike cloud adapters, there is no real presigned URL - the `uploadUrl` is a local endpoint.
 
 You must serve the `dir` folder statically in your dev API. With Elysia:
 

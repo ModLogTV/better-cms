@@ -2,7 +2,7 @@
 /**
  * Fails if any `biome-ignore` comment lacks a real justification.
  *
- * Biome only requires *some* text after the colon — this enforces that the
+ * Biome only requires *some* text after the colon - this enforces that the
  * text is an actual explanation of why the ignore is unavoidable, not a
  * placeholder like "reason" or "fix later".
  */

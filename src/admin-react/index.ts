@@ -17,7 +17,7 @@ import type { PageSummary, RawBlock } from "../core/adapter";
 
 export { QueryClientProvider };
 
-/** Mount this at your admin app root — wraps TanStack Query's QueryClientProvider. */
+/** Mount this at your admin app root - wraps TanStack Query's QueryClientProvider. */
 export function AdminQueryProvider({
 	children,
 	client,

@@ -40,11 +40,11 @@
 
 | Import path                                | Platform | Purpose                                                         |
 | ------------------------------------------ | -------- | --------------------------------------------------------------- |
-| `@modlog/better-cms`                       | Node     | `createCMS` — initializes the CMS instance                      |
+| `@modlog/better-cms`                       | Node     | `createCMS` - initializes the CMS instance                      |
 | `@modlog/better-cms/i18n`                  | Neutral  | `defineNamespace`, markers, `createTranslator`                  |
 | `@modlog/better-cms/client`                | Neutral  | `configureCMSClient`, `loadTranslations`, `loadPageContent`     |
 | `@modlog/better-cms/react`                 | Browser  | `CMSProvider`, `useTranslations`, `usePageContent`, `useLocale` |
-| `@modlog/better-cms/elysia`                | Node     | `toElysiaPlugin` — mounts routes                                |
+| `@modlog/better-cms/elysia`                | Node     | `toElysiaPlugin` - mounts routes                                |
 | `@modlog/better-cms/next`                  | Node     | `toNextHandler`, `createNextProxy`                         |
 | `@modlog/better-cms/next/client`           | Browser  | Next.js-specific client utilities                               |
 | `@modlog/better-cms/tanstack-start`        | Node     | `createServerFns`                                               |
@@ -96,10 +96,10 @@ Plugins extend `createCMS` at initialization time. Each plugin receives the `CMS
 const myPlugin: CMSPlugin = {
   name: "my-plugin",
   init(ctx) {
-    // ctx.elysiaApp — mount routes here
-    // ctx.events — listen to "translations:updated"
-    // ctx.adapter — access DB
-    // ctx.storage — access storage
+    // ctx.elysiaApp - mount routes here
+    // ctx.events - listen to "translations:updated"
+    // ctx.adapter - access DB
+    // ctx.storage - access storage
   },
   extendInfer(current) {
     // optionally extend cms.$Infer with new types

@@ -12,7 +12,7 @@ Storage adapters handle media operations like uploads and deletions. They are us
 
 1. The admin calls `POST /cms/media/presign` with `{ filename, mimeType, size }`
 2. The API generates a **presigned URL** pointing directly to your storage bucket
-3. The browser uploads the file directly to storage — the binary never passes through the CMS API
+3. The browser uploads the file directly to storage - the binary never passes through the CMS API
 4. The API returns the final `publicUrl` for use in your content
 
 This pattern keeps the CMS API small and avoids memory pressure from streaming large files.

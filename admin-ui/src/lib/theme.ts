@@ -13,7 +13,7 @@ export function getStoredTheme(): Theme {
 			return stored;
 		}
 	} catch {
-		// localStorage unavailable (e.g. private browsing) — fall back to system
+		// localStorage unavailable (e.g. private browsing) - fall back to system
 	}
 	return "system";
 }
@@ -28,7 +28,7 @@ export function setTheme(theme: Theme) {
 	try {
 		localStorage.setItem(STORAGE_KEY, theme);
 	} catch {
-		// localStorage unavailable — theme still applies for this session
+		// localStorage unavailable - theme still applies for this session
 	}
 	applyTheme(theme);
 }

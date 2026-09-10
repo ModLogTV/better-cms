@@ -58,7 +58,7 @@ export interface CMSAdapter {
 		locale: string;
 		values: Record<string, string>;
 	}): Promise<void>;
-	/** Per-locale key count and last-updated timestamp for a namespace — powers the admin dashboard/namespace list. */
+	/** Per-locale key count and last-updated timestamp for a namespace - powers the admin dashboard/namespace list. */
 	listNamespaceLocaleMeta(opts: {
 		namespace: string;
 	}): Promise<NamespaceLocaleMeta[]>;

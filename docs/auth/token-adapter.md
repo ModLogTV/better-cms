@@ -4,7 +4,7 @@
 - [Behavior](#behavior)
 - [Limitations](#limitations)
 
-`tokenAuthAdapter` is the simplest auth adapter. It authenticates requests using static bearer tokens — no user accounts, no sessions.
+`tokenAuthAdapter` is the simplest auth adapter. It authenticates requests using static bearer tokens - no user accounts, no sessions.
 
 Use it when:
 - You control all callers (internal services, CI scripts)
@@ -39,8 +39,8 @@ Tokens are accepted via:
 
 ## Limitations
 
-- No `upsertAdminUser` support — `initialAdminUser` will be ignored with a warning.
-- No `management` interface — user/group admin routes will not be registered.
+- No `upsertAdminUser` support - `initialAdminUser` will be ignored with a warning.
+- No `management` interface - user/group admin routes will not be registered.
 
 ---
 

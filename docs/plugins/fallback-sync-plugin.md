@@ -20,7 +20,7 @@ Use `startFallbackSync` when:
 - Your API and frontend are separate services with separate filesystems
 - You need fallback files populated immediately on cold starts without waiting for an update event
 
-If the API and frontend share a disk, use [Fallback Plugin](./fallback-plugin.md) instead — it's simpler and event-driven.
+If the API and frontend share a disk, use [Fallback Plugin](./fallback-plugin.md) instead - it's simpler and event-driven.
 
 ## Setup
 
@@ -93,8 +93,8 @@ configureCMSClient({
 
 On each sync, `startFallbackSync`:
 
-1. `GET /cms/admin/namespaces` — list all registered namespaces
-2. `GET /cms/admin/locales` — list all active locales
+1. `GET /cms/admin/namespaces` - list all registered namespaces
+2. `GET /cms/admin/locales` - list all active locales
 3. For every (namespace, locale) combination: `GET /cms/translations/{namespace}/{locale}`
 4. Writes `{outputDir}/{locale}/{namespace}.json`
 
@@ -116,7 +116,7 @@ Same format as `fallbackPlugin`.
 
 ## Error handling
 
-Sync errors (network failures, API down) are logged to `console.error` and do not throw — the interval continues. The initial sync (`await startFallbackSync(...)`) **does** throw on failure, so Next.js will fail to start if the CMS API is unreachable during boot.
+Sync errors (network failures, API down) are logged to `console.error` and do not throw - the interval continues. The initial sync (`await startFallbackSync(...)`) **does** throw on failure, so Next.js will fail to start if the CMS API is unreachable during boot.
 
 If this behavior is too strict for your setup, wrap the call:
 

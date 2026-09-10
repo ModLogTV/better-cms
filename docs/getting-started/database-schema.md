@@ -66,7 +66,7 @@ model MediaAsset {
 Add these models **and extend the better-auth `user` model** with CMS permission fields:
 
 ```prisma
-// Extend the better-auth user table — add these fields
+// Extend the better-auth user table - add these fields
 model user {
   // ... existing better-auth fields ...
 
@@ -97,12 +97,12 @@ model CmsUserGroup {
 ### Model notes
 
 **`TranslationNamespace`**
-- Composite primary key `[name, locale]` — one row per namespace + locale combination.
+- Composite primary key `[name, locale]` - one row per namespace + locale combination.
 - `values` stores the raw key→value map as JSON. Keys are flat strings (e.g. `"topNav.aboutUs"`).
-- `updatedAt` tracks the last write to this namespace+locale — powers the admin dashboard's "recently updated" list.
+- `updatedAt` tracks the last write to this namespace+locale - powers the admin dashboard's "recently updated" list.
 
 **`Page`**
-- `id` is a string you control — typically a UUID generated on create.
+- `id` is a string you control - typically a UUID generated on create.
 - `slug` + `locale` must be unique together.
 - `blocks` is a JSON array of `{ type: string, data: unknown }` objects. The `pagesPlugin` validates `data` against your registered Zod schemas on write.
 - `status` is either `"draft"` or `"published"`.
@@ -110,7 +110,7 @@ model CmsUserGroup {
 **`Locale`**
 - Locales are managed dynamically through the CMS API, not hardcoded in code.
 - `isDefault` marks the locale used when no locale preference is detected.
-- Only one locale should have `isDefault: true` — the adapter does not enforce this constraint.
+- Only one locale should have `isDefault: true` - the adapter does not enforce this constraint.
 
 **`CmsGroup`**
 - Groups are created by developers or admin users via the CMS API.
@@ -119,8 +119,8 @@ model CmsUserGroup {
 
 **`CmsUserGroup`**
 - Join table between users and groups.
-- Composite primary key `[userId, groupId]` — unique membership per user/group pair.
-- `onDelete: Cascade` — group deletion removes all memberships.
+- Composite primary key `[userId, groupId]` - unique membership per user/group pair.
+- `onDelete: Cascade` - group deletion removes all memberships.
 
 ## Running migrations
 
@@ -130,7 +130,7 @@ bunx prisma migrate dev --name init-cms
 
 ## Schema placement in a monorepo
 
-Place the schema in your shared database package (e.g., `packages/db/schema.prisma`). The Prisma adapter accepts any object matching the `PrismaClient` shape — it does not import `@prisma/client` directly, so you can pass a client from any package without version conflicts.
+Place the schema in your shared database package (e.g., `packages/db/schema.prisma`). The Prisma adapter accepts any object matching the `PrismaClient` shape - it does not import `@prisma/client` directly, so you can pass a client from any package without version conflicts.
 
 ## Drizzle
 
