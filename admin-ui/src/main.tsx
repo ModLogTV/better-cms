@@ -4,8 +4,12 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { initTheme } from "@/lib/theme";
 import { router } from "./router";
 import "./styles.css";
+
+// Applied before first paint so there's no flash of the wrong theme.
+initTheme();
 
 const queryClient = new QueryClient({
 	defaultOptions: {

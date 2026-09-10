@@ -1,8 +1,17 @@
-import { IconKey, IconLogout, IconSelector } from "@tabler/icons-react";
+import {
+	IconDeviceDesktop,
+	IconKey,
+	IconLogout,
+	IconMoon,
+	IconSelector,
+	IconSun,
+} from "@tabler/icons-react";
 import { useNavigate } from "@tanstack/react-router";
+import { cn } from "cn";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -19,7 +28,18 @@ import {
 	useSidebar,
 } from "@/components/ui/sidebar";
 import { signOut } from "@/lib/auth";
+import { getStoredTheme, setTheme, type Theme } from "@/lib/theme";
 import { ChangePasswordDialog } from "./ChangePasswordDialog";
+
+const THEME_OPTIONS: {
+	value: Theme;
+	label: string;
+	icon: React.ElementType;
+}[] = [
+	{ value: "light", label: "Light", icon: IconSun },
+	{ value: "dark", label: "Dark", icon: IconMoon },
+	{ value: "system", label: "System", icon: IconDeviceDesktop },
+];
 
 function initialsFor(name?: string, email?: string) {
 	if (name) {
@@ -43,7 +63,13 @@ export function AccountMenu({
 	const { isMobile } = useSidebar();
 	const navigate = useNavigate();
 	const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+	const [theme, setThemeState] = useState<Theme>(() => getStoredTheme());
 	const initials = initialsFor(userName, userEmail);
+
+	function selectTheme(next: Theme) {
+		setTheme(next);
+		setThemeState(next);
+	}
 
 	async function handleSignOut() {
 		try {
@@ -117,6 +143,26 @@ export function AccountMenu({
 								Change password
 							</DropdownMenuItem>
 						</DropdownMenuGroup>
+						<DropdownMenuLabel>Theme</DropdownMenuLabel>
+						<div className="flex gap-1 px-1 pb-1.5">
+							{THEME_OPTIONS.map((opt) => (
+								<Button
+									key={opt.value}
+									type="button"
+									size="sm"
+									variant="ghost"
+									className={cn(
+										"flex-1 gap-1",
+										theme === opt.value &&
+											"bg-sidebar-accent text-sidebar-accent-foreground",
+									)}
+									onClick={() => selectTheme(opt.value)}
+								>
+									<opt.icon className="size-3.5" />
+									{opt.label}
+								</Button>
+							))}
+						</div>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem
 							variant="destructive"

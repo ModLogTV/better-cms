@@ -8,7 +8,7 @@
 - [ ] Overhaul translations views (namespaces + translations) — switching namespaces/languages is clunky
 - [ ] Change password dialog: add confirm-new-password field + password strength indicator
 - [x] "+ Add locale" button needs to be a size larger
-- [ ] Move theme switcher into account settings at the bottom of the sidebar
+- [x] Move theme switcher into account settings at the bottom of the sidebar
 - [ ] Fix media uploads (broken for all files, not just `.icon`) and show actionable error messages
 - [ ] Fix browser console warning: "[DOM] Password field is not contained in a form"
 - [ ] Use TanStack Form for forms and TanStack Query for API calls throughout
