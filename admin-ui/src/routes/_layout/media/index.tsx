@@ -3,6 +3,7 @@ import {
 	IconFile,
 	IconPhoto,
 	IconRefresh,
+	IconRocket,
 	IconTrash,
 	IconUpload,
 	IconX,
@@ -11,6 +12,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { MediaVersionHistoryPanel } from "@/components/shared/MediaVersionHistoryPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,6 +42,17 @@ interface UploadItem {
 	error: string | null;
 }
 
+function MediaStatusBadge({ status }: { status: MediaAsset["status"] }) {
+	if (status === "modified") {
+		return <Badge variant="warning">published · unpublished changes</Badge>;
+	}
+	return (
+		<Badge variant={status === "published" ? "success" : "warning"}>
+			{status}
+		</Badge>
+	);
+}
+
 function MediaCard({ asset }: { asset: MediaAsset }) {
 	const qc = useQueryClient();
 	const isImage = asset.mimeType.startsWith("image/");
@@ -51,6 +64,16 @@ function MediaCard({ asset }: { asset: MediaAsset }) {
 			qc.invalidateQueries({ queryKey: ["cms", "media"] });
 		},
 		onError: () => toast.error("Delete failed"),
+	});
+
+	const publish = useMutation({
+		mutationFn: () => api.media.publish(asset.id),
+		onSuccess: () => {
+			toast.success("Asset published");
+			qc.invalidateQueries({ queryKey: ["cms", "media"] });
+		},
+		onError: (e) =>
+			toast.error(e instanceof Error ? e.message : "Publish failed"),
 	});
 
 	return (
@@ -78,10 +101,35 @@ function MediaCard({ asset }: { asset: MediaAsset }) {
 						{formatBytes(asset.size)}
 					</span>
 				</div>
-				{!asset.confirmedAt && (
+				{!asset.confirmedAt ? (
 					<Badge variant="warning" className="w-fit text-[10px]">
 						pending
 					</Badge>
+				) : (
+					<div className="flex items-center justify-between gap-2">
+						<MediaStatusBadge status={asset.status} />
+						<div className="flex items-center gap-1">
+							<MediaVersionHistoryPanel
+								assetId={asset.id}
+								compact
+								onRestored={() =>
+									qc.invalidateQueries({ queryKey: ["cms", "media"] })
+								}
+							/>
+							{asset.status !== "published" && (
+								<Button
+									size="icon"
+									variant="outline"
+									className="size-7"
+									onClick={() => publish.mutate()}
+									disabled={publish.isPending}
+									title="Publish"
+								>
+									<IconRocket className="size-3.5" />
+								</Button>
+							)}
+						</div>
+					</div>
 				)}
 			</div>
 			<Dialog>

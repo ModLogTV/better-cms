@@ -4,6 +4,7 @@ import { tokenAuthAdapter } from "../../auth/token-adapter";
 import type {
 	CMSAdapter,
 	MediaAsset,
+	MediaVersionSummary,
 	Page,
 	PageGrant,
 	PageSummary,
@@ -37,6 +38,8 @@ export function makeMediaAsset(
 		publicUrl: "https://cdn.example.com/123-photo.jpg",
 		confirmedAt: null,
 		createdAt: new Date("2024-01-01"),
+		status: "draft",
+		metadata: {},
 		...overrides,
 	};
 }
@@ -87,6 +90,12 @@ export function makeAdapter(overrides: Partial<CMSAdapter> = {}): CMSAdapter {
 		confirmMediaAsset: mock(async () => {}),
 		listMediaAssets: mock(async () => [] as MediaAsset[]),
 		deleteMediaAsset: mock(async () => {}),
+		publishMediaAsset: mock(async () => {}),
+		updateMediaAsset: mock(async (opts) => makeMediaAsset({ id: opts.id })),
+		listMediaVersions: mock(async () => [] as MediaVersionSummary[]),
+		getMediaVersion: mock(async () => null),
+		restoreMediaVersion: mock(async (opts) => makeMediaAsset({ id: opts.id })),
+		getPublishedMediaAsset: mock(async () => null),
 		...overrides,
 	};
 }

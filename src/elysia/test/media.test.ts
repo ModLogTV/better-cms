@@ -214,6 +214,160 @@ describe("media routes - delete", () => {
 	});
 });
 
+describe("media routes - publish/versions/restore", () => {
+	test("POST /cms/media/:id/publish calls publishMediaAsset", async () => {
+		const publishMediaAsset = mock(async () => {});
+		const adapter = makeAdapter({ publishMediaAsset });
+		const app = makeApp(adapter, [makePlugin()]);
+		const res = await app.handle(
+			req("/cms/media/asset-1/publish", { method: "POST" }),
+		);
+		expect(res.status).toBe(200);
+		expect(publishMediaAsset).toHaveBeenCalledWith({ id: "asset-1" });
+	});
+
+	test("POST /cms/media/:id/publish returns 409 when the adapter rejects it", async () => {
+		const adapter = makeAdapter({
+			publishMediaAsset: async () => {
+				throw new Error("no version to publish");
+			},
+		});
+		const app = makeApp(adapter, [makePlugin()]);
+		const res = await app.handle(
+			req("/cms/media/asset-1/publish", { method: "POST" }),
+		);
+		expect(res.status).toBe(409);
+	});
+
+	test("GET /cms/media/:id/versions lists version history", async () => {
+		const summary = {
+			id: "v1",
+			assetId: "asset-1",
+			createdAt: new Date(),
+			publishedAt: null,
+			createdBy: null,
+			fileChanged: true,
+		};
+		const adapter = makeAdapter({
+			listMediaVersions: mock(async () => [summary]),
+		});
+		const app = makeApp(adapter, [makePlugin()]);
+		const res = await app.handle(req("/cms/media/asset-1/versions"));
+		expect(res.status).toBe(200);
+		const body = await res.json();
+		expect(body).toHaveLength(1);
+		expect(adapter.listMediaVersions).toHaveBeenCalledWith({ id: "asset-1" });
+	});
+
+	test("GET /cms/media/versions/:versionId returns a version's snapshot", async () => {
+		const version = {
+			id: "v1",
+			assetId: "asset-1",
+			key: "k",
+			filename: "f",
+			mimeType: "image/jpeg",
+			size: 1,
+			publicUrl: "https://cdn.example.com/k",
+			metadata: { alt: "hi" },
+			createdAt: new Date(),
+			publishedAt: null,
+			createdBy: null,
+			fileChanged: true,
+		};
+		const adapter = makeAdapter({ getMediaVersion: mock(async () => version) });
+		const app = makeApp(adapter, [makePlugin()]);
+		const res = await app.handle(req("/cms/media/versions/v1"));
+		expect(res.status).toBe(200);
+		const body = await res.json();
+		expect(body.id).toBe("v1");
+	});
+
+	test("GET /cms/media/versions/:versionId 404s when missing", async () => {
+		const adapter = makeAdapter({ getMediaVersion: mock(async () => null) });
+		const app = makeApp(adapter, [makePlugin()]);
+		const res = await app.handle(req("/cms/media/versions/missing"));
+		expect(res.status).toBe(404);
+	});
+
+	test("PATCH /cms/media/:id updates metadata via a new version", async () => {
+		const updateMediaAsset = mock(async ({ id }: { id: string }) =>
+			makeMediaAsset({ id }),
+		);
+		const adapter = makeAdapter({ updateMediaAsset });
+		const app = makeApp(adapter, [makePlugin()]);
+		const res = await app.handle(
+			req("/cms/media/asset-1", {
+				method: "PATCH",
+				body: JSON.stringify({ metadata: { alt: "A cat" } }),
+			}),
+		);
+		expect(res.status).toBe(200);
+		expect(updateMediaAsset).toHaveBeenCalledWith(
+			expect.objectContaining({ id: "asset-1", metadata: { alt: "A cat" } }),
+		);
+	});
+
+	test("POST /cms/media/:id/restore restores a past version into a new draft", async () => {
+		const restoreMediaVersion = mock(async ({ id }: { id: string }) =>
+			makeMediaAsset({ id }),
+		);
+		const adapter = makeAdapter({ restoreMediaVersion });
+		const app = makeApp(adapter, [makePlugin()]);
+		const res = await app.handle(
+			req("/cms/media/asset-1/restore", {
+				method: "POST",
+				body: JSON.stringify({ versionId: "v1" }),
+			}),
+		);
+		expect(res.status).toBe(200);
+		expect(restoreMediaVersion).toHaveBeenCalledWith({
+			id: "asset-1",
+			versionId: "v1",
+		});
+	});
+});
+
+describe("media routes - public", () => {
+	test("GET /cms/media/public/:key redirects to the published asset", async () => {
+		const asset = makeMediaAsset({
+			key: "live.jpg",
+			publicUrl: "https://cdn.example.com/live.jpg",
+			status: "published",
+		});
+		const adapter = makeAdapter({
+			getPublishedMediaAsset: mock(async () => asset),
+		});
+		const app = makeApp(adapter, [makePlugin()]);
+		const res = await app.handle(
+			req("/cms/media/public/live.jpg", { redirect: "manual" } as never),
+		);
+		expect(res.status).toBe(302);
+		expect(res.headers.get("location")).toBe(
+			"https://cdn.example.com/live.jpg",
+		);
+	});
+
+	test("GET /cms/media/public/:key 404s for a draft asset (or unknown key)", async () => {
+		const adapter = makeAdapter({
+			getPublishedMediaAsset: mock(async () => null),
+		});
+		const app = makeApp(adapter, [makePlugin()]);
+		const res = await app.handle(req("/cms/media/public/draft.jpg"));
+		expect(res.status).toBe(404);
+	});
+
+	test("GET /cms/media/public/:key requires no auth token", async () => {
+		const adapter = makeAdapter({
+			getPublishedMediaAsset: mock(async () => null),
+		});
+		const app = makeApp(adapter, [makePlugin()]);
+		const res = await app.handle(
+			new Request("http://localhost/cms/media/public/x.jpg"),
+		);
+		expect(res.status).toBe(404); // reaches the handler, not a 401
+	});
+});
+
 function makePlugin() {
 	return mediaPlugin({ storage: makeStorage() });
 }

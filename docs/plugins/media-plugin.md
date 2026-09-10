@@ -48,6 +48,18 @@ const cms = createCMS({
 | `POST` | `/cms/media/:assetId/confirm` | `cms:media:upload` | Mark an asset upload as completed |
 | `GET` | `/cms/media/:key/url` | `cms:admin:read` | Get a read URL (presigned or public) for an asset |
 | `DELETE` | `/cms/media/:key` | `cms:media:delete` | Delete a file from storage and the asset registry |
+| `GET` | `/cms/media/:id/versions` | `cms:admin:read` | Version history for an asset, newest first |
+| `GET` | `/cms/media/versions/:versionId` | `cms:admin:read` | A single version's full snapshot |
+| `POST` | `/cms/media/:id/publish` | `cms:media:upload` | Marks the asset's latest version as published |
+| `PATCH` | `/cms/media/:id` | `cms:media:upload` | Metadata edit - creates a new version (`{ metadata }`) |
+| `POST` | `/cms/media/:id/restore` | `cms:media:upload` | Copies a past version into a new draft version (`{ versionId }`) |
+| `GET` | `/cms/media/public/:key` | none | Redirects to the file **only if published** - the public-facing counterpart to the admin routes above |
+
+## Publishing and version history
+
+Like pages, media has its own draft/published lifecycle, independent of any page referencing it. Every metadata edit and every file replacement (passing `key`/`filename`/`mimeType`/`size`/`publicUrl` to `PATCH /cms/media/:id`) creates a new append-only `MediaVersion`; `POST /cms/media/:id/publish` marks the latest version as the published one. Status is derived: `draft` (never published), `published` (published version matches the latest), or `published` with unpublished changes pending (latest differs from what's published).
+
+Draft/unpublished versions are never exposed via `GET /cms/media/public/:key` - only the currently published version is publicly reachable there. Draft content remains fully visible to authorized admins via the routes above. If you reference media in your frontend and want it to respect draft/publish state, link to `/cms/media/public/:key` instead of the asset's raw `publicUrl` - the latter is a direct storage URL and isn't gated by this CMS at all (see [Storage Adapters](../storage-adapters/overview.md)).
 
 ## Upload flow
 
@@ -76,6 +88,8 @@ interface MediaAsset {
   uploadedBy?: string;  // userId if using betterAuthCMSAdapter
   confirmedAt: Date | null;
   createdAt: Date;
+  status: "draft" | "published" | "modified"; // derived from version history
+  metadata: Record<string, unknown>; // latest version's metadata snapshot
 }
 ```
 

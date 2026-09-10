@@ -21,6 +21,32 @@ export interface MediaAsset {
 	/** null until the browser confirms the upload completed */
 	confirmedAt: Date | null;
 	createdAt: Date;
+	/** Derived from version history - see {@link Page.status}. */
+	status: "draft" | "published" | "modified";
+	/** Arbitrary metadata snapshot from the latest version (alt/caption/custom fields, extracted dimensions/duration). */
+	metadata: Record<string, unknown>;
+}
+
+/** One entry in a media asset's append-only version history. */
+export interface MediaVersionSummary {
+	id: string;
+	assetId: string;
+	createdAt: Date;
+	/** Set once this version was (or still is) the published one. */
+	publishedAt: Date | null;
+	createdBy: string | null;
+	/** True when this version's file ref differs from the version before it. */
+	fileChanged: boolean;
+}
+
+/** A version's full snapshot - used for diffing and restore previews. */
+export interface MediaVersion extends MediaVersionSummary {
+	key: string;
+	filename: string;
+	mimeType: string;
+	size: number;
+	publicUrl: string;
+	metadata: Record<string, unknown>;
 }
 
 /** A page's content for one locale - `id` identifies this content row (what editor routes operate on). */
@@ -243,4 +269,32 @@ export interface CMSAdapter {
 	confirmMediaAsset(opts: { id: string }): Promise<void>;
 	listMediaAssets(): Promise<MediaAsset[]>;
 	deleteMediaAsset(opts: { key: string }): Promise<void>;
+	/** Marks the asset's latest version as published (creates a metadata-only version first if none exists). */
+	publishMediaAsset(opts: { id: string }): Promise<void>;
+	/**
+	 * Creates a new version - a metadata edit, and/or a file replacement when
+	 * any of key/filename/mimeType/size/publicUrl are given (defaults to the
+	 * previous version's values for anything omitted).
+	 */
+	updateMediaAsset(opts: {
+		id: string;
+		key?: string;
+		filename?: string;
+		mimeType?: string;
+		size?: number;
+		publicUrl?: string;
+		metadata?: Record<string, unknown>;
+		createdBy?: string;
+	}): Promise<MediaAsset>;
+	/** Version history for a media asset, newest first. */
+	listMediaVersions(opts: { id: string }): Promise<MediaVersionSummary[]>;
+	/** A single version's full snapshot, for diffing or a restore preview. */
+	getMediaVersion(opts: { versionId: string }): Promise<MediaVersion | null>;
+	/** Copies a past version's file ref + metadata into a new draft version - does not touch the published version. */
+	restoreMediaVersion(opts: {
+		id: string;
+		versionId: string;
+	}): Promise<MediaAsset>;
+	/** Published-only lookup by key - the public-facing counterpart to the admin `listMediaAssets`/`:key/url` routes. Null if not found or not published. */
+	getPublishedMediaAsset(opts: { key: string }): Promise<MediaAsset | null>;
 }

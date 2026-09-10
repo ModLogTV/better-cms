@@ -85,7 +85,13 @@ model PageContent {
 // Append-only. One row per Save and per Publish (publish reuses the latest
 // version when it's still the current draft).
 model PageVersion {
-  id          String    @id @default(cuid())
+  // `seq` (not `id`) is the real primary key - a plain autoincrement int is
+  // the only way SQLite guarantees a stable creation order, since two
+  // versions created within the same millisecond otherwise sort
+  // nondeterministically by `createdAt` alone. `id` is still what every
+  // other model/route references externally.
+  seq         Int       @id @default(autoincrement())
+  id          String    @unique @default(cuid())
   contentId   String
   blocks      Json      @default("[]")
   createdAt   DateTime  @default(now())
@@ -109,15 +115,42 @@ model Locale {
 
 ```prisma
 model MediaAsset {
-  id          String    @id @default(cuid())
-  key         String    @unique
+  id                 String    @id @default(cuid())
+  uploadedBy         String?
+  confirmedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  // Points at the MediaVersion currently live - same derived-status pattern
+  // as PageContent.publishedVersionId.
+  publishedVersionId String?
+
+  versions MediaVersion[]
+}
+
+// Append-only. One row per metadata edit and per file replacement (the
+// current key/filename/mimeType/size/publicUrl live here, not on MediaAsset).
+model MediaVersion {
+  // See PageVersion.seq - same nondeterministic-same-millisecond-sort issue.
+  seq         Int       @id @default(autoincrement())
+  id          String    @unique @default(cuid())
+  assetId     String
+  // Not @unique - a metadata-only edit (no file replacement) reuses the
+  // previous version's key, so it legitimately repeats across an asset's own
+  // history. Looked up via findFirst, not findUnique.
+  key         String
   filename    String
   mimeType    String
   size        Int
   publicUrl   String
-  uploadedBy  String?
-  confirmedAt DateTime?
+  // alt/caption/custom key-value fields + extracted width/height/duration.
+  metadata    Json  // no @default - see the Model notes section
   createdAt   DateTime  @default(now())
+  publishedAt DateTime?
+  createdBy   String?
+
+  asset MediaAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([assetId])
+  @@index([key])
 }
 ```
 

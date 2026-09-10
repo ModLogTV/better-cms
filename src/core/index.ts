@@ -111,6 +111,9 @@ export function createCMS(config: CMSConfig): CMSInstance {
 
 export type {
 	CMSAdapter,
+	MediaAsset,
+	MediaVersion,
+	MediaVersionSummary,
 	NamespaceLocaleMeta,
 	Page,
 	PageAclSubject,

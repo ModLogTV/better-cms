@@ -4,7 +4,26 @@ import type { CMSContext } from "../../core/plugin";
 import { requirePermission } from "../../elysia/auth";
 
 export function mediaRoutes(ctx: CMSContext) {
-	return new Elysia()
+	// No auth - this is the public counterpart to the admin-only routes below,
+	// gated on publish state rather than a permission: draft/unpublished media
+	// (or an unknown key) 404s here even though it's fully visible to admins
+	// via GET /media.
+	const publicRoutes = new Elysia().get(
+		"/media/public/:key",
+		async ({ params, set, redirect }) => {
+			const asset = await ctx.adapter.getPublishedMediaAsset({
+				key: params.key,
+			});
+			if (!asset) {
+				set.status = 404;
+				return { error: "Not found" };
+			}
+			return redirect(asset.publicUrl);
+		},
+		{ params: t.Object({ key: t.String() }) },
+	);
+
+	const adminRoutes = new Elysia()
 		.use(
 			requirePermission({
 				cms: ctx,
@@ -15,26 +34,106 @@ export function mediaRoutes(ctx: CMSContext) {
 			return ctx.adapter.listMediaAssets();
 		})
 		.get(
-			"/media/:key/url",
+			// `:id` here is a storage key (named to match the other single-resource
+			// media routes at this same tree position - see router note below).
+			"/media/:id/url",
 			async ({ params, set }) => {
 				if (!ctx.storage) {
 					set.status = 503;
 					return { error: "No storage adapter configured" };
 				}
+				const key = params.id;
 				const assets = await ctx.adapter.listMediaAssets();
-				const asset = assets.find((a) => a.key === params.key);
+				const asset = assets.find((a) => a.key === key);
 				if (!asset) {
 					set.status = 404;
 					return { error: "Asset not found" };
 				}
 				if (ctx.storage.presignRead) {
-					const { url } = await ctx.storage.presignRead({ key: params.key });
+					const { url } = await ctx.storage.presignRead({ key });
 					return { url };
 				}
 				return { url: asset.publicUrl };
 			},
-			{ params: t.Object({ key: t.String() }) },
+			{ params: t.Object({ id: t.String() }) },
 		)
+		.get(
+			"/media/:id/versions",
+			async ({ params }) => {
+				return ctx.adapter.listMediaVersions({ id: params.id });
+			},
+			{ params: t.Object({ id: t.String() }) },
+		)
+		.get(
+			"/media/versions/:versionId",
+			async ({ params, set }) => {
+				const version = await ctx.adapter.getMediaVersion({
+					versionId: params.versionId,
+				});
+				if (!version) {
+					set.status = 404;
+					return null;
+				}
+				return version;
+			},
+			{ params: t.Object({ versionId: t.String() }) },
+		)
+		.use(
+			requirePermission({
+				cms: ctx,
+				permissions: [CMS_PERMISSIONS.MEDIA_UPLOAD],
+			}),
+		)
+		.post(
+			"/media/:id/publish",
+			async ({ params, set }) => {
+				try {
+					await ctx.adapter.publishMediaAsset({ id: params.id });
+					return { ok: true };
+				} catch (err) {
+					set.status = 409;
+					return {
+						error: err instanceof Error ? err.message : "Couldn't publish",
+					};
+				}
+			},
+			{ params: t.Object({ id: t.String() }) },
+		)
+		.patch(
+			"/media/:id",
+			async ({ params, body }) => {
+				return ctx.adapter.updateMediaAsset({ id: params.id, ...body });
+			},
+			{
+				params: t.Object({ id: t.String() }),
+				body: t.Object({
+					metadata: t.Optional(t.Record(t.String(), t.Unknown())),
+				}),
+			},
+		)
+		.post(
+			"/media/:id/restore",
+			async ({ params, body, set }) => {
+				try {
+					return await ctx.adapter.restoreMediaVersion({
+						id: params.id,
+						versionId: body.versionId,
+					});
+				} catch (err) {
+					set.status = 409;
+					return {
+						error:
+							err instanceof Error ? err.message : "Couldn't restore version",
+					};
+				}
+			},
+			{
+				params: t.Object({ id: t.String() }),
+				body: t.Object({ versionId: t.String() }),
+			},
+		);
+
+	const uploadRoutes = new Elysia()
 		.use(
 			requirePermission({
 				cms: ctx,
@@ -74,13 +173,15 @@ export function mediaRoutes(ctx: CMSContext) {
 			},
 		)
 		.post(
-			"/media/:assetId/confirm",
+			"/media/:id/confirm",
 			async ({ params, set }) => {
-				await ctx.adapter.confirmMediaAsset({ id: params.assetId });
+				await ctx.adapter.confirmMediaAsset({ id: params.id });
 				set.status = 204;
 			},
-			{ params: t.Object({ assetId: t.String() }) },
-		)
+			{ params: t.Object({ id: t.String() }) },
+		);
+
+	const deleteRoutes = new Elysia()
 		.use(
 			requirePermission({
 				cms: ctx,
@@ -102,4 +203,10 @@ export function mediaRoutes(ctx: CMSContext) {
 			},
 			{ params: t.Object({ key: t.String() }) },
 		);
+
+	return new Elysia()
+		.use(publicRoutes)
+		.use(adminRoutes)
+		.use(uploadRoutes)
+		.use(deleteRoutes);
 }

@@ -75,6 +75,8 @@ const post = <T>(path: string, body?: unknown) =>
 		body: body != null ? JSON.stringify(body) : undefined,
 	});
 const del = <T>(path: string) => apiFetch<T>(path, { method: "DELETE" });
+const patch = <T>(path: string, body: unknown) =>
+	apiFetch<T>(path, { method: "PATCH", body: JSON.stringify(body) });
 
 export interface Locale {
 	code: string;
@@ -191,6 +193,26 @@ export interface MediaAsset {
 	uploadedBy?: string;
 	confirmedAt: string | null;
 	createdAt: string;
+	status: PageStatus;
+	metadata: Record<string, unknown>;
+}
+
+export interface MediaVersionSummary {
+	id: string;
+	assetId: string;
+	createdAt: string;
+	publishedAt: string | null;
+	createdBy: string | null;
+	fileChanged: boolean;
+}
+
+export interface MediaVersion extends MediaVersionSummary {
+	key: string;
+	filename: string;
+	mimeType: string;
+	size: number;
+	publicUrl: string;
+	metadata: Record<string, unknown>;
 }
 
 export interface CMSUserSummary {
@@ -352,6 +374,16 @@ export const api = {
 			return { publicUrl, assetId };
 		},
 		delete: (key: string) => del(`/media/${encodeURIComponent(key)}`),
+		publish: (id: string) => post(`/media/${id}/publish`),
+		updateMetadata: (id: string, metadata: Record<string, unknown>) =>
+			patch<MediaAsset>(`/media/${id}`, { metadata }),
+		restore: (id: string, versionId: string) =>
+			post<MediaAsset>(`/media/${id}/restore`, { versionId }),
+		versions: {
+			list: (id: string) => get<MediaVersionSummary[]>(`/media/${id}/versions`),
+			get: (versionId: string) =>
+				get<MediaVersion>(`/media/versions/${versionId}`),
+		},
 	},
 
 	locales: {

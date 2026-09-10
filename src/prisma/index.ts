@@ -4,6 +4,7 @@ import type {
 	ListPagesParams,
 	Locale,
 	MediaAsset,
+	MediaVersionSummary,
 	NamespaceLocaleMeta,
 	Page,
 	PageAclSubject,
@@ -47,9 +48,38 @@ interface PrismaPageContentWithNodeRow extends PrismaPageContentRow {
 }
 
 interface PrismaPageVersionRow {
+	seq: number;
 	id: string;
 	contentId: string;
 	blocks: unknown;
+	createdAt: Date;
+	publishedAt: Date | null;
+	createdBy: string | null;
+}
+
+interface PrismaMediaAssetRow {
+	id: string;
+	uploadedBy: string | null;
+	confirmedAt: Date | null;
+	createdAt: Date;
+	publishedVersionId: string | null;
+}
+
+interface PrismaMediaAssetWithVersionsRow extends PrismaMediaAssetRow {
+	/** Latest version only, when fetched with `include.versions` (take 1, desc). */
+	versions: PrismaMediaVersionRow[];
+}
+
+interface PrismaMediaVersionRow {
+	seq: number;
+	id: string;
+	assetId: string;
+	key: string;
+	filename: string;
+	mimeType: string;
+	size: number;
+	publicUrl: string;
+	metadata: unknown;
 	createdAt: Date;
 	publishedAt: Date | null;
 	createdBy: string | null;
@@ -174,43 +204,56 @@ interface PrismaClient {
 		create(args: {
 			data: {
 				id: string;
-				key: string;
-				filename: string;
-				mimeType: string;
-				size: number;
-				publicUrl: string;
 				uploadedBy?: string;
 				confirmedAt: Date | null;
 			};
-		}): Promise<{
-			id: string;
-			key: string;
-			filename: string;
-			mimeType: string;
-			size: number;
-			publicUrl: string;
-			uploadedBy: string | null;
-			confirmedAt: Date | null;
-			createdAt: Date;
-		}>;
+		}): Promise<PrismaMediaAssetRow>;
 		update(args: {
 			where: { id: string };
-			data: { confirmedAt: Date };
-		}): Promise<unknown>;
-		findMany(): Promise<
-			{
+			data: Partial<{ confirmedAt: Date; publishedVersionId: string | null }>;
+		}): Promise<PrismaMediaAssetRow>;
+		findUnique(args: {
+			where: { id: string };
+		}): Promise<PrismaMediaAssetRow | null>;
+		findMany(args?: {
+			include?: {
+				versions: { orderBy: Record<string, "asc" | "desc">[]; take: number };
+			};
+		}): Promise<PrismaMediaAssetWithVersionsRow[]>;
+		deleteMany(args: { where: { id: string } }): Promise<unknown>;
+	};
+	mediaVersion: {
+		create(args: {
+			data: {
 				id: string;
+				assetId: string;
 				key: string;
 				filename: string;
 				mimeType: string;
 				size: number;
 				publicUrl: string;
-				uploadedBy: string | null;
-				confirmedAt: Date | null;
-				createdAt: Date;
-			}[]
-		>;
-		deleteMany(args: { where: { key: string } }): Promise<unknown>;
+				metadata: unknown;
+				createdBy?: string | null;
+			};
+		}): Promise<PrismaMediaVersionRow>;
+		update(args: {
+			where: { id: string };
+			data: { publishedAt: Date };
+		}): Promise<PrismaMediaVersionRow>;
+		findUnique(args: {
+			where: { id: string };
+		}): Promise<PrismaMediaVersionRow | null>;
+		// `key` isn't unique (a metadata-only edit reuses the previous version's
+		// key), so a key lookup goes through findFirst, newest first.
+		findFirst(args: {
+			where: { key: string };
+			orderBy: Record<string, "asc" | "desc">[];
+		}): Promise<PrismaMediaVersionRow | null>;
+		findMany(args: {
+			where: { assetId: string };
+			orderBy: Record<string, "asc" | "desc">[];
+			take?: number;
+		}): Promise<PrismaMediaVersionRow[]>;
 	};
 }
 
@@ -232,6 +275,56 @@ function toPageVersionSummary(row: PrismaPageVersionRow): PageVersionSummary {
 		publishedAt: row.publishedAt,
 		createdBy: row.createdBy,
 	};
+}
+
+function toMediaAsset(
+	asset: PrismaMediaAssetRow,
+	version: PrismaMediaVersionRow,
+	/** Pass when `version` isn't necessarily the latest (e.g. the published snapshot). */
+	latestVersionIdOverride?: string,
+): MediaAsset {
+	return {
+		id: asset.id,
+		key: version.key,
+		filename: version.filename,
+		mimeType: version.mimeType,
+		size: version.size,
+		publicUrl: version.publicUrl,
+		uploadedBy: asset.uploadedBy ?? undefined,
+		confirmedAt: asset.confirmedAt,
+		createdAt: asset.createdAt,
+		status: deriveStatus(
+			asset.publishedVersionId,
+			latestVersionIdOverride ?? version.id,
+		),
+		metadata: (version.metadata as Record<string, unknown>) ?? {},
+	};
+}
+
+function toMediaVersionSummary(
+	row: PrismaMediaVersionRow,
+	older: PrismaMediaVersionRow | undefined,
+): MediaVersionSummary {
+	return {
+		id: row.id,
+		assetId: row.assetId,
+		createdAt: row.createdAt,
+		publishedAt: row.publishedAt,
+		createdBy: row.createdBy,
+		fileChanged: !older || older.key !== row.key,
+	};
+}
+
+async function mediaLatestVersion(
+	prisma: PrismaClient,
+	assetId: string,
+): Promise<PrismaMediaVersionRow | undefined> {
+	const rows = await prisma.mediaVersion.findMany({
+		where: { assetId },
+		orderBy: [{ seq: "desc" }],
+		take: 1,
+	});
+	return rows[0];
 }
 
 function buildPage(opts: {
@@ -261,7 +354,7 @@ async function latestVersion(
 ): Promise<PrismaPageVersionRow | undefined> {
 	const rows = await prisma.pageVersion.findMany({
 		where: { contentId },
-		orderBy: [{ createdAt: "desc" }],
+		orderBy: [{ seq: "desc" }],
 		take: 1,
 	});
 	return rows[0];
@@ -279,7 +372,7 @@ async function pruneVersions(
 		prisma.pageContent.findUnique({ where: { id: contentId } }),
 		prisma.pageVersion.findMany({
 			where: { contentId },
-			orderBy: [{ createdAt: "desc" }],
+			orderBy: [{ seq: "desc" }],
 		}),
 	]);
 	if (versions.length === 0) return;
@@ -591,7 +684,7 @@ export function prismaAdapter(
 		async listPageVersions({ id }) {
 			const rows = await prisma.pageVersion.findMany({
 				where: { contentId: id },
-				orderBy: [{ createdAt: "desc" }],
+				orderBy: [{ seq: "desc" }],
 			});
 			return rows.map(toPageVersionSummary);
 		},
@@ -644,7 +737,7 @@ export function prismaAdapter(
 				where,
 				include: {
 					node: true,
-					versions: { orderBy: [{ createdAt: "desc" }], take: 1 },
+					versions: { orderBy: [{ seq: "desc" }], take: 1 },
 				},
 			});
 			let items = rows.map(toPageSummary);
@@ -667,7 +760,7 @@ export function prismaAdapter(
 					where: {},
 					include: {
 						node: true,
-						versions: { orderBy: [{ createdAt: "desc" }], take: 1 },
+						versions: { orderBy: [{ seq: "desc" }], take: 1 },
 					},
 				}),
 			]);
@@ -878,29 +971,22 @@ export function prismaAdapter(
 			publicUrl,
 			uploadedBy,
 		}) {
-			const row = await prisma.mediaAsset.create({
+			const asset = await prisma.mediaAsset.create({
+				data: { id, uploadedBy, confirmedAt: null },
+			});
+			const version = await prisma.mediaVersion.create({
 				data: {
-					id,
+					id: crypto.randomUUID(),
+					assetId: id,
 					key,
 					filename,
 					mimeType,
 					size,
 					publicUrl,
-					uploadedBy,
-					confirmedAt: null,
+					metadata: {},
 				},
 			});
-			return {
-				id: row.id,
-				key: row.key,
-				filename: row.filename,
-				mimeType: row.mimeType,
-				size: row.size,
-				publicUrl: row.publicUrl,
-				uploadedBy: row.uploadedBy ?? undefined,
-				confirmedAt: row.confirmedAt,
-				createdAt: row.createdAt,
-			};
+			return toMediaAsset(asset, version);
 		},
 
 		async confirmMediaAsset({ id }) {
@@ -911,24 +997,145 @@ export function prismaAdapter(
 		},
 
 		async listMediaAssets() {
-			const rows = await prisma.mediaAsset.findMany();
-			return rows.map(
-				(r): MediaAsset => ({
-					id: r.id,
-					key: r.key,
-					filename: r.filename,
-					mimeType: r.mimeType,
-					size: r.size,
-					publicUrl: r.publicUrl,
-					uploadedBy: r.uploadedBy ?? undefined,
-					confirmedAt: r.confirmedAt,
-					createdAt: r.createdAt,
-				}),
-			);
+			const rows = await prisma.mediaAsset.findMany({
+				include: { versions: { orderBy: [{ seq: "desc" }], take: 1 } },
+			});
+			return rows
+				.filter((r) => r.versions[0])
+				.map((r) => toMediaAsset(r, r.versions[0]));
 		},
 
 		async deleteMediaAsset({ key }) {
-			await prisma.mediaAsset.deleteMany({ where: { key } });
+			const version = await prisma.mediaVersion.findFirst({
+				where: { key },
+				orderBy: [{ seq: "desc" }],
+			});
+			if (!version) return;
+			await prisma.mediaAsset.deleteMany({ where: { id: version.assetId } });
+		},
+
+		async publishMediaAsset({ id }) {
+			const latest = await mediaLatestVersion(prisma, id);
+			if (!latest)
+				throw new Error(`Media asset "${id}" has no version to publish.`);
+			if (!latest.publishedAt) {
+				await prisma.mediaVersion.update({
+					where: { id: latest.id },
+					data: { publishedAt: new Date() },
+				});
+			}
+			await prisma.mediaAsset.update({
+				where: { id },
+				data: { publishedVersionId: latest.id },
+			});
+		},
+
+		async updateMediaAsset({
+			id,
+			key,
+			filename,
+			mimeType,
+			size,
+			publicUrl,
+			metadata,
+			createdBy,
+		}) {
+			const asset = await prisma.mediaAsset.findUnique({ where: { id } });
+			if (!asset) throw new Error(`No media asset found with id "${id}"`);
+			const prev = await mediaLatestVersion(prisma, id);
+			if (!prev) throw new Error(`Media asset "${id}" has no version yet.`);
+
+			const version = await prisma.mediaVersion.create({
+				data: {
+					id: crypto.randomUUID(),
+					assetId: id,
+					key: key ?? prev.key,
+					filename: filename ?? prev.filename,
+					mimeType: mimeType ?? prev.mimeType,
+					size: size ?? prev.size,
+					publicUrl: publicUrl ?? prev.publicUrl,
+					metadata: metadata ?? prev.metadata,
+					createdBy,
+				},
+			});
+			return toMediaAsset(asset, version);
+		},
+
+		async listMediaVersions({ id }) {
+			const rows = await prisma.mediaVersion.findMany({
+				where: { assetId: id },
+				orderBy: [{ seq: "desc" }],
+			});
+			return rows.map((r, i) => toMediaVersionSummary(r, rows[i + 1]));
+		},
+
+		async getMediaVersion({ versionId }) {
+			const row = await prisma.mediaVersion.findUnique({
+				where: { id: versionId },
+			});
+			if (!row) return null;
+			const siblings = await prisma.mediaVersion.findMany({
+				where: { assetId: row.assetId },
+				orderBy: [{ seq: "desc" }],
+			});
+			const index = siblings.findIndex((v) => v.id === row.id);
+			return {
+				...toMediaVersionSummary(row, siblings[index + 1]),
+				key: row.key,
+				filename: row.filename,
+				mimeType: row.mimeType,
+				size: row.size,
+				publicUrl: row.publicUrl,
+				metadata: (row.metadata as Record<string, unknown>) ?? {},
+			};
+		},
+
+		async restoreMediaVersion({ id, versionId }) {
+			const asset = await prisma.mediaAsset.findUnique({ where: { id } });
+			if (!asset) throw new Error(`No media asset found with id "${id}"`);
+			const source = await prisma.mediaVersion.findUnique({
+				where: { id: versionId },
+			});
+			if (!source || source.assetId !== id) {
+				throw new Error(
+					`No version "${versionId}" found for media asset "${id}"`,
+				);
+			}
+			const restored = await prisma.mediaVersion.create({
+				data: {
+					id: crypto.randomUUID(),
+					assetId: id,
+					key: source.key,
+					filename: source.filename,
+					mimeType: source.mimeType,
+					size: source.size,
+					publicUrl: source.publicUrl,
+					metadata: source.metadata,
+				},
+			});
+			return toMediaAsset(asset, restored);
+		},
+
+		async getPublishedMediaAsset({ key }) {
+			// `key` may belong to an older version (e.g. an unpublished metadata
+			// edit reuses the same key) - resolve the asset first, then always
+			// serve whatever its `publishedVersionId` actually points at, not
+			// necessarily the version this particular key lookup found.
+			const anyMatch = await prisma.mediaVersion.findFirst({
+				where: { key },
+				orderBy: [{ seq: "desc" }],
+			});
+			if (!anyMatch) return null;
+			const asset = await prisma.mediaAsset.findUnique({
+				where: { id: anyMatch.assetId },
+			});
+			if (!asset?.publishedVersionId) return null;
+			const published = await prisma.mediaVersion.findUnique({
+				where: { id: asset.publishedVersionId },
+			});
+			if (!published) return null;
+			const latest = await mediaLatestVersion(prisma, asset.id);
+			return toMediaAsset(asset, published, latest?.id);
 		},
 	};
 }
