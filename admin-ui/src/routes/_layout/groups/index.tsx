@@ -92,7 +92,7 @@ function GroupDialog({
 						<IconPencil className="size-3.5" />
 					</Button>
 				) : (
-					<Button size="sm">
+					<Button size="lg">
 						<IconPlus className="size-4" />
 						New group
 					</Button>

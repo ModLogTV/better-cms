@@ -21,6 +21,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { api, type MediaTagAction, type MediaTagGrant } from "@/lib/api";
 
 const MEDIA_TAG_PERMISSIONS: { value: MediaTagAction; label: string }[] = [
@@ -144,16 +149,16 @@ export function TagAccessPanel({
 
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
-			<DialogTrigger asChild>
-				<Button
-					size="icon"
-					variant="ghost"
-					className="size-6"
-					title={`Access to "${tagName}"`}
-				>
-					<IconLock className="size-3.5" />
-				</Button>
-			</DialogTrigger>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<DialogTrigger asChild>
+						<Button size="icon" variant="ghost" className="size-6">
+							<IconLock className="size-3.5" />
+						</Button>
+					</DialogTrigger>
+				</TooltipTrigger>
+				<TooltipContent>Access to "{tagName}"</TooltipContent>
+			</Tooltip>
 			<DialogContent className="sm:max-w-lg">
 				<DialogHeader>
 					<DialogTitle>

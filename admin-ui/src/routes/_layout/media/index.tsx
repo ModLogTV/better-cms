@@ -35,6 +35,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { api, type MediaAsset } from "@/lib/api";
 import { formatBytes } from "@/lib/utils";
 
@@ -105,9 +110,12 @@ function MediaCard({
 				)}
 			</div>
 			<div className="flex flex-1 flex-col gap-1 p-3">
-				<p className="truncate text-sm font-medium" title={asset.filename}>
-					{asset.filename}
-				</p>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<p className="truncate text-sm font-medium">{asset.filename}</p>
+					</TooltipTrigger>
+					<TooltipContent>{asset.filename}</TooltipContent>
+				</Tooltip>
 				<div className="flex items-center gap-2">
 					<Badge variant="outline" className="text-[10px]">
 						{asset.mimeType}
@@ -143,16 +151,20 @@ function MediaCard({
 								}
 							/>
 							{asset.status !== "published" && (
-								<Button
-									size="icon"
-									variant="outline"
-									className="size-7"
-									onClick={() => publish.mutate()}
-									disabled={publish.isPending}
-									title="Publish"
-								>
-									<IconRocket className="size-3.5" />
-								</Button>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											size="icon"
+											variant="outline"
+											className="size-7"
+											onClick={() => publish.mutate()}
+											disabled={publish.isPending}
+										>
+											<IconRocket className="size-3.5" />
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent>Publish</TooltipContent>
+								</Tooltip>
 							)}
 						</div>
 					</div>
@@ -217,15 +229,21 @@ function UploadingCard({
 				)}
 			</div>
 			<div className="flex flex-1 flex-col gap-1.5 p-3">
-				<p className="truncate text-sm font-medium" title={item.file.name}>
-					{item.file.name}
-				</p>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<p className="truncate text-sm font-medium">{item.file.name}</p>
+					</TooltipTrigger>
+					<TooltipContent>{item.file.name}</TooltipContent>
+				</Tooltip>
 				{item.error ? (
 					<div className="flex items-center gap-1 text-destructive text-xs">
 						<IconAlertCircle className="size-3.5 shrink-0" />
-						<span className="truncate" title={item.error}>
-							{item.error}
-						</span>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<span className="truncate">{item.error}</span>
+							</TooltipTrigger>
+							<TooltipContent>{item.error}</TooltipContent>
+						</Tooltip>
 					</div>
 				) : (
 					<div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -239,24 +257,32 @@ function UploadingCard({
 			<div className="absolute right-2 top-2 flex gap-1">
 				{item.error ? (
 					<>
-						<Button
-							size="icon"
-							variant="outline"
-							className="size-7 bg-background"
-							onClick={onRetry}
-							title="Retry"
-						>
-							<IconRefresh className="size-3.5" />
-						</Button>
-						<Button
-							size="icon"
-							variant="outline"
-							className="size-7 bg-background"
-							onClick={onDismiss}
-							title="Dismiss"
-						>
-							<IconX className="size-3.5" />
-						</Button>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="icon"
+									variant="outline"
+									className="size-7 bg-background"
+									onClick={onRetry}
+								>
+									<IconRefresh className="size-3.5" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Retry</TooltipContent>
+						</Tooltip>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="icon"
+									variant="outline"
+									className="size-7 bg-background"
+									onClick={onDismiss}
+								>
+									<IconX className="size-3.5" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Dismiss</TooltipContent>
+						</Tooltip>
 					</>
 				) : (
 					<Badge variant="outline" className="bg-background">
@@ -403,7 +429,7 @@ function MediaPage() {
 						className="hidden"
 						onChange={(e) => handleFiles(e.target.files)}
 					/>
-					<Button onClick={() => fileInputRef.current?.click()}>
+					<Button size="lg" onClick={() => fileInputRef.current?.click()}>
 						<IconUpload className="size-4" />
 						Upload
 					</Button>

@@ -8,7 +8,9 @@ import {
 	useSensors,
 } from "@dnd-kit/core";
 import {
+	IconAlertTriangle,
 	IconChevronRight,
+	IconExternalLink,
 	IconFileText,
 	IconFolder,
 	IconGripVertical,
@@ -19,7 +21,7 @@ import {
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,6 +47,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { getConfig } from "@/config";
 import {
 	ApiError,
 	api,
@@ -52,6 +55,7 @@ import {
 	type PageNodeLocale,
 	type PageTreeNode,
 } from "@/lib/api";
+import { useTransientError } from "@/lib/use-transient-error";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_layout/pages/")({
@@ -59,6 +63,20 @@ export const Route = createFileRoute("/_layout/pages/")({
 });
 
 const ROOT_DROP_ID = "__root__";
+
+function findNode(nodes: PageTreeNode[], id: string): PageTreeNode | undefined {
+	for (const node of nodes) {
+		if (node.id === id) return node;
+		const found = findNode(node.children, id);
+		if (found) return found;
+	}
+	return undefined;
+}
+
+function collectIds(node: PageTreeNode, into: Set<string>) {
+	into.add(node.id);
+	for (const child of node.children) collectIds(child, into);
+}
 
 interface NewPageValues {
 	slug: string;
@@ -307,44 +325,54 @@ function LocaleBadge({ node, locale }: { node: PageTreeNode; locale: Locale }) {
 
 	if (!content) {
 		return (
-			<AddLocaleDialog
-				nodeId={node.id}
-				path={node.path}
-				locale={locale.code}
-				existingLocales={node.locales}
-				trigger={
-					<button
-						type="button"
-						className="cursor-pointer rounded-full border border-dashed px-1.5 py-0.5 text-[0.625rem] text-muted-foreground uppercase tracking-wide hover:border-foreground hover:text-foreground"
-						title={`Add ${locale.code}`}
-					>
-						+{locale.code}
-					</button>
-				}
-			/>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<span>
+						<AddLocaleDialog
+							nodeId={node.id}
+							path={node.path}
+							locale={locale.code}
+							existingLocales={node.locales}
+							trigger={
+								<button
+									type="button"
+									className="cursor-pointer rounded-full border border-dashed px-1.5 py-0.5 text-[0.625rem] text-muted-foreground uppercase tracking-wide hover:border-foreground hover:text-foreground"
+								>
+									+{locale.code}
+								</button>
+							}
+						/>
+					</span>
+				</TooltipTrigger>
+				<TooltipContent>Add {locale.code}</TooltipContent>
+			</Tooltip>
 		);
 	}
 
 	return (
-		<Link
-			to="/pages/$pageId"
-			params={{ pageId: content.contentId }}
-			search={{ path: node.path, locale: locale.code }}
-		>
-			<Badge
-				variant={
-					content.status === "published"
-						? "success"
-						: content.status === "modified"
-							? "warning"
-							: "secondary"
-				}
-				className="uppercase"
-				title={content.status}
-			>
-				{locale.code}
-			</Badge>
-		</Link>
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<Link
+					to="/pages/$pageId"
+					params={{ pageId: content.contentId }}
+					search={{ path: node.path, locale: locale.code }}
+				>
+					<Badge
+						variant={
+							content.status === "published"
+								? "success"
+								: content.status === "modified"
+									? "warning"
+									: "secondary"
+						}
+						className="uppercase"
+					>
+						{locale.code}
+					</Badge>
+				</Link>
+			</TooltipTrigger>
+			<TooltipContent>{content.status}</TooltipContent>
+		</Tooltip>
 	);
 }
 
@@ -356,6 +384,8 @@ function TreeRow({
 	onPublish,
 	publishingId,
 	locales,
+	moveError,
+	disabledDropIds,
 }: {
 	node: PageTreeNode;
 	depth: number;
@@ -364,10 +394,16 @@ function TreeRow({
 	onPublish: (contentId: string) => void;
 	publishingId: string | undefined;
 	locales: Locale[];
+	moveError: { id: string; message: string } | null;
+	/** Node ids that can't be a drop target for the page currently being dragged (itself and its own descendants). */
+	disabledDropIds: Set<string>;
 }) {
 	const hasChildren = node.children.length > 0;
 	const isExpanded = expanded.has(node.id);
 	const publishableContent = node.locales.find((l) => l.status !== "published");
+	const isMoveError = moveError?.id === node.id;
+	const dropDisabled = disabledDropIds.has(node.id);
+	const siteUrl = getConfig().siteUrl;
 
 	const {
 		attributes,
@@ -375,7 +411,10 @@ function TreeRow({
 		setNodeRef: setDragRef,
 		isDragging,
 	} = useDraggable({ id: node.id });
-	const { setNodeRef: setDropRef, isOver } = useDroppable({ id: node.id });
+	const { setNodeRef: setDropRef, isOver } = useDroppable({
+		id: node.id,
+		disabled: dropDisabled,
+	});
 
 	return (
 		<div>
@@ -387,19 +426,36 @@ function TreeRow({
 							"group flex items-center gap-1.5 rounded-md py-1.5 pr-2",
 							isOver && "bg-accent ring-1 ring-primary",
 							isDragging && "opacity-40",
+							dropDisabled && "opacity-40",
 						)}
 						style={{ paddingLeft: depth * 20 + 4 }}
 					>
-						<button
-							type="button"
-							ref={setDragRef}
-							{...listeners}
-							{...attributes}
-							className="cursor-grab text-muted-foreground opacity-0 group-hover:opacity-100 active:cursor-grabbing"
-							aria-label="Drag to move"
-						>
-							<IconGripVertical className="size-3.5" />
-						</button>
+						<Tooltip open={isMoveError}>
+							<TooltipTrigger asChild>
+								<button
+									type="button"
+									ref={setDragRef}
+									{...listeners}
+									{...attributes}
+									className={cn(
+										"opacity-0 group-hover:opacity-100",
+										isMoveError
+											? "cursor-default text-destructive opacity-100"
+											: "cursor-grab text-muted-foreground active:cursor-grabbing",
+									)}
+									aria-label={isMoveError ? "Move failed" : "Drag to move"}
+								>
+									{isMoveError ? (
+										<IconAlertTriangle className="size-3.5" />
+									) : (
+										<IconGripVertical className="size-3.5" />
+									)}
+								</button>
+							</TooltipTrigger>
+							<TooltipContent variant="destructive" side="right">
+								{moveError?.message}
+							</TooltipContent>
+						</Tooltip>
 						<button
 							type="button"
 							onClick={() => hasChildren && onToggle(node.id)}
@@ -449,6 +505,27 @@ function TreeRow({
 								</TooltipTrigger>
 								<TooltipContent>Add child page</TooltipContent>
 							</Tooltip>
+							{siteUrl && (
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											size="icon"
+											variant="ghost"
+											className="size-6 opacity-0 group-hover:opacity-100"
+											asChild
+										>
+											<a
+												href={`${siteUrl.replace(/\/$/, "")}/${node.path}`}
+												target="_blank"
+												rel="noopener noreferrer"
+											>
+												<IconExternalLink className="size-3.5" />
+											</a>
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent>Open page in new tab</TooltipContent>
+								</Tooltip>
+							)}
 							{publishableContent && (
 								<Button
 									size="sm"
@@ -497,6 +574,8 @@ function TreeRow({
 							onPublish={onPublish}
 							publishingId={publishingId}
 							locales={locales}
+							moveError={moveError}
+							disabledDropIds={disabledDropIds}
 						/>
 					))}
 				</div>
@@ -551,6 +630,7 @@ function PagesPage() {
 		onError: () => toast.error("Publish failed"),
 	});
 
+	const { error: moveError, flash: flashMoveError } = useTransientError();
 	const move = useMutation({
 		mutationFn: ({ id, parentId }: { id: string; parentId: string | null }) =>
 			api.pages.move(id, parentId),
@@ -558,15 +638,33 @@ function PagesPage() {
 			toast.success("Page moved");
 			qc.invalidateQueries({ queryKey: ["cms", "pages"] });
 		},
-		onError: (e) =>
-			toast.error(e instanceof ApiError ? e.message : "Couldn't move page"),
+		onError: (e, variables) =>
+			flashMoveError(
+				variables.id,
+				e instanceof ApiError ? e.message : "Couldn't move page",
+			),
 	});
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
 	);
 
+	const [draggingId, setDraggingId] = useState<string | null>(null);
+	// Itself and its own descendants can't be a valid drop target - dropping
+	// a page onto its own subtree can't be nesting it anywhere new, and the
+	// API rejects it anyway. Disabling it here (vs. only handling the 409)
+	// stops the drop from ever registering as a candidate in the first place.
+	const disabledDropIds = useMemo(() => {
+		if (!draggingId || !tree) return new Set<string>();
+		const dragged = findNode(tree, draggingId);
+		const ids = new Set<string>();
+		if (dragged) collectIds(dragged, ids);
+		else ids.add(draggingId);
+		return ids;
+	}, [draggingId, tree]);
+
 	const handleDragEnd = (event: DragEndEvent) => {
+		setDraggingId(null);
 		const { active, over } = event;
 		if (!over || active.id === over.id) return;
 		const parentId = over.id === ROOT_DROP_ID ? null : String(over.id);
@@ -607,7 +705,12 @@ function PagesPage() {
 					No pages yet.
 				</div>
 			) : (
-				<DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+				<DndContext
+					sensors={sensors}
+					onDragStart={(e) => setDraggingId(String(e.active.id))}
+					onDragEnd={handleDragEnd}
+					onDragCancel={() => setDraggingId(null)}
+				>
 					<RootDropZone>
 						{tree.map((node) => (
 							<TreeRow
@@ -619,6 +722,8 @@ function PagesPage() {
 								onPublish={(id) => publish.mutate(id)}
 								publishingId={publish.isPending ? publish.variables : undefined}
 								locales={locales}
+								moveError={moveError}
+								disabledDropIds={disabledDropIds}
 							/>
 						))}
 					</RootDropZone>

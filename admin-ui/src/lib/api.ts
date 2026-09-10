@@ -5,7 +5,10 @@ export class ApiError extends Error {
 		public status: number,
 		message: string,
 	) {
-		super(`API ${status}: ${message}`);
+		// `message` is exactly the server's error text (e.g. "Cannot move a
+		// page into one of its own descendants.") - it's shown to the user
+		// as-is (toast, in-place error tooltip), so no "API {status}:" prefix.
+		super(message);
 		this.name = "ApiError";
 	}
 }

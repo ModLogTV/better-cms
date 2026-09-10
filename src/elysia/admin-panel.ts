@@ -27,6 +27,14 @@ export interface AdminPanelOptions {
 	apiBasePath?: string;
 	/** Base path of the better-auth API. Default: `/api/auth` */
 	authBasePath?: string;
+	/**
+	 * Base URL of the site that renders your pages (e.g. `https://example.com`).
+	 * When set, each page in the admin panel's tree gets an "open in new tab"
+	 * link to `${siteUrl}${page.path}`. Omit to hide that link - the CMS has
+	 * no public-facing page route of its own (unlike media), since pages are
+	 * rendered by your frontend app's own routing, which the CMS can't infer.
+	 */
+	siteUrl?: string;
 }
 
 /**
@@ -52,13 +60,19 @@ export function adminPanelPlugin(opts: AdminPanelOptions = {}) {
 		basePath = "/admin",
 		apiBasePath = "/cms",
 		authBasePath = "/api/auth",
+		siteUrl,
 	} = opts;
 
 	// In the published package: this file is at dist/elysia/*.js
 	// Admin panel assets are at dist/admin-panel/
 	const distDir = join(__dirname, "../admin-panel");
 
-	const runtimeConfig = JSON.stringify({ apiBasePath, authBasePath, basePath });
+	const runtimeConfig = JSON.stringify({
+		apiBasePath,
+		authBasePath,
+		basePath,
+		siteUrl,
+	});
 
 	function injectConfig(html: string): string {
 		// Vite builds this SPA with a relative base ("./assets/...") so it can be

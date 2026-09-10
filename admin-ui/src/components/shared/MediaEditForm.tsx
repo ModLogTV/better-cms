@@ -15,6 +15,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { api, type MediaAsset } from "@/lib/api";
 
 // Reserved metadata keys with dedicated fields/read-only display - everything
@@ -98,11 +103,16 @@ export function MediaEditForm({ asset }: { asset: MediaAsset }) {
 
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
-			<DialogTrigger asChild>
-				<Button size="icon" variant="outline" className="size-7" title="Edit">
-					<IconPencil className="size-3.5" />
-				</Button>
-			</DialogTrigger>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<DialogTrigger asChild>
+						<Button size="icon" variant="outline" className="size-7">
+							<IconPencil className="size-3.5" />
+						</Button>
+					</DialogTrigger>
+				</TooltipTrigger>
+				<TooltipContent>Edit</TooltipContent>
+			</Tooltip>
 			<DialogContent className="sm:max-w-lg">
 				<DialogHeader>
 					<DialogTitle>

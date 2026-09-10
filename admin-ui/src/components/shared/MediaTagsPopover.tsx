@@ -11,6 +11,11 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { api } from "@/lib/api";
 
 export function MediaTagsPopover({
@@ -44,11 +49,16 @@ export function MediaTagsPopover({
 
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
-			<PopoverTrigger asChild>
-				<Button size="icon" variant="outline" className="size-7" title="Tags">
-					<IconTag className="size-3.5" />
-				</Button>
-			</PopoverTrigger>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<PopoverTrigger asChild>
+						<Button size="icon" variant="outline" className="size-7">
+							<IconTag className="size-3.5" />
+						</Button>
+					</PopoverTrigger>
+				</TooltipTrigger>
+				<TooltipContent>Tags</TooltipContent>
+			</Tooltip>
 			<PopoverContent className="w-56 space-y-2">
 				<p className="font-medium text-muted-foreground text-xs">Tags</p>
 				{tags.length === 0 ? (

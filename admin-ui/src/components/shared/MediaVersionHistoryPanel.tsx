@@ -18,6 +18,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { api, type MediaVersionSummary } from "@/lib/api";
 import { diffBlocks } from "@/lib/diff";
 import { cn } from "@/lib/utils";
@@ -131,23 +136,25 @@ export function MediaVersionHistoryPanel({
 
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
-			<DialogTrigger asChild>
-				{compact ? (
-					<Button
-						size="icon"
-						variant="outline"
-						className="size-7"
-						title="Version history"
-					>
-						<IconHistory className="size-3.5" />
-					</Button>
-				) : (
+			{compact ? (
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<DialogTrigger asChild>
+							<Button size="icon" variant="outline" className="size-7">
+								<IconHistory className="size-3.5" />
+							</Button>
+						</DialogTrigger>
+					</TooltipTrigger>
+					<TooltipContent>Version history</TooltipContent>
+				</Tooltip>
+			) : (
+				<DialogTrigger asChild>
 					<Button variant="outline" size="sm">
 						<IconHistory className="size-4" />
 						History
 					</Button>
-				)}
-			</DialogTrigger>
+				</DialogTrigger>
+			)}
 			<DialogContent className="sm:max-w-2xl">
 				<DialogHeader>
 					<DialogTitle>Version history</DialogTitle>
