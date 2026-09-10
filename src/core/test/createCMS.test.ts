@@ -135,6 +135,19 @@ const mockAdapter: CMSAdapter = {
 		createdAt: new Date(),
 	})),
 	deleteSavedView: mock(async () => {}),
+	getMediaAssetById: mock(async () => null),
+	listMediaTagGrants: mock(async () => []),
+	addMediaTagGrant: mock(
+		async ({ id, tagId, subjectType, subjectId, permission }) => ({
+			id,
+			tagId,
+			subjectType,
+			subjectId,
+			permission,
+		}),
+	),
+	removeMediaTagGrant: mock(async () => {}),
+	getEffectiveMediaTagPermissions: mock(async () => []),
 };
 
 const ns = defineNamespace({

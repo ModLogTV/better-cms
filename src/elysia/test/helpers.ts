@@ -4,6 +4,7 @@ import { tokenAuthAdapter } from "../../auth/token-adapter";
 import type {
 	CMSAdapter,
 	MediaAsset,
+	MediaTagGrant,
 	MediaVersionSummary,
 	Page,
 	PageGrant,
@@ -117,6 +118,17 @@ export function makeAdapter(overrides: Partial<CMSAdapter> = {}): CMSAdapter {
 			createdAt: new Date(),
 		})),
 		deleteSavedView: mock(async () => {}),
+		getMediaAssetById: mock(async () => null),
+		listMediaTagGrants: mock(async () => [] as MediaTagGrant[]),
+		addMediaTagGrant: mock(async (opts) => ({
+			id: opts.id,
+			tagId: opts.tagId,
+			subjectType: opts.subjectType,
+			subjectId: opts.subjectId,
+			permission: opts.permission,
+		})),
+		removeMediaTagGrant: mock(async () => {}),
+		getEffectiveMediaTagPermissions: mock(async () => []),
 		...overrides,
 	};
 }

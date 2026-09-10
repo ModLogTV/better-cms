@@ -41,27 +41,52 @@ const cms = createCMS({
 
 ## Routes added
 
+Every route below except `/cms/media/public/:key` requires at least `cms:media:view` - it's the hard baseline for opening the media library at all, and there's no tag-scoped grant that bypasses it. Routes marked "view / tag" also accept a tag-scoped grant (see [Tag-scoped permissions](#tag-scoped-permissions)) in place of the listed global permission, evaluated against the tags the target asset actually carries; untagged assets are governed purely by the global permission.
+
 | Method | Path | Permission | Description |
 |--------|------|-----------|-------------|
-| `GET` | `/cms/media` | `cms:admin:read` | List all recorded media assets |
+| `GET` | `/cms/media?tagIds=a,b&tagOperator=AND\|OR` | `cms:media:view` | List assets, optionally filtered by tags (`AND` = every tag, `OR` = any one - default `AND`). Narrowed to what the caller can see unless they hold `cms:admin:read` |
+| `GET` | `/cms/media/tags` | `cms:media:view` | List all tags |
+| `GET` | `/cms/media/views` | `cms:media:view` | List saved tag-filter views |
+| `GET` | `/cms/media/:key/url` | `cms:media:view` | Get a read URL (presigned or public) for an asset |
+| `GET` | `/cms/media/:id/versions` | `cms:media:view` | Version history for an asset, newest first |
+| `GET` | `/cms/media/versions/:versionId` | `cms:media:view` | A single version's full snapshot |
+| `POST` | `/cms/media/:id/publish` | `cms:media:upload` / tag `publish` | Marks the asset's latest version as published |
+| `PATCH` | `/cms/media/:id` | `cms:media:upload` / tag `edit` | Metadata edit - creates a new version (`{ metadata }`) |
+| `POST` | `/cms/media/:id/restore` | `cms:media:upload` / tag `edit` | Copies a past version into a new draft version (`{ versionId }`) |
+| `PUT` | `/cms/media/:id/tags` | `cms:media:upload` / tag `edit` | Replace an asset's full tag set (`{ tagIds }`) |
+| `DELETE` | `/cms/media/:key` | `cms:media:delete` / tag `delete` | Delete a file from storage and the asset registry |
 | `POST` | `/cms/media/presign` | `cms:media:upload` | Generate a presigned upload URL and register the asset |
 | `POST` | `/cms/media/:assetId/confirm` | `cms:media:upload` | Mark an asset upload as completed |
-| `GET` | `/cms/media/:key/url` | `cms:admin:read` | Get a read URL (presigned or public) for an asset |
-| `DELETE` | `/cms/media/:key` | `cms:media:delete` | Delete a file from storage and the asset registry |
-| `GET` | `/cms/media/:id/versions` | `cms:admin:read` | Version history for an asset, newest first |
-| `GET` | `/cms/media/versions/:versionId` | `cms:admin:read` | A single version's full snapshot |
-| `POST` | `/cms/media/:id/publish` | `cms:media:upload` | Marks the asset's latest version as published |
-| `PATCH` | `/cms/media/:id` | `cms:media:upload` | Metadata edit - creates a new version (`{ metadata }`) |
-| `POST` | `/cms/media/:id/restore` | `cms:media:upload` | Copies a past version into a new draft version (`{ versionId }`) |
+| `POST` | `/cms/media/tags` | `cms:media:tag-manage` | Create a tag (`{ name }`) |
+| `DELETE` | `/cms/media/tags/:id` | `cms:media:tag-manage` | Delete a tag |
+| `GET` | `/cms/media/tags/:id/grants` | `cms:media:tag-manage` | List access grants for a tag |
+| `POST` | `/cms/media/tags/:id/grants` | `cms:media:tag-manage` | Add a tag-scoped grant (`{ subjectType, subjectId, permission }`) |
+| `DELETE` | `/cms/media/tag-grants/:id` | `cms:media:tag-manage` | Remove a tag-scoped grant |
+| `POST` | `/cms/media/views` | `cms:media:view` | Save a tag-filter combination (`{ name, operator, tagIds }`) |
+| `DELETE` | `/cms/media/views/:id` | `cms:media:view` | Delete a saved view |
 | `GET` | `/cms/media/public/:key` | none | Redirects to the file **only if published** - the public-facing counterpart to the admin routes above |
-| `GET` | `/cms/media?tagIds=a,b&tagOperator=AND\|OR` | `cms:admin:read` | List assets, optionally filtered by tags (`AND` = every tag, `OR` = any one - default `AND`) |
-| `GET` | `/cms/media/tags` | `cms:admin:read` | List all tags |
-| `POST` | `/cms/media/tags` | `cms:media:upload` | Create a tag (`{ name }`) |
-| `DELETE` | `/cms/media/tags/:id` | `cms:media:upload` | Delete a tag |
-| `PUT` | `/cms/media/:id/tags` | `cms:media:upload` | Replace an asset's full tag set (`{ tagIds }`) |
-| `GET` | `/cms/media/views` | `cms:admin:read` | List saved tag-filter views |
-| `POST` | `/cms/media/views` | `cms:media:upload` | Save a tag-filter combination (`{ name, operator, tagIds }`) |
-| `DELETE` | `/cms/media/views/:id` | `cms:media:upload` | Delete a saved view |
+
+## Tag-scoped permissions
+
+On top of the flat, global `cms:media:*` permissions, a user or group can be granted access scoped to one or more tags - additive on top of whatever global permissions they already hold, never a restriction. `cms:media:view` itself is never grantable per-tag; it's a hard prerequisite checked before any route (including tag-scoped ones) runs at all.
+
+```ts
+type MediaTagAction = "view" | "upload" | "edit" | "delete" | "publish";
+
+interface MediaTagGrant {
+  id: string;
+  tagId: string;
+  subjectType: "user" | "group";
+  subjectId: string;
+  permission: MediaTagAction;
+}
+```
+
+- A caller can act on a tagged asset if they hold a matching grant on **any one** of its tags (OR logic across the asset's tags, not AND).
+- Untagged assets are governed solely by the global `cms:media:upload` / `cms:media:delete` permissions - there's no tag to scope a grant to.
+- Uploading without a tag is allowed for anyone with upload access (global or tag-scoped); tagging at upload time is never required.
+- Tag CRUD (create/delete) and grant management both require `cms:media:tag-manage`, which is distinct from *assigning* an existing tag to an asset (`PUT /cms/media/:id/tags`), which only needs edit/upload access to that asset - tags double as an access boundary, so managing the boundary itself is a separate, narrower permission.
 
 ## Tags and saved views
 

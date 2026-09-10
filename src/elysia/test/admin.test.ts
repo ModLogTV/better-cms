@@ -43,7 +43,7 @@ describe("admin routes", () => {
 			value: "cms:*",
 			description: "Grants every CMS permission",
 		});
-		expect(body.length).toBe(14);
+		expect(body.length).toBe(16);
 	});
 
 	test("GET /cms/admin/namespaces/:ns/describe returns key metadata", async () => {

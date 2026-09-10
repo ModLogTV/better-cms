@@ -19,6 +19,7 @@ import {
 	TagChip,
 } from "@/components/shared/MediaTagsPopover";
 import { MediaVersionHistoryPanel } from "@/components/shared/MediaVersionHistoryPanel";
+import { TagAccessPanel } from "@/components/shared/TagAccessPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -411,17 +412,19 @@ function MediaPage() {
 				<div className="flex flex-wrap items-center gap-1.5">
 					<span className="text-muted-foreground text-xs">Tags:</span>
 					{tags.map((tag) => (
-						<TagChip
-							key={tag.id}
-							label={tag.name}
-							active={selectedTagIds.includes(tag.id)}
-							onClick={() => toggleTag(tag.id)}
-							onRemove={() => {
-								if (window.confirm(`Delete tag "${tag.name}"?`)) {
-									deleteTag.mutate(tag.id);
-								}
-							}}
-						/>
+						<div key={tag.id} className="flex items-center gap-0.5">
+							<TagChip
+								label={tag.name}
+								active={selectedTagIds.includes(tag.id)}
+								onClick={() => toggleTag(tag.id)}
+								onRemove={() => {
+									if (window.confirm(`Delete tag "${tag.name}"?`)) {
+										deleteTag.mutate(tag.id);
+									}
+								}}
+							/>
+							<TagAccessPanel tagId={tag.id} tagName={tag.name} />
+						</div>
 					))}
 					<Input
 						value={newTagName}

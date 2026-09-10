@@ -135,6 +135,24 @@ model Tag {
   createdAt DateTime @default(now())
 
   assets MediaAssetTag[]
+  grants MediaTagGrant[]
+}
+
+// ACL grant scoping a user/group to an action (view/upload/edit/delete/
+// publish) on media carrying this tag - OR across an item's tags, additive
+// on top of the subject's global MEDIA_* permissions.
+model MediaTagGrant {
+  id          String   @id @default(cuid())
+  tagId       String
+  subjectType String
+  subjectId   String
+  permission  String
+  createdAt   DateTime @default(now())
+
+  tag Tag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@index([tagId])
+  @@index([subjectType, subjectId])
 }
 
 model MediaAssetTag {

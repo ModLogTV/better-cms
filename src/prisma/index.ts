@@ -4,6 +4,8 @@ import type {
 	ListPagesParams,
 	Locale,
 	MediaAsset,
+	MediaTagAction,
+	MediaTagGrant,
 	MediaVersionSummary,
 	NamespaceLocaleMeta,
 	Page,
@@ -106,6 +108,14 @@ interface PrismaSavedViewRow {
 interface PrismaMediaAssetTagRow {
 	assetId: string;
 	tagId: string;
+}
+
+interface PrismaMediaTagGrantRow {
+	id: string;
+	tagId: string;
+	subjectType: string;
+	subjectId: string;
+	permission: string;
 }
 
 interface PrismaClient {
@@ -306,6 +316,27 @@ interface PrismaClient {
 		findMany(): Promise<PrismaSavedViewRow[]>;
 		delete(args: { where: { id: string } }): Promise<unknown>;
 	};
+	mediaTagGrant: {
+		findMany(args?: {
+			where?: {
+				tagId?: string | { in: string[] };
+				OR?: Array<{
+					subjectType: string;
+					subjectId: string | { in: string[] };
+				}>;
+			};
+		}): Promise<PrismaMediaTagGrantRow[]>;
+		create(args: {
+			data: {
+				id: string;
+				tagId: string;
+				subjectType: string;
+				subjectId: string;
+				permission: string;
+			};
+		}): Promise<PrismaMediaTagGrantRow>;
+		delete(args: { where: { id: string } }): Promise<unknown>;
+	};
 }
 
 function deriveStatus(
@@ -368,6 +399,16 @@ function toSavedView(row: PrismaSavedViewRow): SavedView {
 		operator: row.operator as "AND" | "OR",
 		tagIds: (row.tagIds as string[]) ?? [],
 		createdAt: row.createdAt,
+	};
+}
+
+function toMediaTagGrant(row: PrismaMediaTagGrantRow): MediaTagGrant {
+	return {
+		id: row.id,
+		tagId: row.tagId,
+		subjectType: row.subjectType as "user" | "group",
+		subjectId: row.subjectId,
+		permission: row.permission as MediaTagAction,
 	};
 }
 
@@ -1098,7 +1139,34 @@ export function prismaAdapter(
 								opts.tagIds?.every((t) => a.tagIds.includes(t)),
 							);
 			}
+
+			if (opts?.subject) {
+				const subject = opts.subject;
+				const OR = subjectGrantFilter(subject);
+				const grants =
+					OR.length > 0
+						? await prisma.mediaTagGrant.findMany({ where: { OR } })
+						: [];
+				const viewableTagIds = new Set(
+					grants.filter((g) => g.permission === "view").map((g) => g.tagId),
+				);
+				assets = assets.filter(
+					(a) =>
+						a.tagIds.length === 0 ||
+						a.tagIds.some((t) => viewableTagIds.has(t)),
+				);
+			}
 			return assets;
+		},
+
+		async getMediaAssetById({ id }) {
+			const asset = await prisma.mediaAsset.findUnique({ where: { id } });
+			if (!asset) return null;
+			const latest = await mediaLatestVersion(prisma, id);
+			if (!latest) return null;
+			return toMediaAsset(asset, latest, {
+				tagIds: await assetTagIds(prisma, id),
+			});
 		},
 
 		async deleteMediaAsset({ key }) {
@@ -1278,6 +1346,32 @@ export function prismaAdapter(
 
 		async deleteSavedView({ id }) {
 			await prisma.savedView.delete({ where: { id } });
+		},
+
+		async listMediaTagGrants({ tagId }) {
+			const rows = await prisma.mediaTagGrant.findMany({ where: { tagId } });
+			return rows.map(toMediaTagGrant);
+		},
+
+		async addMediaTagGrant({ id, tagId, subjectType, subjectId, permission }) {
+			const row = await prisma.mediaTagGrant.create({
+				data: { id, tagId, subjectType, subjectId, permission },
+			});
+			return toMediaTagGrant(row);
+		},
+
+		async removeMediaTagGrant({ id }) {
+			await prisma.mediaTagGrant.delete({ where: { id } });
+		},
+
+		async getEffectiveMediaTagPermissions({ userId, groupIds, tagIds }) {
+			if (tagIds.length === 0) return [];
+			const OR = subjectGrantFilter({ userId, groupIds });
+			if (OR.length === 0) return [];
+			const grants = await prisma.mediaTagGrant.findMany({
+				where: { tagId: { in: tagIds }, OR },
+			});
+			return [...new Set(grants.map((g) => g.permission))] as MediaTagAction[];
 		},
 	};
 }

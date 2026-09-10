@@ -45,6 +45,24 @@ export interface SavedView {
 	createdAt: Date;
 }
 
+export type MediaTagAction = "view" | "upload" | "edit" | "delete" | "publish";
+
+/**
+ * ACL grant scoping a user/group to `permission` on media carrying `tagId`.
+ * A media item with multiple tags is accessible if ANY one of its tags has
+ * a matching grant (OR, not AND). Additive on top of the subject's global
+ * `cms:media:*` permissions - `permission` here is its own small action
+ * vocabulary (not the global CMS_PERMISSIONS namespace), since the global
+ * media permission set is coarser than what per-tag grants need to express.
+ */
+export interface MediaTagGrant {
+	id: string;
+	tagId: string;
+	subjectType: "user" | "group";
+	subjectId: string;
+	permission: MediaTagAction;
+}
+
 /** One entry in a media asset's append-only version history. */
 export interface MediaVersionSummary {
 	id: string;
@@ -293,7 +311,17 @@ export interface CMSAdapter {
 	listMediaAssets(opts?: {
 		tagIds?: string[];
 		tagOperator?: "AND" | "OR";
+		/**
+		 * Pass when the caller lacks the global "see everything" permission
+		 * (`cms:admin:read` or wildcard) - narrows results to untagged assets
+		 * plus tagged assets the subject has a "view" grant on (via any one of
+		 * the asset's tags). Purely additive filtering, never used to restrict
+		 * a caller who already has full visibility.
+		 */
+		subject?: PageAclSubject;
 	}): Promise<MediaAsset[]>;
+	/** Fetches a media asset by its own id - used to resolve tags for a permission check before mutating. */
+	getMediaAssetById(opts: { id: string }): Promise<MediaAsset | null>;
 	deleteMediaAsset(opts: { key: string }): Promise<void>;
 	/** Marks the asset's latest version as published (creates a metadata-only version first if none exists). */
 	publishMediaAsset(opts: { id: string }): Promise<void>;
@@ -337,4 +365,24 @@ export interface CMSAdapter {
 		tagIds: string[];
 	}): Promise<SavedView>;
 	deleteSavedView(opts: { id: string }): Promise<void>;
+	/** Grants for one tag - powers the admin tag management view. */
+	listMediaTagGrants(opts: { tagId: string }): Promise<MediaTagGrant[]>;
+	addMediaTagGrant(opts: {
+		id: string;
+		tagId: string;
+		subjectType: "user" | "group";
+		subjectId: string;
+		permission: MediaTagAction;
+	}): Promise<MediaTagGrant>;
+	removeMediaTagGrant(opts: { id: string }): Promise<void>;
+	/**
+	 * The subject's effective media actions across `tagIds`, from tag grants
+	 * only (OR across the given tags - matching any one is enough). Purely
+	 * additive - callers should OR this with the subject's global
+	 * `cms:media:*` permissions, never use it to restrict a subject who
+	 * already has the equivalent global permission.
+	 */
+	getEffectiveMediaTagPermissions(
+		opts: PageAclSubject & { tagIds: string[] },
+	): Promise<MediaTagAction[]>;
 }

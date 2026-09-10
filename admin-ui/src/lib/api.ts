@@ -183,6 +183,16 @@ export interface RawBlock {
 	data: unknown;
 }
 
+export type MediaTagAction = "view" | "upload" | "edit" | "delete" | "publish";
+
+export interface MediaTagGrant {
+	id: string;
+	tagId: string;
+	subjectType: "user" | "group";
+	subjectId: string;
+	permission: MediaTagAction;
+}
+
 export interface MediaAsset {
 	id: string;
 	key: string;
@@ -414,6 +424,19 @@ export const api = {
 			list: () => get<Tag[]>("/media/tags"),
 			create: (name: string) => post<Tag>("/media/tags", { name }),
 			delete: (id: string) => del(`/media/tags/${id}`),
+			grants: {
+				list: (tagId: string) =>
+					get<MediaTagGrant[]>(`/media/tags/${tagId}/grants`),
+				add: (
+					tagId: string,
+					grant: {
+						subjectType: "user" | "group";
+						subjectId: string;
+						permission: MediaTagAction;
+					},
+				) => post<MediaTagGrant>(`/media/tags/${tagId}/grants`, grant),
+				remove: (grantId: string) => del(`/media/tag-grants/${grantId}`),
+			},
 		},
 		views: {
 			list: () => get<SavedView[]>("/media/views"),

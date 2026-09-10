@@ -7,8 +7,12 @@ export const CMS_PERMISSIONS = {
 	PAGES_READ: "cms:pages:read",
 	PAGES_WRITE: "cms:pages:write",
 	PAGES_PUBLISH: "cms:pages:publish",
+	/** Baseline required to open the media library UI/API at all - hard prerequisite, not bypassable via a tag grant. */
+	MEDIA_VIEW: "cms:media:view",
 	MEDIA_UPLOAD: "cms:media:upload",
 	MEDIA_DELETE: "cms:media:delete",
+	/** Tag create/rename/delete - distinct from assigning existing tags to media, which only needs edit/upload access to the item. */
+	MEDIA_TAG_MANAGE: "cms:media:tag-manage",
 	ADMIN_READ: "cms:admin:read",
 	USERS_MANAGE: "cms:users:manage",
 	GROUPS_MANAGE: "cms:groups:manage",
@@ -34,8 +38,10 @@ export const CMS_PERMISSION_DESCRIPTIONS: Record<CMSPermission, string> = {
 	[CMS_PERMISSIONS.PAGES_READ]: "View pages and their content",
 	[CMS_PERMISSIONS.PAGES_WRITE]: "Edit page content",
 	[CMS_PERMISSIONS.PAGES_PUBLISH]: "Publish draft pages",
+	[CMS_PERMISSIONS.MEDIA_VIEW]: "Open the media library",
 	[CMS_PERMISSIONS.MEDIA_UPLOAD]: "Upload media assets",
 	[CMS_PERMISSIONS.MEDIA_DELETE]: "Delete media assets",
+	[CMS_PERMISSIONS.MEDIA_TAG_MANAGE]: "Create, rename and delete media tags",
 	[CMS_PERMISSIONS.ADMIN_READ]: "View namespaces and admin metadata",
 	[CMS_PERMISSIONS.USERS_MANAGE]:
 		"Manage users, their permissions and group memberships",

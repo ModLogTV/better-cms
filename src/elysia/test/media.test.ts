@@ -1,7 +1,13 @@
 import { describe, expect, mock, test } from "bun:test";
 import type { CMSStorageAdapter } from "../../core/storage";
 import { mediaPlugin } from "../../plugins/media/index";
-import { makeAdapter, makeApp, makeMediaAsset, req } from "./helpers";
+import {
+	makeAdapter,
+	makeApp,
+	makeMediaAsset,
+	makeUserAuth,
+	req,
+} from "./helpers";
 
 function makeStorage(
 	overrides: Partial<CMSStorageAdapter> = {},
@@ -198,7 +204,12 @@ describe("media routes - delete", () => {
 	test("DELETE /cms/media/:key calls storage.delete and adapter.deleteMediaAsset", async () => {
 		let deletedKey = "";
 		const deleteMediaAsset = mock(async () => {});
-		const adapter = makeAdapter({ deleteMediaAsset });
+		const adapter = makeAdapter({
+			deleteMediaAsset,
+			listMediaAssets: mock(async () => [
+				makeMediaAsset({ key: "my-file.png" }),
+			]),
+		});
 		const storage = makeStorage({
 			delete: async ({ key }) => {
 				deletedKey = key;
@@ -217,7 +228,10 @@ describe("media routes - delete", () => {
 describe("media routes - publish/versions/restore", () => {
 	test("POST /cms/media/:id/publish calls publishMediaAsset", async () => {
 		const publishMediaAsset = mock(async () => {});
-		const adapter = makeAdapter({ publishMediaAsset });
+		const adapter = makeAdapter({
+			publishMediaAsset,
+			getMediaAssetById: mock(async () => makeMediaAsset({ id: "asset-1" })),
+		});
 		const app = makeApp(adapter, [makePlugin()]);
 		const res = await app.handle(
 			req("/cms/media/asset-1/publish", { method: "POST" }),
@@ -231,6 +245,7 @@ describe("media routes - publish/versions/restore", () => {
 			publishMediaAsset: async () => {
 				throw new Error("no version to publish");
 			},
+			getMediaAssetById: mock(async () => makeMediaAsset({ id: "asset-1" })),
 		});
 		const app = makeApp(adapter, [makePlugin()]);
 		const res = await app.handle(
@@ -250,6 +265,7 @@ describe("media routes - publish/versions/restore", () => {
 		};
 		const adapter = makeAdapter({
 			listMediaVersions: mock(async () => [summary]),
+			getMediaAssetById: mock(async () => makeMediaAsset({ id: "asset-1" })),
 		});
 		const app = makeApp(adapter, [makePlugin()]);
 		const res = await app.handle(req("/cms/media/asset-1/versions"));
@@ -274,7 +290,10 @@ describe("media routes - publish/versions/restore", () => {
 			createdBy: null,
 			fileChanged: true,
 		};
-		const adapter = makeAdapter({ getMediaVersion: mock(async () => version) });
+		const adapter = makeAdapter({
+			getMediaVersion: mock(async () => version),
+			getMediaAssetById: mock(async () => makeMediaAsset({ id: "asset-1" })),
+		});
 		const app = makeApp(adapter, [makePlugin()]);
 		const res = await app.handle(req("/cms/media/versions/v1"));
 		expect(res.status).toBe(200);
@@ -293,7 +312,10 @@ describe("media routes - publish/versions/restore", () => {
 		const updateMediaAsset = mock(async ({ id }: { id: string }) =>
 			makeMediaAsset({ id }),
 		);
-		const adapter = makeAdapter({ updateMediaAsset });
+		const adapter = makeAdapter({
+			updateMediaAsset,
+			getMediaAssetById: mock(async () => makeMediaAsset({ id: "asset-1" })),
+		});
 		const app = makeApp(adapter, [makePlugin()]);
 		const res = await app.handle(
 			req("/cms/media/asset-1", {
@@ -311,7 +333,10 @@ describe("media routes - publish/versions/restore", () => {
 		const restoreMediaVersion = mock(async ({ id }: { id: string }) =>
 			makeMediaAsset({ id }),
 		);
-		const adapter = makeAdapter({ restoreMediaVersion });
+		const adapter = makeAdapter({
+			restoreMediaVersion,
+			getMediaAssetById: mock(async () => makeMediaAsset({ id: "asset-1" })),
+		});
 		const app = makeApp(adapter, [makePlugin()]);
 		const res = await app.handle(
 			req("/cms/media/asset-1/restore", {
@@ -438,7 +463,10 @@ describe("media routes - tags and saved views", () => {
 
 	test("PUT /cms/media/:id/tags replaces an asset's tag set", async () => {
 		const setAssetTags = mock(async () => {});
-		const adapter = makeAdapter({ setAssetTags });
+		const adapter = makeAdapter({
+			setAssetTags,
+			getMediaAssetById: mock(async () => makeMediaAsset({ id: "asset-1" })),
+		});
 		const app = makeApp(adapter, [makePlugin()]);
 		const res = await app.handle(
 			req("/cms/media/asset-1/tags", {
@@ -508,6 +536,199 @@ describe("media routes - tags and saved views", () => {
 		);
 		expect(res.status).toBe(200);
 		expect(deleteSavedView).toHaveBeenCalledWith({ id: "v1" });
+	});
+});
+
+describe("media tag ACL", () => {
+	test("GET /cms/media requires MEDIA_VIEW even with a tag grant", async () => {
+		// No global perms at all, not even MEDIA_VIEW - a tag grant alone can't
+		// open the library route.
+		const adapter = makeAdapter();
+		const app = makeApp(
+			adapter,
+			[makePlugin()],
+			makeUserAuth({ userId: "u1", permissions: [] }),
+		);
+		const res = await app.handle(req("/cms/media"));
+		expect(res.status).toBe(403);
+	});
+
+	test("GET /cms/media narrows to a subject when the caller lacks ADMIN_READ", async () => {
+		const listMediaAssets = mock(async () => []);
+		const adapter = makeAdapter({ listMediaAssets });
+		const app = makeApp(
+			adapter,
+			[makePlugin()],
+			makeUserAuth({
+				userId: "u1",
+				groupIds: ["g1"],
+				permissions: ["cms:media:view"],
+			}),
+		);
+		const res = await app.handle(req("/cms/media"));
+		expect(res.status).toBe(200);
+		expect(listMediaAssets).toHaveBeenCalledWith(
+			expect.objectContaining({
+				subject: { userId: "u1", groupIds: ["g1"] },
+			}),
+		);
+	});
+
+	test("GET /cms/media skips the subject for a caller with ADMIN_READ", async () => {
+		const listMediaAssets = mock(async () => []);
+		const adapter = makeAdapter({ listMediaAssets });
+		const app = makeApp(adapter, [makePlugin()]); // default admin token
+		await app.handle(req("/cms/media"));
+		expect(listMediaAssets).toHaveBeenCalledWith(
+			expect.objectContaining({ subject: undefined }),
+		);
+	});
+
+	test("PATCH /cms/media/:id returns 403 for an untagged asset without global write (no tag to fall back on)", async () => {
+		const adapter = makeAdapter({
+			getMediaAssetById: mock(async () => makeMediaAsset({ tagIds: [] })),
+		});
+		const app = makeApp(
+			adapter,
+			[makePlugin()],
+			makeUserAuth({ userId: "u1", permissions: ["cms:media:view"] }),
+		);
+		const res = await app.handle(
+			req("/cms/media/asset-1", {
+				method: "PATCH",
+				body: JSON.stringify({ metadata: {} }),
+			}),
+		);
+		expect(res.status).toBe(403);
+	});
+
+	test("PATCH /cms/media/:id succeeds via a tag-scoped edit grant", async () => {
+		const updateMediaAsset = mock(async ({ id }: { id: string }) =>
+			makeMediaAsset({ id }),
+		);
+		const adapter = makeAdapter({
+			getMediaAssetById: mock(async () => makeMediaAsset({ tagIds: ["t1"] })),
+			updateMediaAsset,
+			getEffectiveMediaTagPermissions: mock(async () => ["edit" as const]),
+		});
+		const app = makeApp(
+			adapter,
+			[makePlugin()],
+			makeUserAuth({ userId: "u1", permissions: ["cms:media:view"] }),
+		);
+		const res = await app.handle(
+			req("/cms/media/asset-1", {
+				method: "PATCH",
+				body: JSON.stringify({ metadata: { alt: "hi" } }),
+			}),
+		);
+		expect(res.status).toBe(200);
+		expect(updateMediaAsset).toHaveBeenCalledTimes(1);
+	});
+
+	test("DELETE /cms/media/:key requires a tag-scoped delete grant, not just edit", async () => {
+		const adapter = makeAdapter({
+			listMediaAssets: mock(async () => [makeMediaAsset({ tagIds: ["t1"] })]),
+			getEffectiveMediaTagPermissions: mock(async () => ["edit" as const]),
+		});
+		const app = makeApp(
+			adapter,
+			[makePlugin()],
+			makeUserAuth({ userId: "u1", permissions: ["cms:media:view"] }),
+		);
+		const res = await app.handle(
+			req("/cms/media/123-photo.jpg", { method: "DELETE" }),
+		);
+		expect(res.status).toBe(403);
+	});
+
+	test("POST /cms/media/tags (create) requires MEDIA_TAG_MANAGE, not MEDIA_UPLOAD", async () => {
+		const createTag = mock(
+			async ({ id, name }: { id: string; name: string }) => ({
+				id,
+				name,
+				createdAt: new Date(),
+			}),
+		);
+		const adapter = makeAdapter({ createTag });
+		const app = makeApp(
+			adapter,
+			[makePlugin()],
+			makeUserAuth({
+				userId: "u1",
+				permissions: ["cms:media:view", "cms:media:upload"],
+			}),
+		);
+		const res = await app.handle(
+			req("/cms/media/tags", {
+				method: "POST",
+				body: JSON.stringify({ name: "x" }),
+			}),
+		);
+		expect(res.status).toBe(403);
+		expect(createTag).not.toHaveBeenCalled();
+	});
+
+	test("POST /cms/media/tags/:id/grants adds a tag grant (requires MEDIA_TAG_MANAGE)", async () => {
+		const addMediaTagGrant = mock(
+			async (opts: {
+				id: string;
+				tagId: string;
+				subjectType: "user" | "group";
+				subjectId: string;
+				permission: "view" | "upload" | "edit" | "delete" | "publish";
+			}) => opts,
+		);
+		const adapter = makeAdapter({ addMediaTagGrant });
+		const app = makeApp(adapter, [makePlugin()]); // default admin token has everything
+		const res = await app.handle(
+			req("/cms/media/tags/t1/grants", {
+				method: "POST",
+				body: JSON.stringify({
+					subjectType: "group",
+					subjectId: "g1",
+					permission: "view",
+				}),
+			}),
+		);
+		expect(res.status).toBe(200);
+		expect(addMediaTagGrant).toHaveBeenCalledWith(
+			expect.objectContaining({
+				tagId: "t1",
+				subjectType: "group",
+				subjectId: "g1",
+				permission: "view",
+			}),
+		);
+	});
+
+	test("GET /cms/media/tags/:id/grants lists grants for a tag", async () => {
+		const grant = {
+			id: "g1",
+			tagId: "t1",
+			subjectType: "user" as const,
+			subjectId: "u1",
+			permission: "view" as const,
+		};
+		const adapter = makeAdapter({
+			listMediaTagGrants: mock(async () => [grant]),
+		});
+		const app = makeApp(adapter, [makePlugin()]);
+		const res = await app.handle(req("/cms/media/tags/t1/grants"));
+		expect(res.status).toBe(200);
+		const body = await res.json();
+		expect(body).toEqual([grant]);
+	});
+
+	test("DELETE /cms/media/tag-grants/:id removes a grant", async () => {
+		const removeMediaTagGrant = mock(async () => {});
+		const adapter = makeAdapter({ removeMediaTagGrant });
+		const app = makeApp(adapter, [makePlugin()]);
+		const res = await app.handle(
+			req("/cms/media/tag-grants/g1", { method: "DELETE" }),
+		);
+		expect(res.status).toBe(200);
+		expect(removeMediaTagGrant).toHaveBeenCalledWith({ id: "g1" });
 	});
 });
 
