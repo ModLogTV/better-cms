@@ -118,6 +118,9 @@ export type {
 	PageNodeLocale,
 	PageSummary,
 	PageTreeNode,
+	PageVersion,
+	PageVersionRetention,
+	PageVersionSummary,
 	RawBlock,
 } from "./adapter";
 export type { CMSConfig } from "./config";

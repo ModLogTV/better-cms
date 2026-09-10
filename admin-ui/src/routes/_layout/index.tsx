@@ -121,7 +121,7 @@ function RecentPagesCard({
 									{page.locale}
 								</Badge>
 							</Link>
-							{page.status === "draft" ? (
+							{page.status !== "published" ? (
 								<Button
 									size="sm"
 									variant="outline"
@@ -130,7 +130,7 @@ function RecentPagesCard({
 									disabled={publish.isPending}
 								>
 									<IconRocket className="size-3" />
-									Publish
+									{page.status === "modified" ? "Publish changes" : "Publish"}
 								</Button>
 							) : (
 								<Badge variant="success" className="shrink-0">

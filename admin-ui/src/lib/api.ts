@@ -124,6 +124,9 @@ export interface KeyMetadata {
 	inputHint: "text" | "text+vars" | "text+count" | "rich-text";
 }
 
+/** "modified" = published, but the latest saved draft differs from what's live. */
+export type PageStatus = "draft" | "published" | "modified";
+
 export interface PageSummary {
 	id: string;
 	nodeId: string;
@@ -131,14 +134,26 @@ export interface PageSummary {
 	slug: string;
 	path: string;
 	locale: string;
-	status: "draft" | "published";
+	status: PageStatus;
 	updatedAt: string;
+}
+
+export interface PageVersionSummary {
+	id: string;
+	contentId: string;
+	createdAt: string;
+	publishedAt: string | null;
+	createdBy: string | null;
+}
+
+export interface PageVersion extends PageVersionSummary {
+	blocks: RawBlock[];
 }
 
 export interface PageNodeLocale {
 	locale: string;
 	contentId: string;
-	status: "draft" | "published";
+	status: PageStatus;
 	updatedAt: string;
 }
 
@@ -248,6 +263,14 @@ export const api = {
 		update: (id: string, blocks: RawBlock[]) => put(`/pages/${id}`, blocks),
 		publish: (id: string) => post(`/pages/${id}/publish`),
 		describeBlocks: () => get<BlockInfo[]>("/pages/blocks"),
+		versions: {
+			list: (contentId: string) =>
+				get<PageVersionSummary[]>(`/pages/${contentId}/versions`),
+			get: (versionId: string) =>
+				get<PageVersion>(`/pages/versions/${versionId}`),
+		},
+		restore: (contentId: string, versionId: string) =>
+			post<PageSummary>(`/pages/${contentId}/restore`, { versionId }),
 		grants: {
 			list: (nodeId: string) => get<PageGrant[]>(`/pages/${nodeId}/grants`),
 			add: (

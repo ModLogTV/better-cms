@@ -66,18 +66,35 @@ model PageGrant {
 // any of the other locales existing yet. Each locale has its own independent
 // draft/published lifecycle.
 model PageContent {
-  id          String    @id
-  nodeId      String
-  locale      String
-  blocks      Json      @default("[]")
-  status      String    @default("draft")
-  publishedAt DateTime?
-  updatedAt   DateTime  @updatedAt
+  id                 String   @id
+  nodeId             String
+  locale             String
+  // Points at the PageVersion currently live. Status is derived, not stored:
+  // no pointer = draft; pointer == latest version = published; pointer !=
+  // latest version = published with unpublished changes.
+  publishedVersionId String?
+  updatedAt          DateTime @updatedAt
 
-  node PageNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  node     PageNode      @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  versions PageVersion[]
 
   @@unique([nodeId, locale])
   @@index([nodeId])
+}
+
+// Append-only. One row per Save and per Publish (publish reuses the latest
+// version when it's still the current draft).
+model PageVersion {
+  id          String    @id @default(cuid())
+  contentId   String
+  blocks      Json      @default("[]")
+  createdAt   DateTime  @default(now())
+  publishedAt DateTime?
+  createdBy   String?
+
+  content PageContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([contentId])
 }
 
 model Locale {

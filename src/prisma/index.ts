@@ -11,6 +11,8 @@ import type {
 	PageNodeLocale,
 	PageSummary,
 	PageTreeNode,
+	PageVersionRetention,
+	PageVersionSummary,
 	RawBlock,
 } from "../core/adapter";
 
@@ -34,14 +36,23 @@ interface PrismaPageContentRow {
 	id: string;
 	nodeId: string;
 	locale: string;
-	blocks: unknown;
-	status: string;
-	publishedAt: Date | null;
+	publishedVersionId: string | null;
 	updatedAt: Date;
 }
 
 interface PrismaPageContentWithNodeRow extends PrismaPageContentRow {
 	node: PrismaPageNodeRow;
+	/** Latest version only, when fetched with `include.versions` (take 1, desc). */
+	versions: PrismaPageVersionRow[];
+}
+
+interface PrismaPageVersionRow {
+	id: string;
+	contentId: string;
+	blocks: unknown;
+	createdAt: Date;
+	publishedAt: Date | null;
+	createdBy: string | null;
 }
 
 interface PrismaClient {
@@ -85,22 +96,42 @@ interface PrismaClient {
 			};
 		}): Promise<PrismaPageContentRow | null>;
 		create(args: {
-			data: { id: string; nodeId: string; locale: string; blocks: unknown };
+			data: { id: string; nodeId: string; locale: string };
 		}): Promise<PrismaPageContentRow>;
 		update(args: {
 			where: { id: string };
-			data: Partial<{ blocks: unknown; status: string; publishedAt: Date }>;
+			data: Partial<{ publishedVersionId: string | null }>;
 		}): Promise<PrismaPageContentRow>;
 		findMany(args: {
-			where?: { status?: string; locale?: string };
-			include?: { node: true };
-			orderBy?: Record<string, "asc" | "desc">[];
-			skip?: number;
-			take?: number;
+			where?: { locale?: string };
+			include?: {
+				node: true;
+				versions: { orderBy: Record<string, "asc" | "desc">[]; take: number };
+			};
 		}): Promise<PrismaPageContentWithNodeRow[]>;
-		count(args: {
-			where?: { status?: string; locale?: string };
-		}): Promise<number>;
+	};
+	pageVersion: {
+		findUnique(args: {
+			where: { id: string };
+		}): Promise<PrismaPageVersionRow | null>;
+		create(args: {
+			data: {
+				id: string;
+				contentId: string;
+				blocks: unknown;
+				createdBy?: string | null;
+			};
+		}): Promise<PrismaPageVersionRow>;
+		update(args: {
+			where: { id: string };
+			data: { publishedAt: Date };
+		}): Promise<PrismaPageVersionRow>;
+		findMany(args: {
+			where: { contentId: string };
+			orderBy: Record<string, "asc" | "desc">[];
+			take?: number;
+		}): Promise<PrismaPageVersionRow[]>;
+		delete(args: { where: { id: string } }): Promise<unknown>;
 	};
 	pageGrant: {
 		findMany(args?: {
@@ -183,19 +214,97 @@ interface PrismaClient {
 	};
 }
 
-function toPage(row: PrismaPageContentWithNodeRow): Page {
+function deriveStatus(
+	publishedVersionId: string | null,
+	latestVersionId: string | undefined,
+): Page["status"] {
+	if (!publishedVersionId) return "draft";
+	if (latestVersionId && publishedVersionId === latestVersionId)
+		return "published";
+	return "modified";
+}
+
+function toPageVersionSummary(row: PrismaPageVersionRow): PageVersionSummary {
 	return {
 		id: row.id,
-		nodeId: row.node.id,
-		parentId: row.node.parentId,
-		slug: row.node.slug,
-		path: row.node.path,
-		locale: row.locale,
-		blocks: row.blocks as RawBlock[],
-		status: row.status as "draft" | "published",
+		contentId: row.contentId,
+		createdAt: row.createdAt,
 		publishedAt: row.publishedAt,
-		updatedAt: row.updatedAt,
+		createdBy: row.createdBy,
 	};
+}
+
+function buildPage(opts: {
+	content: PrismaPageContentRow;
+	node: PrismaPageNodeRow;
+	blocks: unknown;
+	status: Page["status"];
+	publishedAt: Date | null;
+}): Page {
+	return {
+		id: opts.content.id,
+		nodeId: opts.node.id,
+		parentId: opts.node.parentId,
+		slug: opts.node.slug,
+		path: opts.node.path,
+		locale: opts.content.locale,
+		blocks: opts.blocks as RawBlock[],
+		status: opts.status,
+		publishedAt: opts.publishedAt,
+		updatedAt: opts.content.updatedAt,
+	};
+}
+
+async function latestVersion(
+	prisma: PrismaClient,
+	contentId: string,
+): Promise<PrismaPageVersionRow | undefined> {
+	const rows = await prisma.pageVersion.findMany({
+		where: { contentId },
+		orderBy: [{ createdAt: "desc" }],
+		take: 1,
+	});
+	return rows[0];
+}
+
+/** Prunes old versions per `retention`, if configured. Never removes the latest or currently-published version. */
+async function pruneVersions(
+	prisma: PrismaClient,
+	contentId: string,
+	retention: PageVersionRetention | undefined,
+): Promise<void> {
+	if (!retention?.maxVersions && !retention?.maxAgeDays) return;
+
+	const [content, versions] = await Promise.all([
+		prisma.pageContent.findUnique({ where: { id: contentId } }),
+		prisma.pageVersion.findMany({
+			where: { contentId },
+			orderBy: [{ createdAt: "desc" }],
+		}),
+	]);
+	if (versions.length === 0) return;
+
+	const keep = new Set(
+		[versions[0]?.id, content?.publishedVersionId ?? undefined].filter(
+			(id): id is string => !!id,
+		),
+	);
+
+	const toDelete = new Set<string>();
+	if (retention.maxVersions && versions.length > retention.maxVersions) {
+		for (const v of versions.slice(retention.maxVersions)) {
+			if (!keep.has(v.id)) toDelete.add(v.id);
+		}
+	}
+	if (retention.maxAgeDays) {
+		const cutoff = Date.now() - retention.maxAgeDays * 24 * 60 * 60 * 1000;
+		for (const v of versions) {
+			if (!keep.has(v.id) && v.createdAt.getTime() < cutoff) toDelete.add(v.id);
+		}
+	}
+	for (const id of toDelete) {
+		await prisma.pageVersion.delete({ where: { id } });
+	}
 }
 
 async function computePath(
@@ -266,11 +375,55 @@ async function reparentDescendantPaths(
 	}
 }
 
+const PAGE_SORT_FIELDS = ["slug", "locale", "status", "updatedAt"] as const;
+type PageSortField = (typeof PAGE_SORT_FIELDS)[number];
+
+function applySort(
+	items: PageSummary[],
+	sort: { id: string; desc: boolean }[],
+): PageSummary[] {
+	const [primary] = sort.filter(
+		(s): s is { id: PageSortField; desc: boolean } =>
+			(PAGE_SORT_FIELDS as readonly string[]).includes(s.id),
+	);
+	if (!primary) {
+		return [...items].sort(
+			(a, b) => b.updatedAt.getTime() - a.updatedAt.getTime(),
+		);
+	}
+	const { id, desc } = primary;
+	return [...items].sort((a, b) => {
+		const av = id === "updatedAt" ? a.updatedAt.getTime() : a[id];
+		const bv = id === "updatedAt" ? b.updatedAt.getTime() : b[id];
+		const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+		return desc ? -cmp : cmp;
+	});
+}
+
+function toPageSummary(row: PrismaPageContentWithNodeRow): PageSummary {
+	const latest = row.versions[0];
+	return {
+		id: row.id,
+		nodeId: row.node.id,
+		parentId: row.node.parentId,
+		slug: row.node.slug,
+		path: row.node.path,
+		locale: row.locale,
+		status: deriveStatus(row.publishedVersionId, latest?.id),
+		updatedAt: row.updatedAt,
+	};
+}
+
 /**
  * Prisma adapter for better-cms.
  * Copy the schema snippet from the docs into your schema.prisma before generating.
  */
-export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
+export function prismaAdapter(
+	prisma: PrismaClient,
+	opts?: { pageVersionRetention?: PageVersionRetention },
+): CMSAdapter {
+	const retention = opts?.pageVersionRetention;
+
 	return {
 		async getTranslations({ namespace, locale }) {
 			const row = await prisma.translationNamespace.findUnique({
@@ -308,8 +461,35 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 				where: { nodeId_locale: { nodeId: node.id, locale } },
 			});
 			if (!content) return null;
-			if (!draft && content.status !== "published") return null;
-			return toPage({ ...content, node });
+
+			if (draft) {
+				const latest = await latestVersion(prisma, content.id);
+				if (!latest) return null;
+				return buildPage({
+					content,
+					node,
+					blocks: latest.blocks,
+					status: deriveStatus(content.publishedVersionId, latest.id),
+					publishedAt: latest.publishedAt,
+				});
+			}
+
+			// Public/preview-off access always serves the PUBLISHED snapshot, never
+			// whatever the latest draft happens to be - this is what makes a save
+			// on a published page never clobber what's live (admin-ui/TODO.md #6).
+			if (!content.publishedVersionId) return null;
+			const published = await prisma.pageVersion.findUnique({
+				where: { id: content.publishedVersionId },
+			});
+			if (!published) return null;
+			const latest = await latestVersion(prisma, content.id);
+			return buildPage({
+				content,
+				node,
+				blocks: published.blocks,
+				status: deriveStatus(content.publishedVersionId, latest?.id),
+				publishedAt: published.publishedAt,
+			});
 		},
 
 		async getPageById({ id }) {
@@ -319,11 +499,25 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 				where: { id: content.nodeId },
 			});
 			if (!node) return null;
-			return toPage({ ...content, node });
+			const latest = await latestVersion(prisma, id);
+			return buildPage({
+				content,
+				node,
+				blocks: latest?.blocks ?? [],
+				status: deriveStatus(content.publishedVersionId, latest?.id),
+				publishedAt: latest?.publishedAt ?? null,
+			});
 		},
 
 		async upsertPage({ id, blocks }) {
-			await prisma.pageContent.update({ where: { id }, data: { blocks } });
+			const content = await prisma.pageContent.findUnique({ where: { id } });
+			if (!content) throw new Error(`No page found with id "${id}"`);
+			await prisma.pageVersion.create({
+				data: { id: crypto.randomUUID(), contentId: id, blocks },
+			});
+			// Touches `updatedAt` (@updatedAt refreshes on any update() call to the row).
+			await prisma.pageContent.update({ where: { id }, data: {} });
+			await pruneVersions(prisma, id, retention);
 		},
 
 		async createPage({ id, slug, locale, parentId = null }) {
@@ -332,9 +526,18 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 				data: { id: crypto.randomUUID(), parentId, slug, path },
 			});
 			const content = await prisma.pageContent.create({
-				data: { id, nodeId: node.id, locale, blocks: [] },
+				data: { id, nodeId: node.id, locale },
 			});
-			return toPage({ ...content, node });
+			await prisma.pageVersion.create({
+				data: { id: crypto.randomUUID(), contentId: id, blocks: [] },
+			});
+			return buildPage({
+				content,
+				node,
+				blocks: [],
+				status: "draft",
+				publishedAt: null,
+			});
 		},
 
 		async addPageLocale({ id, nodeId, locale, cloneFromLocale }) {
@@ -346,72 +549,137 @@ export function prismaAdapter(prisma: PrismaClient): CMSAdapter {
 				const source = await prisma.pageContent.findUnique({
 					where: { nodeId_locale: { nodeId, locale: cloneFromLocale } },
 				});
-				if (source) blocks = source.blocks;
+				if (source) {
+					const sourceLatest = await latestVersion(prisma, source.id);
+					if (sourceLatest) blocks = sourceLatest.blocks;
+				}
 			}
 
 			const content = await prisma.pageContent.create({
-				data: { id, nodeId, locale, blocks },
+				data: { id, nodeId, locale },
 			});
-			return toPage({ ...content, node });
+			await prisma.pageVersion.create({
+				data: { id: crypto.randomUUID(), contentId: id, blocks },
+			});
+			return buildPage({
+				content,
+				node,
+				blocks,
+				status: "draft",
+				publishedAt: null,
+			});
 		},
 
 		async publishPage({ id }) {
+			const content = await prisma.pageContent.findUnique({ where: { id } });
+			if (!content) throw new Error(`No page found with id "${id}"`);
+			const latest = await latestVersion(prisma, id);
+			if (!latest)
+				throw new Error(`Page "${id}" has no saved content to publish.`);
+			if (!latest.publishedAt) {
+				await prisma.pageVersion.update({
+					where: { id: latest.id },
+					data: { publishedAt: new Date() },
+				});
+			}
 			await prisma.pageContent.update({
 				where: { id },
-				data: { status: "published", publishedAt: new Date() },
+				data: { publishedVersionId: latest.id },
+			});
+		},
+
+		async listPageVersions({ id }) {
+			const rows = await prisma.pageVersion.findMany({
+				where: { contentId: id },
+				orderBy: [{ createdAt: "desc" }],
+			});
+			return rows.map(toPageVersionSummary);
+		},
+
+		async getPageVersion({ versionId }) {
+			const row = await prisma.pageVersion.findUnique({
+				where: { id: versionId },
+			});
+			if (!row) return null;
+			return { ...toPageVersionSummary(row), blocks: row.blocks as RawBlock[] };
+		},
+
+		async restorePageVersion({ id, versionId }) {
+			const content = await prisma.pageContent.findUnique({ where: { id } });
+			if (!content) throw new Error(`No page found with id "${id}"`);
+			const node = await prisma.pageNode.findUnique({
+				where: { id: content.nodeId },
+			});
+			if (!node) throw new Error(`No page found with id "${id}"`);
+			const source = await prisma.pageVersion.findUnique({
+				where: { id: versionId },
+			});
+			if (!source || source.contentId !== id) {
+				throw new Error(`No version "${versionId}" found for page "${id}"`);
+			}
+
+			const restored = await prisma.pageVersion.create({
+				data: { id: crypto.randomUUID(), contentId: id, blocks: source.blocks },
+			});
+			await prisma.pageContent.update({ where: { id }, data: {} });
+			await pruneVersions(prisma, id, retention);
+
+			return buildPage({
+				content,
+				node,
+				blocks: restored.blocks,
+				status: deriveStatus(content.publishedVersionId, restored.id),
+				publishedAt: restored.publishedAt,
 			});
 		},
 
 		async listPages(params: ListPagesParams) {
-			const where: { status?: string; locale?: string } = {};
-			if (params.status) where.status = params.status;
+			const where: { locale?: string } = {};
 			if (params.locale) where.locale = params.locale;
 
-			const orderBy = (params.sort ?? []).map((s) => ({
-				[s.id]: s.desc ? ("desc" as const) : ("asc" as const),
-			}));
+			// Status is derived (not a DB column), so it's computed and filtered
+			// here rather than in the query - fine at the scale this adapter
+			// targets (a single team's page tree), less so at very large scale.
+			const rows = await prisma.pageContent.findMany({
+				where,
+				include: {
+					node: true,
+					versions: { orderBy: [{ createdAt: "desc" }], take: 1 },
+				},
+			});
+			let items = rows.map(toPageSummary);
+			if (params.status)
+				items = items.filter((i) => i.status === params.status);
+			items = applySort(
+				items,
+				params.sort ?? [{ id: "updatedAt", desc: true }],
+			);
 
-			const [rows, total] = await Promise.all([
-				prisma.pageContent.findMany({
-					where,
-					include: { node: true },
-					orderBy: orderBy.length > 0 ? orderBy : [{ updatedAt: "desc" }],
-					skip: (params.page - 1) * params.pageSize,
-					take: params.pageSize,
-				}),
-				prisma.pageContent.count({ where }),
-			]);
-
-			return {
-				items: rows.map(
-					(r): PageSummary => ({
-						id: r.id,
-						nodeId: r.node.id,
-						parentId: r.node.parentId,
-						slug: r.node.slug,
-						path: r.node.path,
-						locale: r.locale,
-						status: r.status as "draft" | "published",
-						updatedAt: r.updatedAt,
-					}),
-				),
-				total,
-			};
+			const total = items.length;
+			const start = (params.page - 1) * params.pageSize;
+			return { items: items.slice(start, start + params.pageSize), total };
 		},
 
 		async listPageTree({ subject } = {}) {
 			const [nodes, contents] = await Promise.all([
 				prisma.pageNode.findMany(),
-				prisma.pageContent.findMany({ where: {} }),
+				prisma.pageContent.findMany({
+					where: {},
+					include: {
+						node: true,
+						versions: { orderBy: [{ createdAt: "desc" }], take: 1 },
+					},
+				}),
 			]);
 
 			const localesByNode = new Map<string, PageNodeLocale[]>();
 			for (const c of contents) {
+				const latest = c.versions[0];
 				const locales = localesByNode.get(c.nodeId) ?? [];
 				locales.push({
 					locale: c.locale,
 					contentId: c.id,
-					status: c.status as "draft" | "published",
+					status: deriveStatus(c.publishedVersionId, latest?.id),
 					updatedAt: c.updatedAt,
 				});
 				localesByNode.set(c.nodeId, locales);

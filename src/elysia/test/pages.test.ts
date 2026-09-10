@@ -520,3 +520,72 @@ describe("pages ACL", () => {
 		expect(adapter.removePageGrant).toHaveBeenCalledWith({ id: "grant-1" });
 	});
 });
+
+describe("page versions", () => {
+	test("GET /cms/pages/:id/versions lists history for a page", async () => {
+		const summary = {
+			id: "v1",
+			contentId: "page-1",
+			createdAt: new Date(),
+			publishedAt: null,
+			createdBy: null,
+		};
+		const adapter = makeAdapter({
+			getPageById: async () => makePage({ id: "page-1" }),
+			listPageVersions: mock(async () => [summary]),
+		});
+		const app = makeApp(adapter, [pagesPlugin()]);
+		const res = await app.handle(req("/cms/pages/page-1/versions"));
+		expect(res.status).toBe(200);
+		const body = await res.json();
+		expect(body).toHaveLength(1);
+		expect(body[0].id).toBe("v1");
+		expect(adapter.listPageVersions).toHaveBeenCalledWith({ id: "page-1" });
+	});
+
+	test("GET /cms/pages/versions/:versionId returns a version's snapshot", async () => {
+		const version = {
+			id: "v1",
+			contentId: "page-1",
+			blocks: [{ type: "hero", data: {} }],
+			createdAt: new Date(),
+			publishedAt: null,
+			createdBy: null,
+		};
+		const adapter = makeAdapter({
+			getPageVersion: mock(async () => version),
+			getPageById: async () => makePage({ id: "page-1" }),
+		});
+		const app = makeApp(adapter, [pagesPlugin()]);
+		const res = await app.handle(req("/cms/pages/versions/v1"));
+		expect(res.status).toBe(200);
+		const body = await res.json();
+		expect(body.id).toBe("v1");
+		expect(adapter.getPageVersion).toHaveBeenCalledWith({ versionId: "v1" });
+	});
+
+	test("GET /cms/pages/versions/:versionId 404s when the version doesn't exist", async () => {
+		const adapter = makeAdapter({ getPageVersion: mock(async () => null) });
+		const app = makeApp(adapter, [pagesPlugin()]);
+		const res = await app.handle(req("/cms/pages/versions/missing"));
+		expect(res.status).toBe(404);
+	});
+
+	test("POST /cms/pages/:id/restore restores a past version into a new draft", async () => {
+		const adapter = makeAdapter({
+			getPageById: async () => makePage({ id: "page-1" }),
+		});
+		const app = makeApp(adapter, [pagesPlugin()]);
+		const res = await app.handle(
+			req("/cms/pages/page-1/restore", {
+				method: "POST",
+				body: JSON.stringify({ versionId: "v1" }),
+			}),
+		);
+		expect(res.status).toBe(200);
+		expect(adapter.restorePageVersion).toHaveBeenCalledWith({
+			id: "page-1",
+			versionId: "v1",
+		});
+	});
+});

@@ -126,14 +126,19 @@ const page = await admin.pages.get({ slug, locale, draft: true }); // draft = tr
 
 The public-facing hooks never expose draft content.
 
+Page content is version-history backed: every `PUT` creates a new version, and `?draft=false` (or the public routes) always serve the version currently marked published - never whatever the latest draft happens to be, even after further saves. A page's status is derived: `draft` (never published), `published` (the published version matches the latest), or `published` with unpublished changes pending (latest differs from what's published). See [Database Schema](../getting-started/database-schema.md) for the `PageContent`/`PageVersion` model, and the admin UI's page editor for version history, diffing and restore.
+
 ## API routes
 
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/cms/pages` | List all pages (admin, requires token) |
 | `GET` | `/cms/pages/:slug` | Get a page by slug (`?locale=en&draft=false`) |
-| `PUT` | `/cms/pages/:id` | Update page blocks (validates against schemas) |
-| `POST` | `/cms/pages/:id/publish` | Promote draft to published |
+| `PUT` | `/cms/pages/:id` | Update page blocks (validates against schemas, creates a new version) |
+| `POST` | `/cms/pages/:id/publish` | Marks the latest version as published |
+| `GET` | `/cms/pages/:id/versions` | Version history for a page, newest first |
+| `GET` | `/cms/pages/versions/:versionId` | A single version's full snapshot |
+| `POST` | `/cms/pages/:id/restore` | Copies a past version's blocks into a new draft version (`{ versionId }`) |
 
 All page routes require `pagesPlugin` to be registered.
 

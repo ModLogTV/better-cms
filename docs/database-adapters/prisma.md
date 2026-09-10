@@ -20,6 +20,14 @@ const cms = createCMS({
 });
 ```
 
+By default every page `PageVersion` is kept forever. To prune old ones, pass `pageVersionRetention` - the latest version and the currently-published version are never pruned:
+
+```ts
+prismaAdapter(prisma, {
+  pageVersionRetention: { maxVersions: 50, maxAgeDays: 180 },
+});
+```
+
 ## Required schema
 
 Copy these models into your `schema.prisma`. The adapter expects these exact model names, field names, and types.

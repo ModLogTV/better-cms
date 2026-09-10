@@ -327,8 +327,15 @@ function LocaleBadge({ node, locale }: { node: PageTreeNode; locale: Locale }) {
 			search={{ path: node.path, locale: locale.code }}
 		>
 			<Badge
-				variant={content.status === "published" ? "success" : "warning"}
+				variant={
+					content.status === "published"
+						? "success"
+						: content.status === "modified"
+							? "warning"
+							: "secondary"
+				}
 				className="uppercase"
+				title={content.status}
 			>
 				{locale.code}
 			</Badge>
@@ -355,7 +362,7 @@ function TreeRow({
 }) {
 	const hasChildren = node.children.length > 0;
 	const isExpanded = expanded.has(node.id);
-	const draftContent = node.locales.find((l) => l.status === "draft");
+	const publishableContent = node.locales.find((l) => l.status !== "published");
 
 	const {
 		attributes,
@@ -429,16 +436,16 @@ function TreeRow({
 							</Button>
 						}
 					/>
-					{draftContent && (
+					{publishableContent && (
 						<Button
 							size="sm"
 							variant="outline"
 							className="h-6 gap-1 text-xs"
-							onClick={() => onPublish(draftContent.contentId)}
-							disabled={publishingId === draftContent.contentId}
+							onClick={() => onPublish(publishableContent.contentId)}
+							disabled={publishingId === publishableContent.contentId}
 						>
 							<IconRocket className="size-3" />
-							Publish {draftContent.locale}
+							Publish {publishableContent.locale}
 						</Button>
 					)}
 					{node.locales[0] && (

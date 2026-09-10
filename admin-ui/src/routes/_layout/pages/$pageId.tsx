@@ -4,16 +4,28 @@ import {
 	IconRocket,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { BlockEditor } from "@/components/shared/BlockEditor";
 import { PageAccessPanel } from "@/components/shared/PageAccessPanel";
+import { VersionHistoryPanel } from "@/components/shared/VersionHistoryPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { api, type RawBlock } from "@/lib/api";
+import { api, type PageStatus, type RawBlock } from "@/lib/api";
+
+function StatusBadge({ status }: { status: PageStatus }) {
+	if (status === "modified") {
+		return <Badge variant="warning">published · unpublished changes</Badge>;
+	}
+	return (
+		<Badge variant={status === "published" ? "success" : "warning"}>
+			{status}
+		</Badge>
+	);
+}
 
 const searchSchema = z.object({
 	path: z.string(),
@@ -29,7 +41,6 @@ function PageEditorPage() {
 	const { pageId } = Route.useParams();
 	const { path, locale } = Route.useSearch();
 	const qc = useQueryClient();
-	const navigate = useNavigate();
 
 	const { data: fetchedBlocks, isLoading } = useQuery({
 		queryKey: ["cms", "page", path, locale, true],
@@ -63,10 +74,13 @@ function PageEditorPage() {
 		onSuccess: () => {
 			toast.success("Page published");
 			qc.invalidateQueries({ queryKey: ["cms", "pages"] });
-			navigate({ to: "/pages" });
 		},
 		onError: () => toast.error("Publish failed"),
 	});
+
+	function onRestored() {
+		qc.invalidateQueries({ queryKey: ["cms", "page", path, locale, true] });
+	}
 
 	return (
 		<div className="flex h-full flex-col gap-4">
@@ -82,19 +96,16 @@ function PageEditorPage() {
 						<h2 className="text-xl font-bold font-mono">{path}</h2>
 						<div className="flex items-center gap-2 mt-0.5">
 							<Badge variant="outline">{locale}</Badge>
-							{pageSummary && (
-								<Badge
-									variant={
-										pageSummary.status === "published" ? "success" : "warning"
-									}
-								>
-									{pageSummary.status}
-								</Badge>
-							)}
+							{pageSummary && <StatusBadge status={pageSummary.status} />}
 						</div>
 					</div>
 				</div>
 				<div className="flex gap-2">
+					<VersionHistoryPanel
+						contentId={pageId}
+						currentBlocks={blocks}
+						onRestored={onRestored}
+					/>
 					{pageSummary && (
 						<PageAccessPanel nodeId={pageSummary.nodeId} path={path} />
 					)}

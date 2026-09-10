@@ -8,6 +8,7 @@ import type {
 	PageGrant,
 	PageSummary,
 	PageTreeNode,
+	PageVersionSummary,
 } from "../../core/adapter";
 import { createCMS } from "../../core/index";
 import { key, vars } from "../../i18n/markers";
@@ -53,6 +54,9 @@ export function makeAdapter(overrides: Partial<CMSAdapter> = {}): CMSAdapter {
 			makePage({ id: opts.id, nodeId: opts.nodeId, locale: opts.locale }),
 		),
 		publishPage: mock(async () => {}),
+		listPageVersions: mock(async () => [] as PageVersionSummary[]),
+		getPageVersion: mock(async () => null),
+		restorePageVersion: mock(async (opts) => makePage({ id: opts.id })),
 		listPages: mock(async () => ({ items: [] as PageSummary[], total: 0 })),
 		listPageTree: mock(async () => [] as PageTreeNode[]),
 		movePage: mock(async () => {}),

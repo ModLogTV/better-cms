@@ -368,6 +368,123 @@ export function pageRoutes(opts: { ctx: CMSContext; blocks: PageBlock[] }) {
 				return { ok: true };
 			},
 			{ params: t.Object({ id: t.String() }) },
+		)
+		.get(
+			"/pages/:id/versions",
+			// `:id` is a content id.
+			async ({
+				params,
+				set,
+				cmsUserId,
+				cmsPermissions = [],
+				cmsGroupIds = [],
+			}) => {
+				const target = await ctx.adapter.getPageById({ id: params.id });
+				if (!target) {
+					set.status = 404;
+					return [];
+				}
+				const canRead = await canAccessNode({
+					adapter: ctx.adapter,
+					globalPerms: cmsPermissions,
+					userId: cmsUserId,
+					groupIds: cmsGroupIds,
+					nodeId: target.nodeId,
+					permission: CMS_PERMISSIONS.PAGES_READ,
+					locale: target.locale,
+				});
+				if (!canRead) {
+					set.status = 404;
+					return [];
+				}
+				return ctx.adapter.listPageVersions({ id: params.id });
+			},
+			{ params: t.Object({ id: t.String() }) },
+		)
+		.get(
+			"/pages/versions/:versionId",
+			async ({
+				params,
+				set,
+				cmsUserId,
+				cmsPermissions = [],
+				cmsGroupIds = [],
+			}) => {
+				const version = await ctx.adapter.getPageVersion({
+					versionId: params.versionId,
+				});
+				if (!version) {
+					set.status = 404;
+					return null;
+				}
+				const target = await ctx.adapter.getPageById({ id: version.contentId });
+				if (!target) {
+					set.status = 404;
+					return null;
+				}
+				const canRead = await canAccessNode({
+					adapter: ctx.adapter,
+					globalPerms: cmsPermissions,
+					userId: cmsUserId,
+					groupIds: cmsGroupIds,
+					nodeId: target.nodeId,
+					permission: CMS_PERMISSIONS.PAGES_READ,
+					locale: target.locale,
+				});
+				if (!canRead) {
+					set.status = 404;
+					return null;
+				}
+				return version;
+			},
+			{ params: t.Object({ versionId: t.String() }) },
+		)
+		.post(
+			"/pages/:id/restore",
+			// `:id` is a content id.
+			async ({
+				params,
+				body,
+				set,
+				cmsUserId,
+				cmsPermissions = [],
+				cmsGroupIds = [],
+			}) => {
+				const target = await ctx.adapter.getPageById({ id: params.id });
+				if (!target) {
+					set.status = 404;
+					return { ok: false, error: "Page not found" };
+				}
+				const canWrite = await canAccessNode({
+					adapter: ctx.adapter,
+					globalPerms: cmsPermissions,
+					userId: cmsUserId,
+					groupIds: cmsGroupIds,
+					nodeId: target.nodeId,
+					permission: CMS_PERMISSIONS.PAGES_WRITE,
+					locale: target.locale,
+				});
+				if (!canWrite) {
+					set.status = 403;
+					return { ok: false, error: "Forbidden" };
+				}
+				try {
+					return await ctx.adapter.restorePageVersion({
+						id: params.id,
+						versionId: body.versionId,
+					});
+				} catch (err) {
+					set.status = 409;
+					return {
+						error:
+							err instanceof Error ? err.message : "Couldn't restore version",
+					};
+				}
+			},
+			{
+				params: t.Object({ id: t.String() }),
+				body: t.Object({ versionId: t.String() }),
+			},
 		);
 
 	// Managing ACL grants requires the GLOBAL write permission specifically

@@ -33,7 +33,13 @@ export interface Page {
 	path: string;
 	locale: string;
 	blocks: RawBlock[];
-	status: "draft" | "published";
+	/**
+	 * Derived from version history, not a stored flag: "draft" (never
+	 * published), "published" (published version matches the latest), or
+	 * "modified" (latest version differs from what's published - shown in
+	 * the admin UI as "Published (unpublished changes)").
+	 */
+	status: "draft" | "published" | "modified";
 	publishedAt: Date | null;
 	updatedAt: Date;
 }
@@ -45,7 +51,8 @@ export interface PageSummary {
 	slug: string;
 	path: string;
 	locale: string;
-	status: "draft" | "published";
+	/** Derived from version history - see {@link Page.status}. */
+	status: "draft" | "published" | "modified";
 	updatedAt: Date;
 }
 
@@ -53,7 +60,8 @@ export interface PageSummary {
 export interface PageNodeLocale {
 	locale: string;
 	contentId: string;
-	status: "draft" | "published";
+	/** Derived from version history - see {@link Page.status}. */
+	status: "draft" | "published" | "modified";
 	updatedAt: Date;
 }
 
@@ -90,6 +98,27 @@ export interface ListPagesParams extends PaginationParams {
 	sort?: SortParam[];
 	status?: Page["status"];
 	locale?: string;
+}
+
+/** One entry in a page content's append-only version history. */
+export interface PageVersionSummary {
+	id: string;
+	contentId: string;
+	createdAt: Date;
+	/** Set once this version was (or still is) the published one. */
+	publishedAt: Date | null;
+	createdBy: string | null;
+}
+
+/** A version's full snapshot - used for diffing and restore previews. */
+export interface PageVersion extends PageVersionSummary {
+	blocks: RawBlock[];
+}
+
+/** Optional version retention cap (adapter-level config) - disabled unless configured. The latest and currently-published versions are never pruned. */
+export interface PageVersionRetention {
+	maxVersions?: number;
+	maxAgeDays?: number;
 }
 
 /**
@@ -153,7 +182,14 @@ export interface CMSAdapter {
 		locale: string;
 		cloneFromLocale?: string;
 	}): Promise<Page>;
+	/** Marks the content's latest version as published (creates one first if there's no version yet). */
 	publishPage(opts: { id: string }): Promise<void>;
+	/** Version history for a content id, newest first. */
+	listPageVersions(opts: { id: string }): Promise<PageVersionSummary[]>;
+	/** A single version's full snapshot, for diffing or a restore preview. */
+	getPageVersion(opts: { versionId: string }): Promise<PageVersion | null>;
+	/** Copies a past version's blocks into a new draft version - does not touch the published version. */
+	restorePageVersion(opts: { id: string; versionId: string }): Promise<Page>;
 	listPages(params: ListPagesParams): Promise<PaginatedResult<PageSummary>>;
 	/**
 	 * Full page tree (nested by parentId) - each node lists which locales have
