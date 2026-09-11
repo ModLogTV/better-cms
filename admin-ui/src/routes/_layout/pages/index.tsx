@@ -21,6 +21,15 @@ import {
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+	type ColumnDef,
+	type ExpandedState,
+	flexRender,
+	getCoreRowModel,
+	getExpandedRowModel,
+	type Row,
+	useReactTable,
+} from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +51,14 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 import {
 	Tooltip,
 	TooltipContent,
@@ -376,30 +393,32 @@ function LocaleBadge({ node, locale }: { node: PageTreeNode; locale: Locale }) {
 	);
 }
 
-function TreeRow({
-	node,
-	depth,
-	expanded,
-	onToggle,
-	onPublish,
-	publishingId,
-	locales,
-	moveError,
-	disabledDropIds,
-}: {
-	node: PageTreeNode;
-	depth: number;
-	expanded: Set<string>;
-	onToggle: (id: string) => void;
+interface PagesTableMeta {
 	onPublish: (contentId: string) => void;
 	publishingId: string | undefined;
 	locales: Locale[];
 	moveError: { id: string; message: string } | null;
 	/** Node ids that can't be a drop target for the page currently being dragged (itself and its own descendants). */
 	disabledDropIds: Set<string>;
-}) {
+}
+
+const columns: ColumnDef<PageTreeNode>[] = [
+	{ id: "name", header: "Page" },
+	{ id: "locales", header: "Locales" },
+	{ id: "actions", header: "Actions" },
+];
+
+function PageRow({
+	row,
+	onPublish,
+	publishingId,
+	locales,
+	moveError,
+	disabledDropIds,
+}: { row: Row<PageTreeNode> } & PagesTableMeta) {
+	const node = row.original;
 	const hasChildren = node.children.length > 0;
-	const isExpanded = expanded.has(node.id);
+	const isExpanded = row.getIsExpanded();
 	const publishableContent = node.locales.find((l) => l.status !== "published");
 	const isMoveError = moveError?.id === node.id;
 	const dropDisabled = disabledDropIds.has(node.id);
@@ -417,73 +436,81 @@ function TreeRow({
 	});
 
 	return (
-		<div>
-			<Tooltip open={isOver}>
-				<TooltipTrigger asChild>
-					<div
-						ref={setDropRef}
-						className={cn(
-							"group flex items-center gap-1.5 rounded-md py-1.5 pr-2",
-							isOver && "bg-accent ring-1 ring-primary",
-							isDragging && "opacity-40",
-							dropDisabled && "opacity-40",
-						)}
-						style={{ paddingLeft: depth * 20 + 4 }}
-					>
-						<Tooltip open={isMoveError}>
-							<TooltipTrigger asChild>
-								<button
-									type="button"
-									ref={setDragRef}
-									{...listeners}
-									{...attributes}
-									className={cn(
-										"opacity-0 group-hover:opacity-100",
-										isMoveError
-											? "cursor-default text-destructive opacity-100"
-											: "cursor-grab text-muted-foreground active:cursor-grabbing",
-									)}
-									aria-label={isMoveError ? "Move failed" : "Drag to move"}
-								>
-									{isMoveError ? (
-										<IconAlertTriangle className="size-3.5" />
-									) : (
-										<IconGripVertical className="size-3.5" />
-									)}
-								</button>
-							</TooltipTrigger>
-							<TooltipContent variant="destructive" side="right">
-								{moveError?.message}
-							</TooltipContent>
-						</Tooltip>
-						<button
-							type="button"
-							onClick={() => hasChildren && onToggle(node.id)}
-							className={cn(
-								"flex size-4 items-center justify-center text-muted-foreground",
-								hasChildren ? "cursor-pointer" : "invisible",
-							)}
-							aria-label={isExpanded ? "Collapse" : "Expand"}
+		<Tooltip open={isOver}>
+			<TooltipTrigger asChild>
+				<TableRow
+					ref={setDropRef}
+					className={cn(
+						"group",
+						isOver && "bg-accent ring-1 ring-inset ring-primary",
+						isDragging && "opacity-40",
+						dropDisabled && "opacity-40",
+					)}
+				>
+					<TableCell>
+						<div
+							className="flex items-center gap-1.5"
+							style={{ paddingLeft: row.depth * 20 + 4 }}
 						>
-							<IconChevronRight
+							<Tooltip open={isMoveError}>
+								<TooltipTrigger asChild>
+									<button
+										type="button"
+										ref={setDragRef}
+										{...listeners}
+										{...attributes}
+										className={cn(
+											"opacity-0 group-hover:opacity-100",
+											isMoveError
+												? "cursor-default text-destructive opacity-100"
+												: "cursor-grab text-muted-foreground active:cursor-grabbing",
+										)}
+										aria-label={isMoveError ? "Move failed" : "Drag to move"}
+									>
+										{isMoveError ? (
+											<IconAlertTriangle className="size-3.5" />
+										) : (
+											<IconGripVertical className="size-3.5" />
+										)}
+									</button>
+								</TooltipTrigger>
+								<TooltipContent variant="destructive" side="right">
+									{moveError?.message}
+								</TooltipContent>
+							</Tooltip>
+							<button
+								type="button"
+								onClick={() => hasChildren && row.toggleExpanded()}
 								className={cn(
-									"size-3.5 transition-transform",
-									isExpanded && "rotate-90",
+									"flex size-4 items-center justify-center text-muted-foreground",
+									hasChildren ? "cursor-pointer" : "invisible",
 								)}
-							/>
-						</button>
-						{hasChildren ? (
-							<IconFolder className="size-4 text-muted-foreground" />
-						) : (
-							<IconFileText className="size-4 text-muted-foreground" />
-						)}
-						<span className="font-mono text-sm">{node.slug}</span>
+								aria-label={isExpanded ? "Collapse" : "Expand"}
+							>
+								<IconChevronRight
+									className={cn(
+										"size-3.5 transition-transform",
+										isExpanded && "rotate-90",
+									)}
+								/>
+							</button>
+							{hasChildren ? (
+								<IconFolder className="size-4 text-muted-foreground" />
+							) : (
+								<IconFileText className="size-4 text-muted-foreground" />
+							)}
+							<span className="font-mono text-sm">{node.slug}</span>
+						</div>
+					</TableCell>
+					<TableCell>
 						<span className="flex items-center gap-1">
 							{locales.map((l) => (
 								<LocaleBadge key={l.code} node={node} locale={l} />
 							))}
 						</span>
-						<span className="ml-auto flex items-center gap-2">
+					</TableCell>
+					<TableCell>
+						<span className="flex items-center justify-end gap-2">
 							<Tooltip>
 								<TooltipTrigger asChild>
 									<span>
@@ -556,31 +583,13 @@ function TreeRow({
 								</Button>
 							)}
 						</span>
-					</div>
-				</TooltipTrigger>
-				<TooltipContent side="bottom">
-					Drop to nest under <span className="font-mono">{node.slug}</span>
-				</TooltipContent>
-			</Tooltip>
-			{hasChildren && isExpanded && (
-				<div>
-					{node.children.map((child) => (
-						<TreeRow
-							key={child.id}
-							node={child}
-							depth={depth + 1}
-							expanded={expanded}
-							onToggle={onToggle}
-							onPublish={onPublish}
-							publishingId={publishingId}
-							locales={locales}
-							moveError={moveError}
-							disabledDropIds={disabledDropIds}
-						/>
-					))}
-				</div>
-			)}
-		</div>
+					</TableCell>
+				</TableRow>
+			</TooltipTrigger>
+			<TooltipContent side="bottom">
+				Drop to nest under <span className="font-mono">{node.slug}</span>
+			</TooltipContent>
+		</Tooltip>
 	);
 }
 
@@ -589,10 +598,7 @@ function RootDropZone({ children }: { children: React.ReactNode }) {
 	return (
 		<div
 			ref={setNodeRef}
-			className={cn(
-				"min-h-full rounded-lg border p-2",
-				isOver && "bg-accent/50 ring-1 ring-primary",
-			)}
+			className={cn("min-h-full rounded-md", isOver && "ring-1 ring-primary")}
 		>
 			{children}
 		</div>
@@ -612,14 +618,7 @@ function PagesPage() {
 		queryFn: () => api.pages.tree(),
 	});
 
-	const [expanded, setExpanded] = useState<Set<string>>(new Set());
-	const toggle = (id: string) =>
-		setExpanded((prev) => {
-			const next = new Set(prev);
-			if (next.has(id)) next.delete(id);
-			else next.add(id);
-			return next;
-		});
+	const [expanded, setExpanded] = useState<ExpandedState>({});
 
 	const publish = useMutation({
 		mutationFn: (contentId: string) => api.pages.publish(contentId),
@@ -671,6 +670,17 @@ function PagesPage() {
 		move.mutate({ id: String(active.id), parentId });
 	};
 
+	const table = useReactTable({
+		data: tree ?? [],
+		columns,
+		state: { expanded },
+		onExpandedChange: setExpanded,
+		getRowId: (node) => node.id,
+		getSubRows: (node) => node.children,
+		getCoreRowModel: getCoreRowModel(),
+		getExpandedRowModel: getExpandedRowModel(),
+	});
+
 	return (
 		<div className="space-y-4">
 			<div className="flex items-start justify-between">
@@ -712,20 +722,51 @@ function PagesPage() {
 					onDragCancel={() => setDraggingId(null)}
 				>
 					<RootDropZone>
-						{tree.map((node) => (
-							<TreeRow
-								key={node.id}
-								node={node}
-								depth={0}
-								expanded={expanded}
-								onToggle={toggle}
-								onPublish={(id) => publish.mutate(id)}
-								publishingId={publish.isPending ? publish.variables : undefined}
-								locales={locales}
-								moveError={moveError}
-								disabledDropIds={disabledDropIds}
-							/>
-						))}
+						<div className="overflow-hidden rounded-md border">
+							<Table>
+								<TableHeader>
+									{table.getHeaderGroups().map((headerGroup) => (
+										<TableRow
+											key={headerGroup.id}
+											className="hover:bg-transparent"
+										>
+											{headerGroup.headers.map((header) => (
+												<TableHead
+													key={header.id}
+													className={
+														header.column.id === "actions"
+															? "text-right"
+															: undefined
+													}
+												>
+													{header.isPlaceholder
+														? null
+														: flexRender(
+																header.column.columnDef.header,
+																header.getContext(),
+															)}
+												</TableHead>
+											))}
+										</TableRow>
+									))}
+								</TableHeader>
+								<TableBody>
+									{table.getRowModel().rows.map((row) => (
+										<PageRow
+											key={row.id}
+											row={row}
+											onPublish={(id) => publish.mutate(id)}
+											publishingId={
+												publish.isPending ? publish.variables : undefined
+											}
+											locales={locales}
+											moveError={moveError}
+											disabledDropIds={disabledDropIds}
+										/>
+									))}
+								</TableBody>
+							</Table>
+						</div>
 					</RootDropZone>
 				</DndContext>
 			)}
