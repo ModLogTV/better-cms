@@ -160,6 +160,7 @@ export interface PageNodeLocale {
 	contentId: string;
 	status: PageStatus;
 	updatedAt: string;
+	hasBlocks: boolean;
 }
 
 export interface PageTreeNode {

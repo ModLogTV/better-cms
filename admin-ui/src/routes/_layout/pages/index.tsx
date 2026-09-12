@@ -10,28 +10,41 @@ import {
 import {
 	IconAlertTriangle,
 	IconChevronRight,
+	IconChevronsDown,
+	IconChevronsUp,
 	IconExternalLink,
 	IconFileText,
 	IconFolder,
 	IconGripVertical,
+	IconLetterCase,
 	IconPencil,
 	IconPlus,
 	IconRocket,
+	IconWorld,
 } from "@tabler/icons-react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
 	type ColumnDef,
+	type ColumnFiltersState,
 	type ExpandedState,
 	flexRender,
 	getCoreRowModel,
 	getExpandedRowModel,
+	getFilteredRowModel,
+	getSortedRowModel,
 	type Row,
+	type SortingState,
 	useReactTable,
+	type VisibilityState,
 } from "@tanstack/react-table";
+import { useQueryState } from "nuqs";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { DataTableAdvancedToolbar } from "@/components/data-table/data-table-advanced-toolbar";
+import { DataTableFilterMenu } from "@/components/data-table/data-table-filter-menu";
+import { DataTableSortList } from "@/components/data-table/data-table-sort-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -72,8 +85,10 @@ import {
 	type PageNodeLocale,
 	type PageTreeNode,
 } from "@/lib/api";
+import { getFiltersStateParser } from "@/lib/parsers";
 import { useTransientError } from "@/lib/use-transient-error";
 import { cn } from "@/lib/utils";
+import type { ExtendedColumnFilter } from "@/types/data-table";
 
 export const Route = createFileRoute("/_layout/pages/")({
 	component: PagesPage,
@@ -402,11 +417,99 @@ interface PagesTableMeta {
 	disabledDropIds: Set<string>;
 }
 
-const columns: ColumnDef<PageTreeNode>[] = [
-	{ id: "name", header: "Page" },
-	{ id: "locales", header: "Locales" },
-	{ id: "actions", header: "Actions" },
-];
+const FILTERABLE_COLUMN_IDS = ["name", "locales"];
+
+/** Client-side evaluation of an `ExtendedColumnFilter` for the "Page name" text column - mirrors `dataTableConfig.textOperators`. */
+function nameFilterFn(
+	row: Row<PageTreeNode>,
+	columnId: string,
+	filterValue: ExtendedColumnFilter<PageTreeNode>,
+) {
+	const haystack = String(row.getValue(columnId) ?? "").toLowerCase();
+	const needle = String(filterValue.value ?? "").toLowerCase();
+
+	switch (filterValue.operator) {
+		case "eq":
+			return haystack === needle;
+		case "ne":
+			return haystack !== needle;
+		case "notILike":
+			return !haystack.includes(needle);
+		case "isEmpty":
+			return haystack.length === 0;
+		case "isNotEmpty":
+			return haystack.length > 0;
+		default:
+			return haystack.includes(needle);
+	}
+}
+
+/** Client-side evaluation of an `ExtendedColumnFilter` for the "Locales" multiSelect column - mirrors `dataTableConfig.multiSelectOperators`. */
+function localesFilterFn(
+	row: Row<PageTreeNode>,
+	columnId: string,
+	filterValue: ExtendedColumnFilter<PageTreeNode>,
+) {
+	const values = row.getValue<string[]>(columnId);
+	const selected = Array.isArray(filterValue.value)
+		? filterValue.value
+		: [filterValue.value].filter(Boolean);
+
+	switch (filterValue.operator) {
+		case "notInArray":
+			return !selected.some((v) => values.includes(v));
+		case "isEmpty":
+			return values.length === 0;
+		case "isNotEmpty":
+			return values.length > 0;
+		default:
+			return selected.some((v) => values.includes(v));
+	}
+}
+
+function buildColumns(locales: Locale[]): ColumnDef<PageTreeNode>[] {
+	return [
+		{
+			id: "name",
+			accessorFn: (node) => node.slug,
+			header: "Page name",
+			enableHiding: false,
+			enableColumnFilter: true,
+			filterFn: nameFilterFn,
+			meta: {
+				label: "Page name",
+				placeholder: "Search slug…",
+				variant: "text",
+				icon: IconLetterCase,
+			},
+		},
+		{
+			id: "locales",
+			accessorFn: (node) => node.locales.map((l) => l.locale),
+			header: "Locales",
+			sortingFn: (a, b, columnId) =>
+				a.getValue<string[]>(columnId).length -
+				b.getValue<string[]>(columnId).length,
+			enableColumnFilter: true,
+			filterFn: localesFilterFn,
+			meta: {
+				label: "Locales",
+				variant: "multiSelect",
+				icon: IconWorld,
+				options: locales.map((l) => ({
+					label: `${l.name} (${l.code})`,
+					value: l.code,
+				})),
+			},
+		},
+		{
+			id: "actions",
+			header: "Actions",
+			enableHiding: false,
+			enableSorting: false,
+		},
+	];
+}
 
 function PageRow({
 	row,
@@ -447,143 +550,169 @@ function PageRow({
 						dropDisabled && "opacity-40",
 					)}
 				>
-					<TableCell>
-						<div
-							className="flex items-center gap-1.5"
-							style={{ paddingLeft: row.depth * 20 + 4 }}
-						>
-							<Tooltip open={isMoveError}>
-								<TooltipTrigger asChild>
-									<button
-										type="button"
-										ref={setDragRef}
-										{...listeners}
-										{...attributes}
-										className={cn(
-											"opacity-0 group-hover:opacity-100",
-											isMoveError
-												? "cursor-default text-destructive opacity-100"
-												: "cursor-grab text-muted-foreground active:cursor-grabbing",
-										)}
-										aria-label={isMoveError ? "Move failed" : "Drag to move"}
+					{row.getVisibleCells().map((cell) => {
+						if (cell.column.id === "name") {
+							return (
+								<TableCell key={cell.id}>
+									<div
+										className="flex items-center gap-1.5"
+										style={{ paddingLeft: row.depth * 20 + 4 }}
 									>
-										{isMoveError ? (
-											<IconAlertTriangle className="size-3.5" />
+										<Tooltip open={isMoveError}>
+											<TooltipTrigger asChild>
+												<button
+													type="button"
+													ref={setDragRef}
+													{...listeners}
+													{...attributes}
+													className={cn(
+														"opacity-0 group-hover:opacity-100",
+														isMoveError
+															? "cursor-default text-destructive opacity-100"
+															: "cursor-grab text-muted-foreground active:cursor-grabbing",
+													)}
+													aria-label={
+														isMoveError ? "Move failed" : "Drag to move"
+													}
+												>
+													{isMoveError ? (
+														<IconAlertTriangle className="size-3.5" />
+													) : (
+														<IconGripVertical className="size-3.5" />
+													)}
+												</button>
+											</TooltipTrigger>
+											<TooltipContent variant="destructive" side="right">
+												{moveError?.message}
+											</TooltipContent>
+										</Tooltip>
+										<button
+											type="button"
+											onClick={() => hasChildren && row.toggleExpanded()}
+											className={cn(
+												"flex size-4 items-center justify-center text-muted-foreground",
+												hasChildren ? "cursor-pointer" : "invisible",
+											)}
+											aria-label={isExpanded ? "Collapse" : "Expand"}
+										>
+											<IconChevronRight
+												className={cn(
+													"size-3.5 transition-transform",
+													isExpanded && "rotate-90",
+												)}
+											/>
+										</button>
+										{hasChildren ? (
+											node.locales.some((l) => l.hasBlocks) ? (
+												<span className="flex shrink-0 items-center">
+													<IconFolder className="size-4 text-muted-foreground" />
+													<IconFileText className="-ml-1 size-4 rounded-[2px] bg-background text-muted-foreground" />
+												</span>
+											) : (
+												<IconFolder className="size-4 text-muted-foreground" />
+											)
 										) : (
-											<IconGripVertical className="size-3.5" />
+											<IconFileText className="size-4 text-muted-foreground" />
 										)}
-									</button>
-								</TooltipTrigger>
-								<TooltipContent variant="destructive" side="right">
-									{moveError?.message}
-								</TooltipContent>
-							</Tooltip>
-							<button
-								type="button"
-								onClick={() => hasChildren && row.toggleExpanded()}
-								className={cn(
-									"flex size-4 items-center justify-center text-muted-foreground",
-									hasChildren ? "cursor-pointer" : "invisible",
-								)}
-								aria-label={isExpanded ? "Collapse" : "Expand"}
-							>
-								<IconChevronRight
-									className={cn(
-										"size-3.5 transition-transform",
-										isExpanded && "rotate-90",
-									)}
-								/>
-							</button>
-							{hasChildren ? (
-								<IconFolder className="size-4 text-muted-foreground" />
-							) : (
-								<IconFileText className="size-4 text-muted-foreground" />
-							)}
-							<span className="font-mono text-sm">{node.slug}</span>
-						</div>
-					</TableCell>
-					<TableCell>
-						<span className="flex items-center gap-1">
-							{locales.map((l) => (
-								<LocaleBadge key={l.code} node={node} locale={l} />
-							))}
-						</span>
-					</TableCell>
-					<TableCell>
-						<span className="flex items-center justify-end gap-2">
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<span>
-										<NewPageDialog
-											parentId={node.id}
-											parentPath={node.path}
-											locales={locales}
-											trigger={
+										<span className="font-mono text-sm">{node.slug}</span>
+									</div>
+								</TableCell>
+							);
+						}
+
+						if (cell.column.id === "locales") {
+							return (
+								<TableCell key={cell.id}>
+									<span className="flex items-center gap-1">
+										{locales.map((l) => (
+											<LocaleBadge key={l.code} node={node} locale={l} />
+										))}
+									</span>
+								</TableCell>
+							);
+						}
+
+						return (
+							<TableCell key={cell.id}>
+								<span className="flex items-center justify-end gap-2">
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<span>
+												<NewPageDialog
+													parentId={node.id}
+													parentPath={node.path}
+													locales={locales}
+													trigger={
+														<Button
+															size="icon"
+															variant="ghost"
+															className="size-6 opacity-0 group-hover:opacity-100"
+														>
+															<IconPlus className="size-3.5" />
+														</Button>
+													}
+												/>
+											</span>
+										</TooltipTrigger>
+										<TooltipContent>Add child page</TooltipContent>
+									</Tooltip>
+									{siteUrl && (
+										<Tooltip>
+											<TooltipTrigger asChild>
 												<Button
 													size="icon"
 													variant="ghost"
 													className="size-6 opacity-0 group-hover:opacity-100"
+													asChild
 												>
-													<IconPlus className="size-3.5" />
+													<a
+														href={`${siteUrl.replace(/\/$/, "")}/${node.path}`}
+														target="_blank"
+														rel="noopener noreferrer"
+													>
+														<IconExternalLink className="size-3.5" />
+													</a>
 												</Button>
-											}
-										/>
-									</span>
-								</TooltipTrigger>
-								<TooltipContent>Add child page</TooltipContent>
-							</Tooltip>
-							{siteUrl && (
-								<Tooltip>
-									<TooltipTrigger asChild>
+											</TooltipTrigger>
+											<TooltipContent>Open page in new tab</TooltipContent>
+										</Tooltip>
+									)}
+									{publishableContent && (
 										<Button
-											size="icon"
-											variant="ghost"
-											className="size-6 opacity-0 group-hover:opacity-100"
+											size="sm"
+											variant="outline"
+											className="h-6 gap-1 text-xs"
+											onClick={() => onPublish(publishableContent.contentId)}
+											disabled={publishingId === publishableContent.contentId}
+										>
+											<IconRocket className="size-3" />
+											Publish {publishableContent.locale}
+										</Button>
+									)}
+									{node.locales[0] && (
+										<Button
+											size="sm"
+											variant="outline"
+											className="h-6 gap-1 text-xs"
 											asChild
 										>
-											<a
-												href={`${siteUrl.replace(/\/$/, "")}/${node.path}`}
-												target="_blank"
-												rel="noopener noreferrer"
+											<Link
+												to="/pages/$pageId"
+												params={{ pageId: node.locales[0].contentId }}
+												search={{
+													path: node.path,
+													locale: node.locales[0].locale,
+												}}
 											>
-												<IconExternalLink className="size-3.5" />
-											</a>
+												<IconPencil className="size-3" />
+												Edit
+											</Link>
 										</Button>
-									</TooltipTrigger>
-									<TooltipContent>Open page in new tab</TooltipContent>
-								</Tooltip>
-							)}
-							{publishableContent && (
-								<Button
-									size="sm"
-									variant="outline"
-									className="h-6 gap-1 text-xs"
-									onClick={() => onPublish(publishableContent.contentId)}
-									disabled={publishingId === publishableContent.contentId}
-								>
-									<IconRocket className="size-3" />
-									Publish {publishableContent.locale}
-								</Button>
-							)}
-							{node.locales[0] && (
-								<Button
-									size="sm"
-									variant="outline"
-									className="h-6 gap-1 text-xs"
-									asChild
-								>
-									<Link
-										to="/pages/$pageId"
-										params={{ pageId: node.locales[0].contentId }}
-										search={{ path: node.path, locale: node.locales[0].locale }}
-									>
-										<IconPencil className="size-3" />
-										Edit
-									</Link>
-								</Button>
-							)}
-						</span>
-					</TableCell>
+									)}
+								</span>
+							</TableCell>
+						);
+					})}
 				</TableRow>
 			</TooltipTrigger>
 			<TooltipContent side="bottom">
@@ -619,6 +748,24 @@ function PagesPage() {
 	});
 
 	const [expanded, setExpanded] = useState<ExpandedState>({});
+	const [sorting, setSorting] = useState<SortingState>([]);
+	const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+
+	const filtersParser = useMemo(
+		() =>
+			getFiltersStateParser<PageTreeNode>(FILTERABLE_COLUMN_IDS).withDefault(
+				[],
+			),
+		[],
+	);
+	const [filters] = useQueryState("filters", filtersParser);
+	const columnFilters: ColumnFiltersState = useMemo(
+		() => filters.map((f) => ({ id: f.id, value: f })),
+		[filters],
+	);
+	const hasActiveFilters = filters.length > 0;
+
+	const columns = useMemo(() => buildColumns(locales), [locales]);
 
 	const publish = useMutation({
 		mutationFn: (contentId: string) => api.pages.publish(contentId),
@@ -673,11 +820,22 @@ function PagesPage() {
 	const table = useReactTable({
 		data: tree ?? [],
 		columns,
-		state: { expanded },
+		state: {
+			expanded: hasActiveFilters ? true : expanded,
+			sorting,
+			columnVisibility,
+			columnFilters,
+		},
 		onExpandedChange: setExpanded,
+		onSortingChange: setSorting,
+		onColumnVisibilityChange: setColumnVisibility,
+		onColumnFiltersChange: () => {},
+		filterFromLeafRows: true,
 		getRowId: (node) => node.id,
 		getSubRows: (node) => node.children,
 		getCoreRowModel: getCoreRowModel(),
+		getFilteredRowModel: getFilteredRowModel(),
+		getSortedRowModel: getSortedRowModel(),
 		getExpandedRowModel: getExpandedRowModel(),
 	});
 
@@ -715,60 +873,86 @@ function PagesPage() {
 					No pages yet.
 				</div>
 			) : (
-				<DndContext
-					sensors={sensors}
-					onDragStart={(e) => setDraggingId(String(e.active.id))}
-					onDragEnd={handleDragEnd}
-					onDragCancel={() => setDraggingId(null)}
-				>
-					<RootDropZone>
-						<div className="overflow-hidden rounded-md border">
-							<Table>
-								<TableHeader>
-									{table.getHeaderGroups().map((headerGroup) => (
-										<TableRow
-											key={headerGroup.id}
-											className="hover:bg-transparent"
-										>
-											{headerGroup.headers.map((header) => (
-												<TableHead
-													key={header.id}
-													className={
-														header.column.id === "actions"
-															? "text-right"
-															: undefined
-													}
-												>
-													{header.isPlaceholder
-														? null
-														: flexRender(
-																header.column.columnDef.header,
-																header.getContext(),
-															)}
-												</TableHead>
-											))}
-										</TableRow>
-									))}
-								</TableHeader>
-								<TableBody>
-									{table.getRowModel().rows.map((row) => (
-										<PageRow
-											key={row.id}
-											row={row}
-											onPublish={(id) => publish.mutate(id)}
-											publishingId={
-												publish.isPending ? publish.variables : undefined
-											}
-											locales={locales}
-											moveError={moveError}
-											disabledDropIds={disabledDropIds}
-										/>
-									))}
-								</TableBody>
-							</Table>
-						</div>
-					</RootDropZone>
-				</DndContext>
+				<div className="space-y-2">
+					<DataTableAdvancedToolbar
+						table={table}
+						endActions={
+							<Button
+								variant="outline"
+								size="sm"
+								className="h-8 font-normal"
+								disabled={hasActiveFilters}
+								onClick={() =>
+									table.toggleAllRowsExpanded(!table.getIsAllRowsExpanded())
+								}
+							>
+								{table.getIsAllRowsExpanded() ? (
+									<IconChevronsUp className="text-muted-foreground" />
+								) : (
+									<IconChevronsDown className="text-muted-foreground" />
+								)}
+								{table.getIsAllRowsExpanded() ? "Collapse all" : "Expand all"}
+							</Button>
+						}
+					>
+						<DataTableFilterMenu table={table} />
+						<DataTableSortList table={table} />
+					</DataTableAdvancedToolbar>
+					<DndContext
+						sensors={sensors}
+						onDragStart={(e) => setDraggingId(String(e.active.id))}
+						onDragEnd={handleDragEnd}
+						onDragCancel={() => setDraggingId(null)}
+					>
+						<RootDropZone>
+							<div className="overflow-hidden rounded-md border">
+								<Table>
+									<TableHeader>
+										{table.getHeaderGroups().map((headerGroup) => (
+											<TableRow
+												key={headerGroup.id}
+												className="hover:bg-transparent"
+											>
+												{headerGroup.headers.map((header) => (
+													<TableHead
+														key={header.id}
+														className={
+															header.column.id === "actions"
+																? "text-right"
+																: undefined
+														}
+													>
+														{header.isPlaceholder
+															? null
+															: flexRender(
+																	header.column.columnDef.header,
+																	header.getContext(),
+																)}
+													</TableHead>
+												))}
+											</TableRow>
+										))}
+									</TableHeader>
+									<TableBody>
+										{table.getRowModel().rows.map((row) => (
+											<PageRow
+												key={row.id}
+												row={row}
+												onPublish={(id) => publish.mutate(id)}
+												publishingId={
+													publish.isPending ? publish.variables : undefined
+												}
+												locales={locales}
+												moveError={moveError}
+												disabledDropIds={disabledDropIds}
+											/>
+										))}
+									</TableBody>
+								</Table>
+							</div>
+						</RootDropZone>
+					</DndContext>
+				</div>
 			)}
 		</div>
 	);

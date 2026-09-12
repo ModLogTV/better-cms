@@ -238,6 +238,7 @@ describe("pages routes", () => {
 							contentId: "c1",
 							status: "published" as const,
 							updatedAt: new Date(),
+							hasBlocks: true,
 						},
 					],
 					children: [],

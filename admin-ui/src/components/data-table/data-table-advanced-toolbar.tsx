@@ -9,12 +9,15 @@ import { cn } from "@/lib/utils";
 interface DataTableAdvancedToolbarProps<TData>
 	extends React.ComponentProps<"div"> {
 	table: Table<TData>;
+	/** Rendered on the right side, just before the "View" column-visibility popover. */
+	endActions?: React.ReactNode;
 }
 
 export function DataTableAdvancedToolbar<TData>({
 	table,
 	children,
 	className,
+	endActions,
 	...props
 }: DataTableAdvancedToolbarProps<TData>) {
 	return (
@@ -29,6 +32,7 @@ export function DataTableAdvancedToolbar<TData>({
 		>
 			<div className="flex flex-1 flex-wrap items-center gap-2">{children}</div>
 			<div className="flex items-center gap-2">
+				{endActions}
 				<DataTableViewOptions table={table} align="end" />
 			</div>
 		</div>

@@ -125,6 +125,8 @@ export interface PageNodeLocale {
 	/** Derived from version history - see {@link Page.status}. */
 	status: "draft" | "published" | "modified";
 	updatedAt: Date;
+	/** Whether the latest version has any blocks - distinguishes real content from an empty wrapper page. */
+	hasBlocks: boolean;
 }
 
 /** A tree node is locale-independent - `locales` says which locales have content, and their status. */

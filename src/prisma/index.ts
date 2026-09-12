@@ -893,6 +893,7 @@ export function prismaAdapter(
 					contentId: c.id,
 					status: deriveStatus(c.publishedVersionId, latest?.id),
 					updatedAt: c.updatedAt,
+					hasBlocks: Array.isArray(latest?.blocks) && latest.blocks.length > 0,
 				});
 				localesByNode.set(c.nodeId, locales);
 			}
