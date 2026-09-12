@@ -43,7 +43,7 @@ describe("admin routes", () => {
 			value: "cms:*",
 			description: "Grants every CMS permission",
 		});
-		expect(body.length).toBe(16);
+		expect(body.length).toBe(17);
 	});
 
 	test("GET /cms/admin/namespaces/:ns/describe returns key metadata", async () => {
@@ -72,6 +72,36 @@ describe("admin routes", () => {
 		const app = makeApp(makeAdapter());
 		const res = await app.handle(
 			req("/cms/admin/namespaces", { token: "wrong" }),
+		);
+		expect(res.status).toBe(401);
+	});
+
+	test("GET /cms/admin/audit-log returns the paginated audit trail", async () => {
+		const entry = {
+			id: "a1",
+			actorId: "u1",
+			action: "group.created",
+			targetType: "group",
+			targetId: "g1",
+			detail: {},
+			createdAt: new Date("2024-01-01"),
+		};
+		const app = makeApp(
+			makeAdapter({
+				listAuditLog: async () => ({ items: [entry], total: 1 }),
+			}),
+		);
+		const res = await app.handle(req("/cms/admin/audit-log"));
+		expect(res.status).toBe(200);
+		const body = await res.json();
+		expect(body.total).toBe(1);
+		expect(body.items[0].action).toBe("group.created");
+	});
+
+	test("GET /cms/admin/audit-log without token returns 401", async () => {
+		const app = makeApp(makeAdapter());
+		const res = await app.handle(
+			req("/cms/admin/audit-log", { token: "wrong" }),
 		);
 		expect(res.status).toBe(401);
 	});

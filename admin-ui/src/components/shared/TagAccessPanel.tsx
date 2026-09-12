@@ -3,6 +3,7 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
+import { UserCombobox } from "@/components/shared/UserCombobox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,7 +13,6 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
 	Select,
@@ -195,7 +195,7 @@ export function TagAccessPanel({
 						e.stopPropagation();
 						form.handleSubmit();
 					}}
-					className="space-y-3 border-t pt-4"
+					className="space-y-3 rounded-lg border border-dashed p-3"
 				>
 					<form.Field name="subjectType">
 						{(field) => (
@@ -244,14 +244,10 @@ export function TagAccessPanel({
 									<form.Field name="userId">
 										{(userField) => (
 											<div className="space-y-1.5">
-												<Label>User ID</Label>
-												<Input
-													value={userField.state.value}
-													onChange={(e) =>
-														userField.handleChange(e.target.value)
-													}
-													placeholder="user id"
-													className="font-mono text-xs"
+												<Label>User</Label>
+												<UserCombobox
+													value={userField.state.value || null}
+													onChange={(user) => userField.handleChange(user.id)}
 												/>
 											</div>
 										)}

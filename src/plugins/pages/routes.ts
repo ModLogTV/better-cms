@@ -505,10 +505,28 @@ export function pageRoutes(opts: { ctx: CMSContext; blocks: PageBlock[] }) {
 			},
 			{ params: t.Object({ id: t.String() }) },
 		)
+		.get(
+			// Mirror image of the per-node listing above - every grant one
+			// subject holds, across every page. Powers a group's own "Page
+			// access" view (rather than only a page's "who has access" view).
+			"/pages/grants/by-subject",
+			async ({ query }) => {
+				return ctx.adapter.listPageGrantsForSubject({
+					subjectType: query.subjectType,
+					subjectId: query.subjectId,
+				});
+			},
+			{
+				query: t.Object({
+					subjectType: t.Union([t.Literal("user"), t.Literal("group")]),
+					subjectId: t.String(),
+				}),
+			},
+		)
 		.post(
 			"/pages/:id/grants",
-			async ({ params, body }) => {
-				return ctx.adapter.addPageGrant({
+			async ({ params, body, cmsUserId }) => {
+				const grant = await ctx.adapter.addPageGrant({
 					id: crypto.randomUUID(),
 					nodeId: params.id,
 					subjectType: body.subjectType,
@@ -516,6 +534,20 @@ export function pageRoutes(opts: { ctx: CMSContext; blocks: PageBlock[] }) {
 					permission: body.permission,
 					locale: body.locale ?? null,
 				});
+				await ctx.adapter.recordAuditEntry({
+					actorId: cmsUserId,
+					action: "pageGrant.added",
+					targetType: "pageGrant",
+					targetId: grant.id,
+					detail: {
+						nodeId: grant.nodeId,
+						subjectType: grant.subjectType,
+						subjectId: grant.subjectId,
+						permission: grant.permission,
+						locale: grant.locale,
+					},
+				});
+				return grant;
 			},
 			{
 				params: t.Object({ id: t.String() }),
@@ -529,8 +561,24 @@ export function pageRoutes(opts: { ctx: CMSContext; blocks: PageBlock[] }) {
 		)
 		.delete(
 			"/pages/grants/:grantId",
-			async ({ params }) => {
+			async ({ params, cmsUserId }) => {
+				const before = await ctx.adapter.getPageGrant({ id: params.grantId });
 				await ctx.adapter.removePageGrant({ id: params.grantId });
+				await ctx.adapter.recordAuditEntry({
+					actorId: cmsUserId,
+					action: "pageGrant.removed",
+					targetType: "pageGrant",
+					targetId: params.grantId,
+					detail: before
+						? {
+								nodeId: before.nodeId,
+								subjectType: before.subjectType,
+								subjectId: before.subjectId,
+								permission: before.permission,
+								locale: before.locale,
+							}
+						: {},
+				});
 				return { ok: true };
 			},
 			{ params: t.Object({ grantId: t.String() }) },

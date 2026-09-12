@@ -100,6 +100,28 @@ export interface PermissionInfo {
 	description: string;
 }
 
+/** A directed nesting edge: `childGroupId` is nested inside `parentGroupId` and inherits its permissions/grants transitively. */
+export interface GroupMembershipEdge {
+	childGroupId: string;
+	parentGroupId: string;
+}
+
+export interface AuditLogEntry {
+	id: string;
+	actorId: string | null;
+	action: string;
+	targetType: string;
+	targetId: string;
+	detail: Record<string, unknown>;
+	createdAt: string;
+}
+
+export interface ListAuditLogParams extends ListParams {
+	targetType?: string;
+	targetId?: string;
+	actorId?: string;
+}
+
 export type BlockFieldType = "text" | "textarea" | "number" | "boolean";
 
 export interface BlockFieldInfo {
@@ -387,6 +409,11 @@ export const api = {
 				},
 			) => post<PageGrant>(`/pages/${nodeId}/grants`, grant),
 			remove: (grantId: string) => del(`/pages/grants/${grantId}`),
+			/** Every page-subtree grant one subject (typically a group) holds, across every node. */
+			listBySubject: (subjectType: "user" | "group", subjectId: string) =>
+				get<PageGrant[]>(
+					`/pages/grants/by-subject?subjectType=${subjectType}&subjectId=${encodeURIComponent(subjectId)}`,
+				),
 		},
 	},
 
@@ -578,6 +605,11 @@ export const api = {
 					},
 				) => post<MediaTagGrant>(`/media/tags/${tagId}/grants`, grant),
 				remove: (grantId: string) => del(`/media/tag-grants/${grantId}`),
+				/** Every tag grant one subject (typically a group) holds, across every tag. */
+				listBySubject: (subjectType: "user" | "group", subjectId: string) =>
+					get<MediaTagGrant[]>(
+						`/media/tag-grants/by-subject?subjectType=${subjectType}&subjectId=${encodeURIComponent(subjectId)}`,
+					),
 			},
 		},
 		views: {
@@ -622,9 +654,24 @@ export const api = {
 		update: (id: string, data: { name?: string; permissions?: string[] }) =>
 			put<CMSGroup>(`/admin/groups/${id}`, data),
 		delete: (id: string) => del(`/admin/groups/${id}`),
+		/** All nesting edges across every group. */
+		listMemberships: () =>
+			get<GroupMembershipEdge[]>("/admin/group-memberships"),
+		/** Nests `childGroupId` inside `parentGroupId`. Rejected (throws an ApiError) if this would create a cycle. */
+		addMembership: (childGroupId: string, parentGroupId: string) =>
+			post(`/admin/groups/${childGroupId}/memberships`, { parentGroupId }),
+		removeMembership: (childGroupId: string, parentGroupId: string) =>
+			del(`/admin/groups/${childGroupId}/memberships/${parentGroupId}`),
 	},
 
 	permissions: {
 		list: () => get<PermissionInfo[]>("/admin/permissions"),
+	},
+
+	auditLog: {
+		list: (params: ListAuditLogParams) =>
+			get<PaginatedResult<AuditLogEntry>>(
+				`/admin/audit-log?${buildQuery(params)}`,
+			),
 	},
 };

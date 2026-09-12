@@ -205,6 +205,70 @@ describe("admin.groups.delete", () => {
 	});
 });
 
+describe("admin.groups.listMemberships", () => {
+	test("GET /cms/admin/group-memberships", async () => {
+		const edges = [{ childGroupId: "g2", parentGroupId: "g1" }];
+		const spy = mockFetch((url) => {
+			expect(url).toBe(`${CMS_URL}/cms/admin/group-memberships`);
+			return jsonOk(edges);
+		});
+		const result = await admin.groups.listMemberships();
+		expect(result).toEqual(edges);
+		spy.mockRestore();
+	});
+});
+
+describe("admin.groups.addMembership", () => {
+	test("POST /cms/admin/groups/:childGroupId/memberships with parentGroupId in body", async () => {
+		const spy = mockFetch((url, init) => {
+			expect(url).toBe(`${CMS_URL}/cms/admin/groups/g2/memberships`);
+			expect(init.method).toBe("POST");
+			const body = JSON.parse(init.body as string);
+			expect(body).toEqual({ parentGroupId: "g1" });
+			return jsonOk({ ok: true });
+		});
+		await admin.groups.addMembership({
+			childGroupId: "g2",
+			parentGroupId: "g1",
+		});
+		spy.mockRestore();
+	});
+});
+
+describe("admin.groups.removeMembership", () => {
+	test("DELETE /cms/admin/groups/:childGroupId/memberships/:parentGroupId", async () => {
+		const spy = mockFetch((url, init) => {
+			expect(url).toBe(`${CMS_URL}/cms/admin/groups/g2/memberships/g1`);
+			expect(init.method).toBe("DELETE");
+			return jsonOk({ ok: true });
+		});
+		await admin.groups.removeMembership({
+			childGroupId: "g2",
+			parentGroupId: "g1",
+		});
+		spy.mockRestore();
+	});
+});
+
+describe("admin.auditLog.list", () => {
+	test("GET /cms/admin/audit-log with query params", async () => {
+		const paginated = { items: [], total: 0 };
+		const spy = mockFetch((url) => {
+			expect(url).toBe(
+				`${CMS_URL}/cms/admin/audit-log?page=1&pageSize=20&targetType=group`,
+			);
+			return jsonOk(paginated);
+		});
+		const result = await admin.auditLog.list({
+			page: 1,
+			pageSize: 20,
+			targetType: "group",
+		});
+		expect(result).toEqual(paginated);
+		spy.mockRestore();
+	});
+});
+
 // ---------------------------------------------------------------------------
 // Auth header
 // ---------------------------------------------------------------------------

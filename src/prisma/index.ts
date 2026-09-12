@@ -1,5 +1,7 @@
-import { CMS_PERMISSIONS } from "../auth/permissions";
+import { CMS_PERMISSIONS, expandImpliedPermissions } from "../auth/permissions";
 import type {
+	AuditLogEntry,
+	AuditLogRetention,
 	CMSAdapter,
 	ListPagesParams,
 	Locale,
@@ -118,6 +120,16 @@ interface PrismaMediaTagGrantRow {
 	permission: string;
 }
 
+interface PrismaAuditLogEntryRow {
+	id: string;
+	actorId: string | null;
+	action: string;
+	targetType: string;
+	targetId: string;
+	detail: unknown;
+	createdAt: Date;
+}
+
 interface PrismaClient {
 	translationNamespace: {
 		findUnique(args: {
@@ -206,6 +218,9 @@ interface PrismaClient {
 				}>;
 			};
 		}): Promise<PrismaPageGrantRow[]>;
+		findUnique(args: {
+			where: { id: string };
+		}): Promise<PrismaPageGrantRow | null>;
 		create(args: {
 			data: {
 				id: string;
@@ -326,6 +341,9 @@ interface PrismaClient {
 				}>;
 			};
 		}): Promise<PrismaMediaTagGrantRow[]>;
+		findUnique(args: {
+			where: { id: string };
+		}): Promise<PrismaMediaTagGrantRow | null>;
 		create(args: {
 			data: {
 				id: string;
@@ -336,6 +354,38 @@ interface PrismaClient {
 			};
 		}): Promise<PrismaMediaTagGrantRow>;
 		delete(args: { where: { id: string } }): Promise<unknown>;
+	};
+	auditLogEntry: {
+		create(args: {
+			data: {
+				id: string;
+				actorId: string | null;
+				action: string;
+				targetType: string;
+				targetId: string;
+				detail: unknown;
+			};
+		}): Promise<PrismaAuditLogEntryRow>;
+		findMany(args: {
+			where?: {
+				targetType?: string;
+				targetId?: string;
+				actorId?: string;
+			};
+			orderBy: Record<string, "asc" | "desc">[];
+			skip?: number;
+			take?: number;
+		}): Promise<PrismaAuditLogEntryRow[]>;
+		count(args?: {
+			where?: {
+				targetType?: string;
+				targetId?: string;
+				actorId?: string;
+			};
+		}): Promise<number>;
+		deleteMany(args: {
+			where: { id?: { in: string[] }; createdAt?: { lt: Date } };
+		}): Promise<unknown>;
 	};
 }
 
@@ -519,6 +569,50 @@ async function pruneVersions(
 	}
 }
 
+function toAuditLogEntry(row: PrismaAuditLogEntryRow): AuditLogEntry {
+	return {
+		id: row.id,
+		actorId: row.actorId,
+		action: row.action,
+		targetType: row.targetType,
+		targetId: row.targetId,
+		detail: (row.detail as Record<string, unknown>) ?? {},
+		createdAt: row.createdAt,
+	};
+}
+
+/** Prunes old audit entries per `retention`, if configured. Kept forever otherwise - this is a compliance trail, not a cache. */
+async function pruneAuditLog(
+	prisma: PrismaClient,
+	retention: AuditLogRetention | undefined,
+): Promise<void> {
+	if (!retention?.maxEntries && !retention?.maxAgeDays) return;
+
+	if (retention.maxAgeDays) {
+		const cutoff = new Date(
+			Date.now() - retention.maxAgeDays * 24 * 60 * 60 * 1000,
+		);
+		await prisma.auditLogEntry.deleteMany({
+			where: { createdAt: { lt: cutoff } },
+		});
+	}
+	if (retention.maxEntries) {
+		const total = await prisma.auditLogEntry.count();
+		if (total > retention.maxEntries) {
+			const excess = await prisma.auditLogEntry.findMany({
+				where: {},
+				orderBy: [{ createdAt: "desc" }],
+				skip: retention.maxEntries,
+			});
+			if (excess.length > 0) {
+				await prisma.auditLogEntry.deleteMany({
+					where: { id: { in: excess.map((e) => e.id) } },
+				});
+			}
+		}
+	}
+}
+
 async function computePath(
 	prisma: PrismaClient,
 	opts: { parentId: string | null; slug: string },
@@ -632,9 +726,13 @@ function toPageSummary(row: PrismaPageContentWithNodeRow): PageSummary {
  */
 export function prismaAdapter(
 	prisma: PrismaClient,
-	opts?: { pageVersionRetention?: PageVersionRetention },
+	opts?: {
+		pageVersionRetention?: PageVersionRetention;
+		auditRetention?: AuditLogRetention;
+	},
 ): CMSAdapter {
 	const retention = opts?.pageVersionRetention;
+	const auditRetention = opts?.auditRetention;
 
 	return {
 		async getTranslations({ namespace, locale }) {
@@ -1016,6 +1114,18 @@ export function prismaAdapter(
 			return rows.map(toPageGrant);
 		},
 
+		async getPageGrant({ id }) {
+			const row = await prisma.pageGrant.findUnique({ where: { id } });
+			return row ? toPageGrant(row) : null;
+		},
+
+		async listPageGrantsForSubject({ subjectType, subjectId }) {
+			const rows = await prisma.pageGrant.findMany({
+				where: { OR: [{ subjectType, subjectId }] },
+			});
+			return rows.map(toPageGrant);
+		},
+
 		async addPageGrant({
 			id,
 			nodeId,
@@ -1047,7 +1157,10 @@ export function prismaAdapter(
 					? g.locale === null || g.locale === locale
 					: g.locale === null,
 			);
-			return [...new Set(matching.map((g) => g.permission))];
+			// A write/publish grant also counts as read/write, same as global
+			// permissions (src/auth/permissions.ts) - these share one string
+			// vocabulary, so the implication has to apply here too.
+			return expandImpliedPermissions(matching.map((g) => g.permission));
 		},
 
 		async listLocales() {
@@ -1371,6 +1484,18 @@ export function prismaAdapter(
 			return rows.map(toMediaTagGrant);
 		},
 
+		async getMediaTagGrant({ id }) {
+			const row = await prisma.mediaTagGrant.findUnique({ where: { id } });
+			return row ? toMediaTagGrant(row) : null;
+		},
+
+		async listMediaTagGrantsForSubject({ subjectType, subjectId }) {
+			const rows = await prisma.mediaTagGrant.findMany({
+				where: { OR: [{ subjectType, subjectId }] },
+			});
+			return rows.map(toMediaTagGrant);
+		},
+
 		async addMediaTagGrant({ id, tagId, subjectType, subjectId, permission }) {
 			const row = await prisma.mediaTagGrant.create({
 				data: { id, tagId, subjectType, subjectId, permission },
@@ -1390,6 +1515,38 @@ export function prismaAdapter(
 				where: { tagId: { in: tagIds }, OR },
 			});
 			return [...new Set(grants.map((g) => g.permission))] as MediaTagAction[];
+		},
+
+		async recordAuditEntry({ actorId, action, targetType, targetId, detail }) {
+			await prisma.auditLogEntry.create({
+				data: {
+					id: crypto.randomUUID(),
+					actorId: actorId ?? null,
+					action,
+					targetType,
+					targetId,
+					detail: detail ?? {},
+				},
+			});
+			await pruneAuditLog(prisma, auditRetention);
+		},
+
+		async listAuditLog({ page, pageSize, targetType, targetId, actorId }) {
+			const where = {
+				...(targetType ? { targetType } : {}),
+				...(targetId ? { targetId } : {}),
+				...(actorId ? { actorId } : {}),
+			};
+			const [rows, total] = await Promise.all([
+				prisma.auditLogEntry.findMany({
+					where,
+					orderBy: [{ createdAt: "desc" }],
+					skip: (page - 1) * pageSize,
+					take: pageSize,
+				}),
+				prisma.auditLogEntry.count({ where }),
+			]);
+			return { items: rows.map(toAuditLogEntry), total };
 		},
 	};
 }

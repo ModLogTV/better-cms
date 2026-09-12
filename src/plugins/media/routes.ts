@@ -579,16 +579,47 @@ export function mediaRoutes(ctx: CMSContext) {
 			},
 			{ params: t.Object({ id: t.String() }) },
 		)
+		.get(
+			// Mirror image of the per-tag listing above - every grant one
+			// subject holds, across every tag. Powers a group's own "Tag
+			// access" view (rather than only a tag's "who has access" view).
+			"/media/tag-grants/by-subject",
+			async ({ query }) => {
+				return ctx.adapter.listMediaTagGrantsForSubject({
+					subjectType: query.subjectType,
+					subjectId: query.subjectId,
+				});
+			},
+			{
+				query: t.Object({
+					subjectType: t.Union([t.Literal("user"), t.Literal("group")]),
+					subjectId: t.String(),
+				}),
+			},
+		)
 		.post(
 			"/media/tags/:id/grants",
-			async ({ params, body }) => {
-				return ctx.adapter.addMediaTagGrant({
+			async ({ params, body, cmsUserId }) => {
+				const grant = await ctx.adapter.addMediaTagGrant({
 					id: crypto.randomUUID(),
 					tagId: params.id,
 					subjectType: body.subjectType,
 					subjectId: body.subjectId,
 					permission: body.permission,
 				});
+				await ctx.adapter.recordAuditEntry({
+					actorId: cmsUserId,
+					action: "mediaTagGrant.added",
+					targetType: "mediaTagGrant",
+					targetId: grant.id,
+					detail: {
+						tagId: grant.tagId,
+						subjectType: grant.subjectType,
+						subjectId: grant.subjectId,
+						permission: grant.permission,
+					},
+				});
+				return grant;
 			},
 			{
 				params: t.Object({ id: t.String() }),
@@ -607,8 +638,23 @@ export function mediaRoutes(ctx: CMSContext) {
 		)
 		.delete(
 			"/media/tag-grants/:id",
-			async ({ params }) => {
+			async ({ params, cmsUserId }) => {
+				const before = await ctx.adapter.getMediaTagGrant({ id: params.id });
 				await ctx.adapter.removeMediaTagGrant({ id: params.id });
+				await ctx.adapter.recordAuditEntry({
+					actorId: cmsUserId,
+					action: "mediaTagGrant.removed",
+					targetType: "mediaTagGrant",
+					targetId: params.id,
+					detail: before
+						? {
+								tagId: before.tagId,
+								subjectType: before.subjectType,
+								subjectId: before.subjectId,
+								permission: before.permission,
+							}
+						: {},
+				});
 				return { ok: true };
 			},
 			{ params: t.Object({ id: t.String() }) },

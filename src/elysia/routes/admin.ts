@@ -101,5 +101,26 @@ export function adminRoutes(cms: CMSInstance) {
 			{
 				params: t.Object({ code: t.String() }),
 			},
+		)
+		.use(requirePermission({ cms, permissions: [CMS_PERMISSIONS.AUDIT_READ] }))
+		.get(
+			"/audit-log",
+			({ query }) =>
+				cms.adapter.listAuditLog({
+					page: query.page ? Number(query.page) : 1,
+					pageSize: query.pageSize ? Number(query.pageSize) : 20,
+					targetType: query.targetType,
+					targetId: query.targetId,
+					actorId: query.actorId,
+				}),
+			{
+				query: t.Object({
+					page: t.Optional(t.String()),
+					pageSize: t.Optional(t.String()),
+					targetType: t.Optional(t.String()),
+					targetId: t.Optional(t.String()),
+					actorId: t.Optional(t.String()),
+				}),
+			},
 		);
 }

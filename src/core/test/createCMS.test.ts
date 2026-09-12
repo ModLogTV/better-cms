@@ -148,6 +148,12 @@ const mockAdapter: CMSAdapter = {
 	),
 	removeMediaTagGrant: mock(async () => {}),
 	getEffectiveMediaTagPermissions: mock(async () => []),
+	getPageGrant: mock(async () => null),
+	listPageGrantsForSubject: mock(async () => []),
+	getMediaTagGrant: mock(async () => null),
+	listMediaTagGrantsForSubject: mock(async () => []),
+	recordAuditEntry: mock(async () => {}),
+	listAuditLog: mock(async () => ({ items: [], total: 0 })),
 };
 
 const ns = defineNamespace({

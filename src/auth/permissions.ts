@@ -16,6 +16,8 @@ export const CMS_PERMISSIONS = {
 	ADMIN_READ: "cms:admin:read",
 	USERS_MANAGE: "cms:users:manage",
 	GROUPS_MANAGE: "cms:groups:manage",
+	/** Read the authority audit log (group/grant/membership/permission changes) - separate from GROUPS_MANAGE/USERS_MANAGE so a group can be delegated oversight without also being able to make changes. */
+	AUDIT_READ: "cms:audit:read",
 } as const;
 
 export type CMSPermission =
@@ -46,19 +48,49 @@ export const CMS_PERMISSION_DESCRIPTIONS: Record<CMSPermission, string> = {
 	[CMS_PERMISSIONS.USERS_MANAGE]:
 		"Manage users, their permissions and group memberships",
 	[CMS_PERMISSIONS.GROUPS_MANAGE]: "Create, edit and delete permission groups",
+	[CMS_PERMISSIONS.AUDIT_READ]: "View the authority audit log",
 };
 
 /**
- * Returns true if `userPerms` satisfies `required`.
+ * Permission hierarchy: holding the key also grants everything in its list,
+ * transitively (publish -> write -> read). Only the pages resource has this
+ * shape today - media's MEDIA_VIEW is a deliberately independent baseline
+ * gate (see its doc comment above), not part of a write/read ladder, so it's
+ * intentionally not listed here.
+ */
+const PERMISSION_IMPLICATIONS: Partial<Record<CMSPermission, CMSPermission[]>> =
+	{
+		[CMS_PERMISSIONS.PAGES_WRITE]: [CMS_PERMISSIONS.PAGES_READ],
+		[CMS_PERMISSIONS.PAGES_PUBLISH]: [
+			CMS_PERMISSIONS.PAGES_WRITE,
+			CMS_PERMISSIONS.PAGES_READ,
+		],
+	};
+
+/** Expands `perms` to also include everything each held permission implies (see `PERMISSION_IMPLICATIONS`). */
+export function expandImpliedPermissions(perms: readonly string[]): string[] {
+	const result = new Set(perms);
+	for (const p of perms) {
+		const implied = PERMISSION_IMPLICATIONS[p as CMSPermission];
+		if (!implied) continue;
+		for (const i of implied) result.add(i);
+	}
+	return [...result];
+}
+
+/**
+ * Returns true if `userPerms` satisfies `required`, expanding implied
+ * permissions first (write implies read, publish implies write and read).
  * A wildcard entry ("cms:*") grants all permissions.
  */
 export function hasPermission(opts: {
 	userPerms: readonly string[];
 	required: CMSPermission;
 }): boolean {
+	const expanded = expandImpliedPermissions(opts.userPerms);
 	return (
-		opts.userPerms.includes(CMS_WILDCARD_PERMISSION) ||
-		opts.userPerms.includes(opts.required)
+		expanded.includes(CMS_WILDCARD_PERMISSION) ||
+		expanded.includes(opts.required)
 	);
 }
 

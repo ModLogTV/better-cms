@@ -68,6 +68,11 @@ type FakePrisma = {
 		create: ReturnType<typeof mock>;
 		delete: ReturnType<typeof mock>;
 	};
+	groupMembership: {
+		findMany: ReturnType<typeof mock>;
+		create: ReturnType<typeof mock>;
+		delete: ReturnType<typeof mock>;
+	};
 };
 
 function makePrisma(
@@ -75,6 +80,7 @@ function makePrisma(
 		user?: Partial<FakePrisma["user"]>;
 		cmsGroup?: Partial<FakePrisma["cmsGroup"]>;
 		cmsUserGroup?: Partial<FakePrisma["cmsUserGroup"]>;
+		groupMembership?: Partial<FakePrisma["groupMembership"]>;
 	} = {},
 ): FakePrisma {
 	return {
@@ -100,6 +106,12 @@ function makePrisma(
 			create: mock(async () => {}),
 			delete: mock(async () => {}),
 			...overrides.cmsUserGroup,
+		},
+		groupMembership: {
+			findMany: mock(async () => []),
+			create: mock(async () => {}),
+			delete: mock(async () => {}),
+			...overrides.groupMembership,
 		},
 	};
 }
@@ -685,5 +697,166 @@ describe("betterAuthCMSAdapter - management groups CRUD", () => {
 			where: { id: string };
 		};
 		expect(args.where.id).toBe("g1");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// management group nesting (graph)
+// ---------------------------------------------------------------------------
+
+describe("betterAuthCMSAdapter - management group nesting", () => {
+	test("listGroupMemberships returns all edges", async () => {
+		const edges = [{ childGroupId: "g2", parentGroupId: "g1" }];
+		const prisma = makePrisma({
+			groupMembership: { findMany: mock(async () => edges) },
+		});
+		const adapter = betterAuthCMSAdapter({
+			auth: makeAuth(),
+			prisma: prisma as never,
+		});
+
+		const result = await requireManagement(adapter).listGroupMemberships();
+		expect(result).toEqual(edges);
+	});
+
+	test("addGroupMembership creates the edge when no cycle results", async () => {
+		const createMock = mock(async () => {});
+		const prisma = makePrisma({
+			groupMembership: { findMany: mock(async () => []), create: createMock },
+		});
+		const adapter = betterAuthCMSAdapter({
+			auth: makeAuth(),
+			prisma: prisma as never,
+		});
+
+		await requireManagement(adapter).addGroupMembership({
+			childGroupId: "g2",
+			parentGroupId: "g1",
+		});
+
+		expect(createMock).toHaveBeenCalledTimes(1);
+		const args = (createMock.mock.calls as unknown[][])[0][0] as {
+			data: { childGroupId: string; parentGroupId: string };
+		};
+		expect(args.data).toEqual({ childGroupId: "g2", parentGroupId: "g1" });
+	});
+
+	test("addGroupMembership rejects nesting a group inside itself", async () => {
+		const createMock = mock(async () => {});
+		const prisma = makePrisma({
+			groupMembership: { findMany: mock(async () => []), create: createMock },
+		});
+		const adapter = betterAuthCMSAdapter({
+			auth: makeAuth(),
+			prisma: prisma as never,
+		});
+
+		await expect(
+			requireManagement(adapter).addGroupMembership({
+				childGroupId: "g1",
+				parentGroupId: "g1",
+			}),
+		).rejects.toThrow(/cycle/i);
+		expect(createMock).not.toHaveBeenCalled();
+	});
+
+	test("addGroupMembership rejects a transitive cycle (g1 -> g2 -> g3, then g3 -> g1)", async () => {
+		const createMock = mock(async () => {});
+		const prisma = makePrisma({
+			groupMembership: {
+				// g1 nested in g2, g2 nested in g3 - adding g3 nested in g1 would
+				// close the loop g1 -> g2 -> g3 -> g1.
+				findMany: mock(async () => [
+					{ childGroupId: "g1", parentGroupId: "g2" },
+					{ childGroupId: "g2", parentGroupId: "g3" },
+				]),
+				create: createMock,
+			},
+		});
+		const adapter = betterAuthCMSAdapter({
+			auth: makeAuth(),
+			prisma: prisma as never,
+		});
+
+		await expect(
+			requireManagement(adapter).addGroupMembership({
+				childGroupId: "g3",
+				parentGroupId: "g1",
+			}),
+		).rejects.toThrow(/cycle/i);
+		expect(createMock).not.toHaveBeenCalled();
+	});
+
+	test("removeGroupMembership deletes the edge by composite key", async () => {
+		const deleteMock = mock(async () => {});
+		const prisma = makePrisma({
+			groupMembership: { delete: deleteMock },
+		});
+		const adapter = betterAuthCMSAdapter({
+			auth: makeAuth(),
+			prisma: prisma as never,
+		});
+
+		await requireManagement(adapter).removeGroupMembership({
+			childGroupId: "g2",
+			parentGroupId: "g1",
+		});
+
+		expect(deleteMock).toHaveBeenCalledTimes(1);
+		const args = (deleteMock.mock.calls as unknown[][])[0][0] as {
+			where: {
+				childGroupId_parentGroupId: {
+					childGroupId: string;
+					parentGroupId: string;
+				};
+			};
+		};
+		expect(args.where.childGroupId_parentGroupId).toEqual({
+			childGroupId: "g2",
+			parentGroupId: "g1",
+		});
+	});
+
+	test("a user in a nested child group inherits the parent group's permissions", async () => {
+		const prisma = makePrisma({
+			user: {
+				findUnique: mock(async () =>
+					makeUser({
+						cmsPermissions: [],
+						cmsGroups: [
+							{
+								groupId: "child",
+								group: { id: "child", name: "Child", permissions: [] },
+							},
+						],
+					}),
+				),
+			},
+			cmsGroup: {
+				findMany: mock(async () => [
+					makeGroup({ id: "child", name: "Child", permissions: [] }),
+					makeGroup({
+						id: "parent",
+						name: "Parent",
+						permissions: ["cms:pages:publish"],
+					}),
+				]),
+			},
+			groupMembership: {
+				findMany: mock(async () => [
+					{ childGroupId: "child", parentGroupId: "parent" },
+				]),
+			},
+		});
+		const adapter = betterAuthCMSAdapter({
+			auth: makeAuth(),
+			prisma: prisma as never,
+		});
+
+		const result = await adapter.verifyRequest({ cookie: "session=abc" });
+
+		expect(result.permissions).toContain("cms:pages:publish");
+		expect(result.groupIds).toContain("child");
+		expect(result.groupIds).toContain("parent");
 	});
 });

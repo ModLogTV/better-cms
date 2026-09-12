@@ -1,9 +1,12 @@
 import type {
 	CMSGroup,
 	CMSUserSummary,
+	GroupMembershipEdge,
 	ListUsersParams,
 } from "../auth/adapter";
 import type {
+	AuditLogEntry,
+	ListAuditLogParams,
 	ListPagesParams,
 	MediaAsset,
 	PageSummary,
@@ -11,7 +14,14 @@ import type {
 	RawBlock,
 } from "../core/adapter";
 
-export type { CMSGroup, CMSUserSummary, MediaAsset, PaginatedResult };
+export type {
+	AuditLogEntry,
+	CMSGroup,
+	CMSUserSummary,
+	GroupMembershipEdge,
+	MediaAsset,
+	PaginatedResult,
+};
 
 export interface NamespaceSummary {
 	name: string;
@@ -174,9 +184,25 @@ export interface AdminClient {
 		}): Promise<CMSGroup>;
 		/** Permanently removes a group. All user memberships are removed via cascade. */
 		delete(opts: { id: string }): Promise<void>;
+		/** All nesting edges across every group - a group's members inherit permissions/grants from every group it's nested inside, transitively. */
+		listMemberships(): Promise<GroupMembershipEdge[]>;
+		/** Nests `childGroupId` inside `parentGroupId`. Rejected (throws) if this would create a cycle. */
+		addMembership(opts: {
+			childGroupId: string;
+			parentGroupId: string;
+		}): Promise<void>;
+		/** Removes a nesting edge. */
+		removeMembership(opts: {
+			childGroupId: string;
+			parentGroupId: string;
+		}): Promise<void>;
 	};
 	/** Catalog of all valid CMS permission strings, for building a permission picker UI. */
 	permissions: {
 		list(): Promise<PermissionInfo[]>;
+	};
+	/** Append-only trail of authority/permission changes - group CRUD, nesting edges, grants, group membership, direct user permissions. */
+	auditLog: {
+		list(params: ListAuditLogParams): Promise<PaginatedResult<AuditLogEntry>>;
 	};
 }

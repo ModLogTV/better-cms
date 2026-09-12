@@ -32,6 +32,17 @@ export interface CMSGroup {
 	permissions: string[];
 }
 
+/**
+ * A directed nesting edge: `childGroupId` is nested inside `parentGroupId`
+ * and inherits its permissions (and page/tag grants) transitively. A group
+ * can be nested inside several parents at once (graph, not a tree - matches
+ * Active Directory nested-group semantics).
+ */
+export interface GroupMembershipEdge {
+	childGroupId: string;
+	parentGroupId: string;
+}
+
 export interface ListUsersParams extends PaginationParams {
 	sort?: SortParam[];
 	search?: string;
@@ -57,6 +68,17 @@ export interface CMSAuthManagement {
 		permissions?: string[];
 	}): Promise<CMSGroup>;
 	deleteGroup(opts: { id: string }): Promise<void>;
+	/** All nesting edges across every group - small admin-scale dataset, fetched once and used to derive both "belongs to" and "contains" per group client-side. */
+	listGroupMemberships(): Promise<GroupMembershipEdge[]>;
+	/** Throws if this edge would create a cycle (a group nested inside itself, directly or transitively). */
+	addGroupMembership(opts: {
+		childGroupId: string;
+		parentGroupId: string;
+	}): Promise<void>;
+	removeGroupMembership(opts: {
+		childGroupId: string;
+		parentGroupId: string;
+	}): Promise<void>;
 }
 
 /**

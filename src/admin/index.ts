@@ -224,10 +224,24 @@ export function createAdminClient(opts: AdminClientOptions): AdminClient {
 			update: ({ id, ...rest }) => put(`/cms/admin/groups/${id}`, rest),
 			/** Permanently removes a group. All user memberships are removed via cascade. */
 			delete: ({ id }) => del(`/cms/admin/groups/${id}`),
+			/** All nesting edges across every group. */
+			listMemberships: () => get("/cms/admin/group-memberships"),
+			/** Nests `childGroupId` inside `parentGroupId`. Rejected (throws) if this would create a cycle. */
+			addMembership: ({ childGroupId, parentGroupId }) =>
+				post(`/cms/admin/groups/${childGroupId}/memberships`, {
+					parentGroupId,
+				}),
+			/** Removes a nesting edge. */
+			removeMembership: ({ childGroupId, parentGroupId }) =>
+				del(`/cms/admin/groups/${childGroupId}/memberships/${parentGroupId}`),
 		},
 		permissions: {
 			/** Catalog of all valid CMS permission strings, for building a permission picker UI. */
 			list: () => get<PermissionInfo[]>("/cms/admin/permissions"),
+		},
+		auditLog: {
+			/** Append-only trail of authority/permission changes, paginated newest-first. */
+			list: (params) => get(`/cms/admin/audit-log?${buildQuery(params)}`),
 		},
 	};
 }
@@ -235,10 +249,12 @@ export function createAdminClient(opts: AdminClientOptions): AdminClient {
 export { describeNamespace } from "./describe";
 export type {
 	AdminClient,
+	AuditLogEntry,
 	BlockFieldInfo,
 	BlockInfo,
 	CMSGroup,
 	CMSUserSummary,
+	GroupMembershipEdge,
 	InputHint,
 	KeyMetadata,
 	KeyType,

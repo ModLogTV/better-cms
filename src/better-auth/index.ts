@@ -4,6 +4,7 @@ import type {
 	CMSAuthResult,
 	CMSGroup,
 	CMSUserSummary,
+	GroupMembershipEdge,
 	ListUsersParams,
 } from "../auth/adapter";
 import { CMS_WILDCARD_PERMISSION } from "../auth/permissions";
@@ -85,6 +86,20 @@ interface BetterAuthPrismaLike {
 			where: { userId_groupId: { userId: string; groupId: string } };
 		}): Promise<unknown>;
 	};
+	groupMembership: {
+		findMany(): Promise<GroupMembershipEdge[]>;
+		create(args: {
+			data: { childGroupId: string; parentGroupId: string };
+		}): Promise<unknown>;
+		delete(args: {
+			where: {
+				childGroupId_parentGroupId: {
+					childGroupId: string;
+					parentGroupId: string;
+				};
+			};
+		}): Promise<unknown>;
+	};
 }
 
 interface BetterAuthCMSAdapterOptions {
@@ -112,6 +127,56 @@ async function resolvePermissions(
 	return permissions;
 }
 
+/**
+ * Expands `directGroupIds` to include every group reachable by following
+ * nesting edges upward (child -> parent, repeatedly) - the full ancestor
+ * closure a member of any of `directGroupIds` effectively also belongs to.
+ * Cycle-safe via a visited set (cycles are rejected at write time by
+ * `wouldCreateCycle`, but this stays defensive regardless).
+ */
+function expandGroupAncestors(
+	directGroupIds: string[],
+	edges: GroupMembershipEdge[],
+): string[] {
+	const result = new Set(directGroupIds);
+	const stack = [...directGroupIds];
+	while (stack.length > 0) {
+		const current = stack.pop() as string;
+		for (const edge of edges) {
+			if (edge.childGroupId === current && !result.has(edge.parentGroupId)) {
+				result.add(edge.parentGroupId);
+				stack.push(edge.parentGroupId);
+			}
+		}
+	}
+	return [...result];
+}
+
+/**
+ * True if adding a child->parent nesting edge would create a cycle - i.e.
+ * `childGroupId` is already a (transitive) ancestor of `parentGroupId` via
+ * existing edges, which would loop back to itself once the new edge lands.
+ */
+async function wouldCreateCycle(
+	prisma: BetterAuthPrismaLike,
+	opts: { childGroupId: string; parentGroupId: string },
+): Promise<boolean> {
+	if (opts.childGroupId === opts.parentGroupId) return true;
+	const edges = await prisma.groupMembership.findMany();
+	const visited = new Set<string>();
+	const stack = [opts.parentGroupId];
+	while (stack.length > 0) {
+		const current = stack.pop() as string;
+		if (visited.has(current)) continue;
+		visited.add(current);
+		if (current === opts.childGroupId) return true;
+		for (const edge of edges) {
+			if (edge.childGroupId === current) stack.push(edge.parentGroupId);
+		}
+	}
+	return false;
+}
+
 async function resolveUserAuth(
 	prisma: BetterAuthPrismaLike,
 	userId: string,
@@ -121,10 +186,33 @@ async function resolveUserAuth(
 		include: { cmsGroups: { include: { group: true } } },
 	});
 	if (!user) return { permissions: [], groupIds: [] };
-	const groupPerms = user.cmsGroups.flatMap((ug) => ug.group.permissions);
+
+	const directGroupIds = user.cmsGroups.map((ug) => ug.groupId);
+	const directGroupPerms = user.cmsGroups.flatMap((ug) => ug.group.permissions);
+
+	const edges = await prisma.groupMembership.findMany();
+	const groupIds = expandGroupAncestors(directGroupIds, edges);
+
+	// Ancestor groups (nested-in, but not a direct membership) aren't already
+	// loaded via `cmsGroups.group` - fetch their permissions only when nesting
+	// actually put some in scope, not on every request.
+	const ancestorOnlyIds = groupIds.filter((id) => !directGroupIds.includes(id));
+	const ancestorPerms =
+		ancestorOnlyIds.length > 0
+			? (await prisma.cmsGroup.findMany())
+					.filter((g) => ancestorOnlyIds.includes(g.id))
+					.flatMap((g) => g.permissions)
+			: [];
+
 	return {
-		permissions: [...new Set([...user.cmsPermissions, ...groupPerms])],
-		groupIds: user.cmsGroups.map((ug) => ug.groupId),
+		permissions: [
+			...new Set([
+				...user.cmsPermissions,
+				...directGroupPerms,
+				...ancestorPerms,
+			]),
+		],
+		groupIds,
 	};
 }
 
@@ -234,6 +322,27 @@ function buildManagement(prisma: BetterAuthPrismaLike): CMSAuthManagement {
 
 		async deleteGroup({ id }) {
 			await prisma.cmsGroup.delete({ where: { id } });
+		},
+
+		async listGroupMemberships() {
+			return prisma.groupMembership.findMany();
+		},
+
+		async addGroupMembership({ childGroupId, parentGroupId }) {
+			if (await wouldCreateCycle(prisma, { childGroupId, parentGroupId })) {
+				throw new Error(
+					"This would create a cycle - a group can't be nested inside itself, directly or transitively.",
+				);
+			}
+			await prisma.groupMembership.create({
+				data: { childGroupId, parentGroupId },
+			});
+		},
+
+		async removeGroupMembership({ childGroupId, parentGroupId }) {
+			await prisma.groupMembership.delete({
+				where: { childGroupId_parentGroupId: { childGroupId, parentGroupId } },
+			});
 		},
 	};
 }

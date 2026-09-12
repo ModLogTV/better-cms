@@ -1,5 +1,6 @@
 import {
 	IconFileText,
+	IconHistory,
 	IconLanguage,
 	IconLayoutDashboard,
 	IconPhoto,
@@ -22,7 +23,7 @@ import {
 } from "@/components/ui/sidebar";
 import { AccountMenu } from "./AccountMenu";
 
-const NAV_ITEMS = [
+export const NAV_ITEMS = [
 	{ label: "Dashboard", to: "/", icon: IconLayoutDashboard, exact: true },
 	{ label: "Translations", to: "/translations", icon: IconLanguage },
 	{ label: "Pages", to: "/pages", icon: IconFileText },
@@ -30,6 +31,7 @@ const NAV_ITEMS = [
 	{ label: "Locales", to: "/locales", icon: IconWorld },
 	{ label: "Users", to: "/users", icon: IconUsers },
 	{ label: "Groups", to: "/groups", icon: IconShield },
+	{ label: "Audit Log", to: "/audit-log", icon: IconHistory },
 ] as const;
 
 export function AppSidebar({

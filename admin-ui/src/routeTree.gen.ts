@@ -18,8 +18,10 @@ import { Route as LayoutPagesIndexRouteImport } from './routes/_layout/pages/ind
 import { Route as LayoutMediaIndexRouteImport } from './routes/_layout/media/index'
 import { Route as LayoutLocalesIndexRouteImport } from './routes/_layout/locales/index'
 import { Route as LayoutGroupsIndexRouteImport } from './routes/_layout/groups/index'
+import { Route as LayoutAuditLogIndexRouteImport } from './routes/_layout/audit-log/index'
 import { Route as LayoutTranslationsNamespaceRouteImport } from './routes/_layout/translations/$namespace'
 import { Route as LayoutPagesPageIdRouteImport } from './routes/_layout/pages/$pageId'
+import { Route as LayoutGroupsGroupIdRouteImport } from './routes/_layout/groups/$groupId'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -65,6 +67,11 @@ const LayoutGroupsIndexRoute = LayoutGroupsIndexRouteImport.update({
   path: '/groups/',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutAuditLogIndexRoute = LayoutAuditLogIndexRouteImport.update({
+  id: '/audit-log/',
+  path: '/audit-log/',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutTranslationsNamespaceRoute =
   LayoutTranslationsNamespaceRouteImport.update({
     id: '/translations/$namespace',
@@ -76,12 +83,19 @@ const LayoutPagesPageIdRoute = LayoutPagesPageIdRouteImport.update({
   path: '/pages/$pageId',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutGroupsGroupIdRoute = LayoutGroupsGroupIdRouteImport.update({
+  id: '/groups/$groupId',
+  path: '/groups/$groupId',
+  getParentRoute: () => LayoutRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
   '/login': typeof LoginRoute
+  '/groups/$groupId': typeof LayoutGroupsGroupIdRoute
   '/pages/$pageId': typeof LayoutPagesPageIdRoute
   '/translations/$namespace': typeof LayoutTranslationsNamespaceRoute
+  '/audit-log/': typeof LayoutAuditLogIndexRoute
   '/groups/': typeof LayoutGroupsIndexRoute
   '/locales/': typeof LayoutLocalesIndexRoute
   '/media/': typeof LayoutMediaIndexRoute
@@ -92,8 +106,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/': typeof LayoutIndexRoute
+  '/groups/$groupId': typeof LayoutGroupsGroupIdRoute
   '/pages/$pageId': typeof LayoutPagesPageIdRoute
   '/translations/$namespace': typeof LayoutTranslationsNamespaceRoute
+  '/audit-log': typeof LayoutAuditLogIndexRoute
   '/groups': typeof LayoutGroupsIndexRoute
   '/locales': typeof LayoutLocalesIndexRoute
   '/media': typeof LayoutMediaIndexRoute
@@ -106,8 +122,10 @@ export interface FileRoutesById {
   '/_layout': typeof LayoutRouteWithChildren
   '/login': typeof LoginRoute
   '/_layout/': typeof LayoutIndexRoute
+  '/_layout/groups/$groupId': typeof LayoutGroupsGroupIdRoute
   '/_layout/pages/$pageId': typeof LayoutPagesPageIdRoute
   '/_layout/translations/$namespace': typeof LayoutTranslationsNamespaceRoute
+  '/_layout/audit-log/': typeof LayoutAuditLogIndexRoute
   '/_layout/groups/': typeof LayoutGroupsIndexRoute
   '/_layout/locales/': typeof LayoutLocalesIndexRoute
   '/_layout/media/': typeof LayoutMediaIndexRoute
@@ -120,8 +138,10 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/groups/$groupId'
     | '/pages/$pageId'
     | '/translations/$namespace'
+    | '/audit-log/'
     | '/groups/'
     | '/locales/'
     | '/media/'
@@ -132,8 +152,10 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/'
+    | '/groups/$groupId'
     | '/pages/$pageId'
     | '/translations/$namespace'
+    | '/audit-log'
     | '/groups'
     | '/locales'
     | '/media'
@@ -145,8 +167,10 @@ export interface FileRouteTypes {
     | '/_layout'
     | '/login'
     | '/_layout/'
+    | '/_layout/groups/$groupId'
     | '/_layout/pages/$pageId'
     | '/_layout/translations/$namespace'
+    | '/_layout/audit-log/'
     | '/_layout/groups/'
     | '/_layout/locales/'
     | '/_layout/media/'
@@ -225,6 +249,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutGroupsIndexRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/audit-log/': {
+      id: '/_layout/audit-log/'
+      path: '/audit-log'
+      fullPath: '/audit-log/'
+      preLoaderRoute: typeof LayoutAuditLogIndexRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/translations/$namespace': {
       id: '/_layout/translations/$namespace'
       path: '/translations/$namespace'
@@ -239,13 +270,22 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutPagesPageIdRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/groups/$groupId': {
+      id: '/_layout/groups/$groupId'
+      path: '/groups/$groupId'
+      fullPath: '/groups/$groupId'
+      preLoaderRoute: typeof LayoutGroupsGroupIdRouteImport
+      parentRoute: typeof LayoutRoute
+    }
   }
 }
 
 interface LayoutRouteChildren {
   LayoutIndexRoute: typeof LayoutIndexRoute
+  LayoutGroupsGroupIdRoute: typeof LayoutGroupsGroupIdRoute
   LayoutPagesPageIdRoute: typeof LayoutPagesPageIdRoute
   LayoutTranslationsNamespaceRoute: typeof LayoutTranslationsNamespaceRoute
+  LayoutAuditLogIndexRoute: typeof LayoutAuditLogIndexRoute
   LayoutGroupsIndexRoute: typeof LayoutGroupsIndexRoute
   LayoutLocalesIndexRoute: typeof LayoutLocalesIndexRoute
   LayoutMediaIndexRoute: typeof LayoutMediaIndexRoute
@@ -256,8 +296,10 @@ interface LayoutRouteChildren {
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutIndexRoute: LayoutIndexRoute,
+  LayoutGroupsGroupIdRoute: LayoutGroupsGroupIdRoute,
   LayoutPagesPageIdRoute: LayoutPagesPageIdRoute,
   LayoutTranslationsNamespaceRoute: LayoutTranslationsNamespaceRoute,
+  LayoutAuditLogIndexRoute: LayoutAuditLogIndexRoute,
   LayoutGroupsIndexRoute: LayoutGroupsIndexRoute,
   LayoutLocalesIndexRoute: LayoutLocalesIndexRoute,
   LayoutMediaIndexRoute: LayoutMediaIndexRoute,

@@ -110,7 +110,10 @@ export function createCMS(config: CMSConfig): CMSInstance {
 }
 
 export type {
+	AuditLogEntry,
+	AuditLogRetention,
 	CMSAdapter,
+	ListAuditLogParams,
 	MediaAsset,
 	MediaTagAction,
 	MediaTagGrant,

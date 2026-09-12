@@ -1,12 +1,6 @@
-import {
-	IconPencil,
-	IconPlus,
-	IconShield,
-	IconTrash,
-} from "@tabler/icons-react";
-import { useForm } from "@tanstack/react-form";
+import { IconPlus, IconShield } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
 	type ColumnDef,
 	getCoreRowModel,
@@ -18,7 +12,6 @@ import { toast } from "sonner";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { ConfirmPopover } from "@/components/shared/ConfirmPopover";
-import { PermissionPicker } from "@/components/shared/PermissionPicker";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,125 +25,74 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, type CMSGroup } from "@/lib/api";
+import { expandImpliedPermissions } from "@/lib/permissions";
 
 export const Route = createFileRoute("/_layout/groups/")({
 	component: GroupsPage,
 });
 
-interface GroupFormValues {
-	name: string;
-	permissions: string[];
-}
-
-function GroupDialog({
-	group,
-	onClose,
-}: {
-	group?: CMSGroup;
-	onClose?: () => void;
-}) {
+/**
+ * Nesting, permissions, page/tag access and members all reference an
+ * already-existing group id, so none of them can be set before the group is
+ * created. Rather than duplicate the whole detail page into a dialog (which
+ * couldn't do anything with those fields yet anyway), creation only ever
+ * asks for a name, then jumps straight to the real detail page where
+ * everything is actually usable.
+ */
+function NewGroupDialog() {
 	const qc = useQueryClient();
+	const navigate = useNavigate();
 	const [open, setOpen] = useState(false);
-	const isEdit = !!group;
+	const [name, setName] = useState("");
 
-	const save = useMutation({
-		mutationFn: (values: GroupFormValues) =>
-			isEdit
-				? api.groups.update(group.id, values)
-				: api.groups.create(values.name, values.permissions),
-		onSuccess: () => {
-			toast.success(isEdit ? "Group updated" : "Group created");
+	const create = useMutation({
+		mutationFn: () => api.groups.create(name.trim(), []),
+		onSuccess: (group) => {
 			qc.invalidateQueries({ queryKey: ["cms", "groups"] });
 			setOpen(false);
-			if (!isEdit) form.reset();
-			onClose?.();
+			setName("");
+			navigate({ to: "/groups/$groupId", params: { groupId: group.id } });
 		},
-		onError: () => toast.error("Save failed"),
-	});
-
-	const form = useForm({
-		defaultValues: {
-			name: group?.name ?? "",
-			permissions: group?.permissions ?? [],
-		} as GroupFormValues,
-		onSubmit: async ({ value }) => {
-			await save.mutateAsync(value);
-		},
+		onError: () => toast.error("Couldn't create group"),
 	});
 
 	return (
-		<Dialog
-			open={open}
-			onOpenChange={(o) => {
-				setOpen(o);
-				if (!o) onClose?.();
-			}}
-		>
+		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger asChild>
-				{isEdit ? (
-					<Button size="sm" variant="outline" className="h-7">
-						<IconPencil className="size-3.5" />
-					</Button>
-				) : (
-					<Button size="lg">
-						<IconPlus className="size-4" />
-						New group
-					</Button>
-				)}
+				<Button size="lg">
+					<IconPlus className="size-4" />
+					New group
+				</Button>
 			</DialogTrigger>
-			<DialogContent className="sm:max-w-lg">
+			<DialogContent className="sm:max-w-sm">
 				<DialogHeader>
-					<DialogTitle>{isEdit ? "Edit group" : "Create group"}</DialogTitle>
+					<DialogTitle>Create group</DialogTitle>
 				</DialogHeader>
 				<form
 					onSubmit={(e) => {
 						e.preventDefault();
-						e.stopPropagation();
-						form.handleSubmit();
+						if (name.trim()) create.mutate();
 					}}
-					className="contents"
+					className="space-y-4"
 				>
-					<div className="space-y-4">
-						<form.Field
-							name="name"
-							validators={{
-								onChange: ({ value }) =>
-									!value.trim() ? "Required" : undefined,
-							}}
-						>
-							{(field) => (
-								<div className="space-y-1.5">
-									<Label htmlFor={field.name}>Name</Label>
-									<Input
-										id={field.name}
-										value={field.state.value}
-										onBlur={field.handleBlur}
-										onChange={(e) => field.handleChange(e.target.value)}
-										placeholder="Editors"
-									/>
-								</div>
-							)}
-						</form.Field>
-						<form.Field name="permissions">
-							{(field) => (
-								<div className="space-y-1.5">
-									<Label>Permissions</Label>
-									<PermissionPicker
-										value={field.state.value}
-										onChange={field.handleChange}
-									/>
-								</div>
-							)}
-						</form.Field>
+					<div className="space-y-1.5">
+						<Label htmlFor="new-group-name">Name</Label>
+						<Input
+							id="new-group-name"
+							value={name}
+							onChange={(e) => setName(e.target.value)}
+							placeholder="Editors"
+							autoFocus
+						/>
+						<p className="text-muted-foreground text-xs">
+							Permissions, nesting, page/tag access and members are all
+							configured next, on the group's own page.
+						</p>
 					</div>
 					<DialogFooter>
-						<form.Subscribe selector={(state) => state.values.name}>
-							{(name) => (
-								<Button type="submit" disabled={save.isPending || !name.trim()}>
-									{save.isPending ? "Saving…" : "Save"}
-								</Button>
-							)}
-						</form.Subscribe>
+						<Button type="submit" disabled={create.isPending || !name.trim()}>
+							{create.isPending ? "Creating…" : "Create"}
+						</Button>
 					</DialogFooter>
 				</form>
 			</DialogContent>
@@ -160,10 +102,30 @@ function GroupDialog({
 
 function GroupsPage() {
 	const qc = useQueryClient();
+	const navigate = useNavigate();
 	const { data, isLoading } = useQuery({
 		queryKey: ["cms", "groups"],
 		queryFn: () => api.groups.list(),
 	});
+	const { data: memberships = [] } = useQuery({
+		queryKey: ["cms", "group-memberships"],
+		queryFn: () => api.groups.listMemberships(),
+	});
+
+	const parentCounts = useMemo(() => {
+		const counts = new Map<string, number>();
+		for (const edge of memberships) {
+			counts.set(edge.childGroupId, (counts.get(edge.childGroupId) ?? 0) + 1);
+		}
+		return counts;
+	}, [memberships]);
+	const childCounts = useMemo(() => {
+		const counts = new Map<string, number>();
+		for (const edge of memberships) {
+			counts.set(edge.parentGroupId, (counts.get(edge.parentGroupId) ?? 0) + 1);
+		}
+		return counts;
+	}, [memberships]);
 
 	const remove = useMutation({
 		mutationFn: (id: string) => api.groups.delete(id),
@@ -171,6 +133,7 @@ function GroupsPage() {
 			toast.success("Group deleted");
 			qc.invalidateQueries({ queryKey: ["cms", "groups"] });
 			qc.invalidateQueries({ queryKey: ["cms", "users"] });
+			qc.invalidateQueries({ queryKey: ["cms", "group-memberships"] });
 		},
 		onError: () => toast.error("Delete failed"),
 	});
@@ -188,24 +151,55 @@ function GroupsPage() {
 			{
 				id: "permissions",
 				header: "Permissions",
-				cell: ({ row }) => (
-					<div className="flex flex-wrap gap-1">
-						{row.original.permissions.slice(0, 4).map((p) => (
-							<Badge
-								key={p}
-								variant="outline"
-								className="font-mono text-[10px]"
-							>
-								{p}
-							</Badge>
-						))}
-						{row.original.permissions.length > 4 && (
-							<Badge variant="outline" className="text-xs">
-								+{row.original.permissions.length - 4}
-							</Badge>
-						)}
-					</div>
-				),
+				cell: ({ row }) => {
+					// Includes what's stored plus anything it implies (write ->
+					// read, publish -> write -> read), so e.g. a write-only group
+					// visibly shows read too.
+					const perms = expandImpliedPermissions(row.original.permissions);
+					return (
+						<div className="flex flex-wrap gap-1">
+							{perms.slice(0, 4).map((p) => (
+								<Badge
+									key={p}
+									variant="outline"
+									className="font-mono text-[10px]"
+								>
+									{p}
+								</Badge>
+							))}
+							{perms.length > 4 && (
+								<Badge variant="outline" className="text-xs">
+									+{perms.length - 4}
+								</Badge>
+							)}
+						</div>
+					);
+				},
+			},
+			{
+				id: "nesting",
+				header: "Nesting",
+				cell: ({ row }) => {
+					const parents = parentCounts.get(row.original.id) ?? 0;
+					const children = childCounts.get(row.original.id) ?? 0;
+					if (parents === 0 && children === 0) {
+						return <span className="text-muted-foreground text-xs">—</span>;
+					}
+					return (
+						<div className="flex flex-wrap gap-1">
+							{parents > 0 && (
+								<Badge variant="secondary" className="text-[10px]">
+									belongs to {parents}
+								</Badge>
+							)}
+							{children > 0 && (
+								<Badge variant="secondary" className="text-[10px]">
+									contains {children}
+								</Badge>
+							)}
+						</div>
+					);
+				},
 			},
 			{
 				id: "actions",
@@ -214,16 +208,16 @@ function GroupsPage() {
 					const group = row.original;
 					return (
 						<div className="text-right">
-							<GroupDialog group={group} />
 							<ConfirmPopover
 								trigger={
 									<Button
 										size="sm"
 										variant="outline"
-										className="ml-2 h-7 text-destructive hover:bg-destructive/10"
+										className="h-7 text-destructive hover:bg-destructive/10"
 										disabled={remove.isPending}
+										onClick={(e) => e.stopPropagation()}
 									>
-										<IconTrash className="size-3.5" />
+										Delete
 									</Button>
 								}
 								title={`Delete "${group.name}"?`}
@@ -238,7 +232,7 @@ function GroupsPage() {
 				},
 			},
 		],
-		[remove],
+		[remove, parentCounts, childCounts],
 	);
 
 	const table = useReactTable({
@@ -254,10 +248,10 @@ function GroupsPage() {
 				<div>
 					<h2 className="text-2xl font-bold tracking-tight">Groups</h2>
 					<p className="text-muted-foreground">
-						Define permission groups for your CMS users.
+						Define permission groups, nesting and access delegation.
 					</p>
 				</div>
-				<GroupDialog />
+				<NewGroupDialog />
 			</div>
 
 			{isLoading ? (
@@ -272,7 +266,15 @@ function GroupsPage() {
 					No groups yet.
 				</div>
 			) : (
-				<DataTable table={table} />
+				<DataTable
+					table={table}
+					onRowClick={(group) =>
+						navigate({
+							to: "/groups/$groupId",
+							params: { groupId: group.id },
+						})
+					}
+				/>
 			)}
 		</div>
 	);

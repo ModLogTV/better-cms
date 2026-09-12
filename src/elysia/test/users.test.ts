@@ -6,6 +6,7 @@ import type {
 	CMSUserSummary,
 } from "../../auth/adapter";
 import { tokenAuthAdapter } from "../../auth/token-adapter";
+import type { CMSAdapter } from "../../core/adapter";
 import { createCMS } from "../../core/index";
 import { toElysiaPlugin } from "../index";
 import { makeAdapter, ns, req } from "./helpers";
@@ -50,13 +51,19 @@ function makeManagement(
 			permissions: rest.permissions ?? [],
 		})),
 		deleteGroup: mock(async () => {}),
+		listGroupMemberships: mock(async () => []),
+		addGroupMembership: mock(async () => {}),
+		removeGroupMembership: mock(async () => {}),
 		...overrides,
 	};
 }
 
-function makeAppWithManagement(management: CMSAuthManagement) {
+function makeAppWithManagement(
+	management: CMSAuthManagement,
+	adapter: CMSAdapter = makeAdapter(),
+) {
 	const cms = createCMS({
-		database: makeAdapter(),
+		database: adapter,
 		namespaces: [ns],
 		auth: {
 			...tokenAuthAdapter({ readToken: "read", adminToken: ADMIN_TOKEN }),
@@ -275,5 +282,131 @@ describe("DELETE /cms/admin/groups/:groupId", () => {
 		const call = (mgmt.deleteGroup as ReturnType<typeof mock>).mock
 			.calls[0][0] as { id: string };
 		expect(call.id).toBe("g1");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Group nesting
+// ---------------------------------------------------------------------------
+
+describe("GET /cms/admin/group-memberships", () => {
+	test("returns all nesting edges", async () => {
+		const edges = [{ childGroupId: "g2", parentGroupId: "g1" }];
+		const mgmt = makeManagement({
+			listGroupMemberships: mock(async () => edges),
+		});
+		const app = makeAppWithManagement(mgmt);
+		const res = await app.handle(adminReq("/cms/admin/group-memberships"));
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual(edges);
+	});
+});
+
+describe("POST /cms/admin/groups/:groupId/memberships", () => {
+	test("nests the group and records an audit entry", async () => {
+		const mgmt = makeManagement();
+		const adapter = makeAdapter();
+		const app = makeAppWithManagement(mgmt, adapter);
+		const res = await app.handle(
+			adminReq("/cms/admin/groups/g2/memberships", {
+				method: "POST",
+				body: JSON.stringify({ parentGroupId: "g1" }),
+			}),
+		);
+		expect(res.status).toBe(200);
+		expect(await res.json()).toMatchObject({ ok: true });
+		const call = (mgmt.addGroupMembership as ReturnType<typeof mock>).mock
+			.calls[0][0] as { childGroupId: string; parentGroupId: string };
+		expect(call).toEqual({ childGroupId: "g2", parentGroupId: "g1" });
+		expect(adapter.recordAuditEntry).toHaveBeenCalledTimes(1);
+		const auditCall = (adapter.recordAuditEntry as ReturnType<typeof mock>).mock
+			.calls[0][0] as { action: string; targetId: string };
+		expect(auditCall.action).toBe("group.membership.added");
+		expect(auditCall.targetId).toBe("g2");
+	});
+
+	test("returns 409 when the management adapter rejects a cycle", async () => {
+		const mgmt = makeManagement({
+			addGroupMembership: mock(async () => {
+				throw new Error("This would create a cycle.");
+			}),
+		});
+		const adapter = makeAdapter();
+		const app = makeAppWithManagement(mgmt, adapter);
+		const res = await app.handle(
+			adminReq("/cms/admin/groups/g1/memberships", {
+				method: "POST",
+				body: JSON.stringify({ parentGroupId: "g1" }),
+			}),
+		);
+		expect(res.status).toBe(409);
+		const body = await res.json();
+		expect(body.error).toMatch(/cycle/i);
+		expect(adapter.recordAuditEntry).not.toHaveBeenCalled();
+	});
+});
+
+describe("DELETE /cms/admin/groups/:groupId/memberships/:parentGroupId", () => {
+	test("removes the edge and records an audit entry", async () => {
+		const mgmt = makeManagement();
+		const adapter = makeAdapter();
+		const app = makeAppWithManagement(mgmt, adapter);
+		const res = await app.handle(
+			adminReq("/cms/admin/groups/g2/memberships/g1", { method: "DELETE" }),
+		);
+		expect(res.status).toBe(200);
+		const call = (mgmt.removeGroupMembership as ReturnType<typeof mock>).mock
+			.calls[0][0] as { childGroupId: string; parentGroupId: string };
+		expect(call).toEqual({ childGroupId: "g2", parentGroupId: "g1" });
+		expect(adapter.recordAuditEntry).toHaveBeenCalledTimes(1);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Audit entries on user/group mutations
+// ---------------------------------------------------------------------------
+
+describe("audit log entries", () => {
+	test("PUT permissions records before/after", async () => {
+		const mgmt = makeManagement();
+		const adapter = makeAdapter();
+		const app = makeAppWithManagement(mgmt, adapter);
+		await app.handle(
+			adminReq("/cms/admin/users/u1/permissions", {
+				method: "PUT",
+				body: JSON.stringify({ permissions: ["cms:pages:write"] }),
+			}),
+		);
+		const call = (adapter.recordAuditEntry as ReturnType<typeof mock>).mock
+			.calls[0][0] as { action: string; detail: Record<string, unknown> };
+		expect(call.action).toBe("user.permissions.updated");
+		expect(call.detail.after).toEqual(["cms:pages:write"]);
+	});
+
+	test("POST group creates an audit entry", async () => {
+		const mgmt = makeManagement();
+		const adapter = makeAdapter();
+		const app = makeAppWithManagement(mgmt, adapter);
+		await app.handle(
+			adminReq("/cms/admin/groups", {
+				method: "POST",
+				body: JSON.stringify({ name: "Writers", permissions: [] }),
+			}),
+		);
+		const call = (adapter.recordAuditEntry as ReturnType<typeof mock>).mock
+			.calls[0][0] as { action: string; targetType: string };
+		expect(call.action).toBe("group.created");
+		expect(call.targetType).toBe("group");
+	});
+
+	test("DELETE group creates an audit entry with a before-snapshot", async () => {
+		const mgmt = makeManagement();
+		const adapter = makeAdapter();
+		const app = makeAppWithManagement(mgmt, adapter);
+		await app.handle(adminReq("/cms/admin/groups/g1", { method: "DELETE" }));
+		const call = (adapter.recordAuditEntry as ReturnType<typeof mock>).mock
+			.calls[0][0] as { action: string; detail: Record<string, unknown> };
+		expect(call.action).toBe("group.deleted");
+		expect(call.detail.name).toBe("Editors");
 	});
 });

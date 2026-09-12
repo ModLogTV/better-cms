@@ -4,7 +4,7 @@ import {
 	redirect,
 	useRouterState,
 } from "@tanstack/react-router";
-import { AppSidebar } from "@/components/layout/AppSidebar";
+import { AppSidebar, NAV_ITEMS } from "@/components/layout/AppSidebar";
 import { Separator } from "@/components/ui/separator";
 import {
 	SidebarInset,
@@ -50,6 +50,13 @@ function PageTitle() {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
 	const segments = pathname.split("/").filter(Boolean);
 	if (segments.length === 0) return "Dashboard";
+	// Titled by section (first segment), not the last one - a detail route
+	// like /groups/$groupId or /pages/$pageId would otherwise show the raw
+	// id as its title.
+	const section = NAV_ITEMS.find(
+		(item) => item.to !== "/" && pathname.startsWith(item.to),
+	);
+	if (section) return section.label;
 	const last = segments[segments.length - 1];
 	return last.charAt(0).toUpperCase() + last.slice(1);
 }

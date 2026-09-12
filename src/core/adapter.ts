@@ -186,6 +186,37 @@ export interface PageVersionRetention {
 }
 
 /**
+ * One entry in the append-only authority audit log - who changed what
+ * permission/authority-related thing, when. Not a general activity feed;
+ * content changes have their own history via PageVersion/MediaVersion.
+ */
+export interface AuditLogEntry {
+	id: string;
+	/** Null for system/service-token actions with no human actor. */
+	actorId: string | null;
+	/** e.g. "group.created", "group.membership.added", "pageGrant.removed". */
+	action: string;
+	/** e.g. "group", "user", "pageGrant", "mediaTagGrant". */
+	targetType: string;
+	targetId: string;
+	/** Freeform snapshot of what changed - shape depends on `action`. */
+	detail: Record<string, unknown>;
+	createdAt: Date;
+}
+
+/** Optional retention cap for the audit log (adapter-level config) - kept forever unless configured. */
+export interface AuditLogRetention {
+	maxEntries?: number;
+	maxAgeDays?: number;
+}
+
+export interface ListAuditLogParams extends PaginationParams {
+	targetType?: string;
+	targetId?: string;
+	actorId?: string;
+}
+
+/**
  * A page-level ACL grant: `subjectId` (a user or group id) may `permission`
  * on `nodeId` and its whole subtree, scoped to `locale` (null = all locales).
  * Grants are additive-only - there's no "deny" or inheritance-break.
@@ -268,6 +299,13 @@ export interface CMSAdapter {
 	movePage(opts: { nodeId: string; parentId: string | null }): Promise<void>;
 	/** Grants for one node (not including inherited ancestor grants) - powers the admin "Access" panel. */
 	listPageGrants(opts: { nodeId: string }): Promise<PageGrant[]>;
+	/** A single grant by its own id - used to snapshot it for the audit log before removal. */
+	getPageGrant(opts: { id: string }): Promise<PageGrant | null>;
+	/** Every grant held by one subject, across every node - powers "what does this group/user have access to" views (e.g. from a group's own detail page, the mirror image of listPageGrants' per-node view). */
+	listPageGrantsForSubject(opts: {
+		subjectType: "user" | "group";
+		subjectId: string;
+	}): Promise<PageGrant[]>;
 	addPageGrant(opts: {
 		id: string;
 		nodeId: string;
@@ -378,6 +416,13 @@ export interface CMSAdapter {
 	deleteSavedView(opts: { id: string }): Promise<void>;
 	/** Grants for one tag - powers the admin tag management view. */
 	listMediaTagGrants(opts: { tagId: string }): Promise<MediaTagGrant[]>;
+	/** A single grant by its own id - used to snapshot it for the audit log before removal. */
+	getMediaTagGrant(opts: { id: string }): Promise<MediaTagGrant | null>;
+	/** Every grant held by one subject, across every tag - the mirror image of listMediaTagGrants' per-tag view. */
+	listMediaTagGrantsForSubject(opts: {
+		subjectType: "user" | "group";
+		subjectId: string;
+	}): Promise<MediaTagGrant[]>;
 	addMediaTagGrant(opts: {
 		id: string;
 		tagId: string;
@@ -396,4 +441,16 @@ export interface CMSAdapter {
 	getEffectiveMediaTagPermissions(
 		opts: PageAclSubject & { tagIds: string[] },
 	): Promise<MediaTagAction[]>;
+	/** Appends one entry to the authority audit log. Never throws on its own failure path being called wrong - callers should treat this as best-effort logging around an already-succeeded mutation. */
+	recordAuditEntry(opts: {
+		actorId?: string | null;
+		action: string;
+		targetType: string;
+		targetId: string;
+		detail?: Record<string, unknown>;
+	}): Promise<void>;
+	/** Paginated, newest-first, optionally filtered by target/actor. */
+	listAuditLog(
+		params: ListAuditLogParams,
+	): Promise<PaginatedResult<AuditLogEntry>>;
 }

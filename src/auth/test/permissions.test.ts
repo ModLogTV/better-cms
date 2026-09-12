@@ -3,6 +3,7 @@ import {
 	ALL_CMS_PERMISSIONS,
 	CMS_PERMISSIONS,
 	CMS_WILDCARD_PERMISSION,
+	expandImpliedPermissions,
 	hasAllPermissions,
 	hasAnyPermission,
 	hasPermission,
@@ -143,6 +144,78 @@ describe("hasAnyPermission", () => {
 				required: [CMS_PERMISSIONS.USERS_MANAGE],
 			}),
 		).toBe(true);
+	});
+});
+
+describe("permission hierarchy - pages write/read, publish/write/read", () => {
+	test("PAGES_WRITE alone satisfies a PAGES_READ check", () => {
+		expect(
+			hasPermission({
+				userPerms: [CMS_PERMISSIONS.PAGES_WRITE],
+				required: CMS_PERMISSIONS.PAGES_READ,
+			}),
+		).toBe(true);
+	});
+
+	test("PAGES_PUBLISH alone satisfies PAGES_WRITE and PAGES_READ checks", () => {
+		expect(
+			hasPermission({
+				userPerms: [CMS_PERMISSIONS.PAGES_PUBLISH],
+				required: CMS_PERMISSIONS.PAGES_WRITE,
+			}),
+		).toBe(true);
+		expect(
+			hasPermission({
+				userPerms: [CMS_PERMISSIONS.PAGES_PUBLISH],
+				required: CMS_PERMISSIONS.PAGES_READ,
+			}),
+		).toBe(true);
+	});
+
+	test("PAGES_READ alone does not satisfy PAGES_WRITE or PAGES_PUBLISH (hierarchy is one-directional)", () => {
+		expect(
+			hasPermission({
+				userPerms: [CMS_PERMISSIONS.PAGES_READ],
+				required: CMS_PERMISSIONS.PAGES_WRITE,
+			}),
+		).toBe(false);
+		expect(
+			hasPermission({
+				userPerms: [CMS_PERMISSIONS.PAGES_READ],
+				required: CMS_PERMISSIONS.PAGES_PUBLISH,
+			}),
+		).toBe(false);
+	});
+
+	test("PAGES_WRITE does not satisfy PAGES_PUBLISH (write does not imply publish)", () => {
+		expect(
+			hasPermission({
+				userPerms: [CMS_PERMISSIONS.PAGES_WRITE],
+				required: CMS_PERMISSIONS.PAGES_PUBLISH,
+			}),
+		).toBe(false);
+	});
+
+	test("the hierarchy is scoped to pages - MEDIA_UPLOAD does not imply MEDIA_VIEW", () => {
+		expect(
+			hasPermission({
+				userPerms: [CMS_PERMISSIONS.MEDIA_UPLOAD],
+				required: CMS_PERMISSIONS.MEDIA_VIEW,
+			}),
+		).toBe(false);
+	});
+
+	test("expandImpliedPermissions expands publish to publish+write+read", () => {
+		const expanded = expandImpliedPermissions([CMS_PERMISSIONS.PAGES_PUBLISH]);
+		expect(expanded).toContain(CMS_PERMISSIONS.PAGES_PUBLISH);
+		expect(expanded).toContain(CMS_PERMISSIONS.PAGES_WRITE);
+		expect(expanded).toContain(CMS_PERMISSIONS.PAGES_READ);
+	});
+
+	test("expandImpliedPermissions leaves unrelated permissions untouched", () => {
+		expect(
+			expandImpliedPermissions([CMS_PERMISSIONS.TRANSLATIONS_WRITE]),
+		).toEqual([CMS_PERMISSIONS.TRANSLATIONS_WRITE]);
 	});
 });
 
