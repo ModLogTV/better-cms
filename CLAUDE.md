@@ -38,9 +38,18 @@ This is a headless, type-safe CMS for translations and page blocks, designed for
 
 - Admin hooks (via `@modlog/better-cms/admin/react`) *do* use TanStack Query and require `AdminQueryProvider`.
 - Full TanStack Start server function wrappers are provided via `@modlog/better-cms/tanstack-start`.
+  
+### Admin UI: error display convention
+
+Action errors in `admin-ui` (a failed mutation - move, delete, save, etc.) are shown **in place**, not as a toast: the icon on the control that triggered the action swaps to `IconAlertTriangle` in `text-destructive`, and a destructive-variant `Tooltip` (`<TooltipContent variant="destructive">`) pinned open shows the error message right next to where the action happened. Both revert back to normal after a few seconds - see `admin-ui/src/lib/use-transient-error.ts` (`useTransientError`) for the reusable timer/state, and `TreeRow`'s drag handle in `admin-ui/src/routes/_layout/pages/index.tsx` for a worked example. This is the standard for every action error in the admin UI going forward - do not add new `toast.error(...)` calls for action failures; use this pattern instead. `toast.success(...)` for successful actions is unaffected and stays as-is.
+
 
 ## Tech Stack & Commands
 
 - **Build:** `tsup` (outputs to `dist/`, split by platform: `neutral`, `node`, `browser`).
 - **Tests:** `bun test` (runtime assertions) + `tsc --noEmit` (type assertions). Run both via `bun run test`.
 - **Formatting/Linting:** Biome (`bun run format` runs `biome check --write .`).
+
+## Marketing Copy and UI texts
+
+Never user em/en dashes or hyphens to separate two sentences.

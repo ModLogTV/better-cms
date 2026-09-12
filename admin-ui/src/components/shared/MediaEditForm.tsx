@@ -1,19 +1,24 @@
-import { IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
+import {
+	IconPencil,
+	IconPlus,
+	IconTrash,
+	IconUpload,
+} from "@tabler/icons-react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	Sheet,
+	SheetContent,
+	SheetFooter,
+	SheetHeader,
+	SheetTitle,
+	SheetTrigger,
+} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import {
 	Tooltip,
@@ -21,6 +26,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { api, type MediaAsset } from "@/lib/api";
+import { cn } from "@/lib/utils";
 
 // Reserved metadata keys with dedicated fields/read-only display - everything
 // else in an asset's metadata is a free-form custom field.
@@ -58,9 +64,18 @@ interface FormValues {
 	customFields: CustomField[];
 }
 
-export function MediaEditForm({ asset }: { asset: MediaAsset }) {
+export function MediaEditForm({
+	asset,
+	triggerClassName,
+}: {
+	asset: MediaAsset;
+	/** Overrides the trigger button's default `size-7` square styling. */
+	triggerClassName?: string;
+}) {
 	const qc = useQueryClient();
 	const [open, setOpen] = useState(false);
+	const fileInputRef = useRef<HTMLInputElement>(null);
+	const [reuploadProgress, setReuploadProgress] = useState<number | null>(null);
 	const metadata = asset.metadata ?? {};
 	const width = metadata.width;
 	const height = metadata.height;
@@ -79,7 +94,7 @@ export function MediaEditForm({ asset }: { asset: MediaAsset }) {
 			for (const field of values.customFields) {
 				if (field.key.trim()) nextMetadata[field.key.trim()] = field.value;
 			}
-			return api.media.updateMetadata(asset.id, nextMetadata);
+			return api.media.update(asset.id, { metadata: nextMetadata });
 		},
 		onSuccess: () => {
 			toast.success("Metadata saved");
@@ -89,6 +104,30 @@ export function MediaEditForm({ asset }: { asset: MediaAsset }) {
 		onError: (e) =>
 			toast.error(e instanceof Error ? e.message : "Couldn't save metadata"),
 	});
+
+	const reupload = useMutation({
+		mutationFn: (file: File) =>
+			api.media.reupload(asset, file, (percent) =>
+				setReuploadProgress(percent),
+			),
+		onSuccess: () => {
+			toast.success("File replaced");
+			qc.invalidateQueries({ queryKey: ["cms", "media"] });
+			setReuploadProgress(null);
+		},
+		onError: (e) => {
+			toast.error(e instanceof Error ? e.message : "Couldn't replace file");
+			setReuploadProgress(null);
+		},
+	});
+
+	function handleReuploadFile(files: FileList | null) {
+		const file = files?.[0];
+		if (!file) return;
+		setReuploadProgress(0);
+		reupload.mutate(file);
+		if (fileInputRef.current) fileInputRef.current.value = "";
+	}
 
 	const form = useForm({
 		defaultValues: {
@@ -102,23 +141,27 @@ export function MediaEditForm({ asset }: { asset: MediaAsset }) {
 	});
 
 	return (
-		<Dialog open={open} onOpenChange={setOpen}>
+		<Sheet open={open} onOpenChange={setOpen}>
 			<Tooltip>
 				<TooltipTrigger asChild>
-					<DialogTrigger asChild>
-						<Button size="icon" variant="outline" className="size-7">
+					<SheetTrigger asChild>
+						<Button
+							size="icon"
+							variant="outline"
+							className={cn("size-7", triggerClassName)}
+						>
 							<IconPencil className="size-3.5" />
 						</Button>
-					</DialogTrigger>
+					</SheetTrigger>
 				</TooltipTrigger>
 				<TooltipContent>Edit</TooltipContent>
 			</Tooltip>
-			<DialogContent className="sm:max-w-lg">
-				<DialogHeader>
-					<DialogTitle>
+			<SheetContent className="overflow-y-auto sm:max-w-lg">
+				<SheetHeader>
+					<SheetTitle>
 						Edit <span className="font-mono">{asset.filename}</span>
-					</DialogTitle>
-				</DialogHeader>
+					</SheetTitle>
+				</SheetHeader>
 
 				<form
 					onSubmit={(e) => {
@@ -126,7 +169,7 @@ export function MediaEditForm({ asset }: { asset: MediaAsset }) {
 						e.stopPropagation();
 						form.handleSubmit();
 					}}
-					className="space-y-4"
+					className="space-y-4 px-6 pb-6"
 				>
 					<div className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-md border p-3 text-xs">
 						<span className="text-muted-foreground">Filename</span>
@@ -157,6 +200,34 @@ export function MediaEditForm({ asset }: { asset: MediaAsset }) {
 						)}
 						<span className="text-muted-foreground">Created</span>
 						<span>{new Date(asset.createdAt).toLocaleString()}</span>
+					</div>
+
+					<div className="space-y-1.5">
+						<Label>File</Label>
+						<div className="flex items-center gap-2">
+							<input
+								ref={fileInputRef}
+								type="file"
+								className="hidden"
+								onChange={(e) => handleReuploadFile(e.target.files)}
+							/>
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={() => fileInputRef.current?.click()}
+								disabled={reuploadProgress !== null}
+							>
+								<IconUpload className="size-3.5" />
+								{reuploadProgress !== null
+									? `Uploading… ${reuploadProgress}%`
+									: "Replace file…"}
+							</Button>
+						</div>
+						<p className="text-muted-foreground text-[11px]">
+							Uploads a new file under this same filename and asset - the
+							current version stays in history and can be restored later.
+						</p>
 					</div>
 
 					<form.Field name="alt">
@@ -237,13 +308,13 @@ export function MediaEditForm({ asset }: { asset: MediaAsset }) {
 						)}
 					</form.Field>
 
-					<DialogFooter>
+					<SheetFooter className="px-0">
 						<Button type="submit" disabled={update.isPending}>
 							{update.isPending ? "Saving…" : "Save"}
 						</Button>
-					</DialogFooter>
+					</SheetFooter>
 				</form>
-			</DialogContent>
-		</Dialog>
+			</SheetContent>
+		</Sheet>
 	);
 }

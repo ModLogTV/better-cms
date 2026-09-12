@@ -1,6 +1,6 @@
-import { IconHistory, IconRestore } from "@tabler/icons-react";
+import { IconGitCompare, IconHistory, IconRestore } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -88,16 +88,20 @@ export function MediaVersionHistoryPanel({
 	assetId,
 	onRestored,
 	compact = false,
+	triggerClassName,
 }: {
 	assetId: string;
 	onRestored: () => void;
 	/** Icon-only trigger, for tight card layouts. */
 	compact?: boolean;
+	/** Overrides the compact trigger's default `size-7` square styling. */
+	triggerClassName?: string;
 }) {
 	const qc = useQueryClient();
 	const [open, setOpen] = useState(false);
 	const [fromId, setFromId] = useState("");
 	const [toId, setToId] = useState("");
+	const compareSectionRef = useRef<HTMLDivElement>(null);
 
 	const { data: versions = [], isLoading } = useQuery({
 		queryKey: ["cms", "media", "versions", assetId],
@@ -134,13 +138,28 @@ export function MediaVersionHistoryPanel({
 	const fileChanged =
 		fromVersion && toVersion && fromVersion.key !== toVersion.key;
 
+	function compareToCurrent(versionId: string) {
+		setFromId(versionId);
+		setToId(versions[0]?.id ?? "");
+		requestAnimationFrame(() => {
+			compareSectionRef.current?.scrollIntoView({
+				behavior: "smooth",
+				block: "start",
+			});
+		});
+	}
+
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
 			{compact ? (
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<DialogTrigger asChild>
-							<Button size="icon" variant="outline" className="size-7">
+							<Button
+								size="icon"
+								variant="outline"
+								className={cn("size-7", triggerClassName)}
+							>
 								<IconHistory className="size-3.5" />
 							</Button>
 						</DialogTrigger>
@@ -166,7 +185,7 @@ export function MediaVersionHistoryPanel({
 					<p className="text-muted-foreground text-sm">No versions yet.</p>
 				) : (
 					<div className="space-y-4">
-						<div className="grid grid-cols-2 gap-2">
+						<div ref={compareSectionRef} className="grid grid-cols-2 gap-2">
 							<Select value={effectiveFrom} onValueChange={setFromId}>
 								<SelectTrigger className="w-full">
 									<SelectValue placeholder="From version" />
@@ -237,6 +256,16 @@ export function MediaVersionHistoryPanel({
 										{v.publishedAt && (
 											<Badge variant="success">published</Badge>
 										)}
+										<Button
+											size="sm"
+											variant="ghost"
+											className="h-6 gap-1 text-xs"
+											onClick={() => compareToCurrent(v.id)}
+											disabled={v.id === versions[0]?.id}
+										>
+											<IconGitCompare className="size-3" />
+											Compare
+										</Button>
 										<Button
 											size="sm"
 											variant="ghost"

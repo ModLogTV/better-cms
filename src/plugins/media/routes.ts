@@ -300,6 +300,64 @@ export function mediaRoutes(ctx: CMSContext) {
 				params: t.Object({ id: t.String() }),
 				body: t.Object({
 					metadata: t.Optional(t.Record(t.String(), t.Unknown())),
+					key: t.Optional(t.String()),
+					filename: t.Optional(t.String()),
+					mimeType: t.Optional(t.String()),
+					size: t.Optional(t.Number()),
+					publicUrl: t.Optional(t.String()),
+				}),
+			},
+		)
+		.post(
+			// Presigns a fresh storage key for an existing asset (re-upload /
+			// replace-file) - unlike POST /media/presign, this never creates a
+			// new MediaAsset; the caller lands the new version via PATCH
+			// /media/:id once the upload completes.
+			"/media/:id/presign",
+			async ({
+				params,
+				body,
+				set,
+				cmsUserId,
+				cmsPermissions = [],
+				cmsGroupIds = [],
+			}) => {
+				if (!ctx.storage) {
+					set.status = 503;
+					return { error: "No storage adapter configured" };
+				}
+				const target = await ctx.adapter.getMediaAssetById({ id: params.id });
+				if (!target) {
+					set.status = 404;
+					return { error: "Asset not found" };
+				}
+				const canEdit = await canAccessMedia({
+					adapter: ctx.adapter,
+					globalPerms: cmsPermissions,
+					userId: cmsUserId,
+					groupIds: cmsGroupIds,
+					tagIds: target.tagIds,
+					action: "edit",
+					globalPermission: CMS_PERMISSIONS.MEDIA_UPLOAD,
+				});
+				if (!canEdit) {
+					set.status = 403;
+					return { error: "Forbidden" };
+				}
+				const key = `${Date.now()}-${body.filename}`;
+				const { uploadUrl, publicUrl } = await ctx.storage.presign({
+					key,
+					mimeType: body.mimeType,
+					size: body.size,
+				});
+				return { uploadUrl, publicUrl, key };
+			},
+			{
+				params: t.Object({ id: t.String() }),
+				body: t.Object({
+					filename: t.String(),
+					mimeType: t.String(),
+					size: t.Number(),
 				}),
 			},
 		)

@@ -470,8 +470,89 @@ export const api = {
 		},
 		delete: (key: string) => del(`/media/${encodeURIComponent(key)}`),
 		publish: (id: string) => post(`/media/${id}/publish`),
-		updateMetadata: (id: string, metadata: Record<string, unknown>) =>
-			patch<MediaAsset>(`/media/${id}`, { metadata }),
+		update: (
+			id: string,
+			body: {
+				metadata?: Record<string, unknown>;
+				key?: string;
+				filename?: string;
+				mimeType?: string;
+				size?: number;
+				publicUrl?: string;
+			},
+		) => patch<MediaAsset>(`/media/${id}`, body),
+		/**
+		 * Replaces the file behind an existing asset - presigns a fresh storage
+		 * key scoped to this asset (no new `MediaAsset` row), uploads to it, then
+		 * lands a new version via `update`. `filename` is deliberately never
+		 * sent - re-upload keeps the asset's existing filename regardless of
+		 * what the replacement file is called locally.
+		 */
+		reupload: async (
+			asset: MediaAsset,
+			file: File,
+			onProgress?: (percent: number) => void,
+		) => {
+			if (file.size === 0) {
+				throw new Error(`"${file.name}" is empty, there is nothing to upload.`);
+			}
+			const mimeType = file.type || "application/octet-stream";
+			const presigned = await post<{
+				uploadUrl?: string;
+				publicUrl?: string;
+				key?: string;
+				error?: string;
+			}>(`/media/${asset.id}/presign`, {
+				filename: file.name,
+				mimeType,
+				size: file.size,
+			});
+			if (!presigned.uploadUrl || !presigned.publicUrl || !presigned.key) {
+				throw new Error(
+					presigned.error ??
+						"Couldn't start the upload. No storage adapter is configured on the server, ask an administrator to set one up.",
+				);
+			}
+			const { uploadUrl, publicUrl, key } = presigned;
+
+			await new Promise<void>((resolve, reject) => {
+				const xhr = new XMLHttpRequest();
+				xhr.open("PUT", uploadUrl);
+				xhr.setRequestHeader("Content-Type", mimeType);
+				xhr.upload.onprogress = (e) => {
+					if (e.lengthComputable)
+						onProgress?.(Math.round((e.loaded / e.total) * 100));
+				};
+				xhr.onload = () => {
+					if (xhr.status >= 200 && xhr.status < 300) {
+						resolve();
+					} else {
+						reject(
+							new Error(
+								xhr.responseText ||
+									`Upload of "${file.name}" failed (server responded with ${xhr.status}). The storage adapter may be misconfigured.`,
+							),
+						);
+					}
+				};
+				xhr.onerror = () =>
+					reject(
+						new Error(
+							`Couldn't reach the upload server for "${file.name}". Check your connection and try again.`,
+						),
+					);
+				xhr.send(file);
+			});
+
+			const extracted = await extractMediaMetadata(file);
+			return patch<MediaAsset>(`/media/${asset.id}`, {
+				key,
+				mimeType,
+				size: file.size,
+				publicUrl,
+				metadata: { ...asset.metadata, ...extracted },
+			});
+		},
 		restore: (id: string, versionId: string) =>
 			post<MediaAsset>(`/media/${id}/restore`, { versionId }),
 		versions: {
