@@ -453,6 +453,7 @@ function SortableItem(props: SortableItemProps) {
 				{...(asHandle && !disabled ? attributes : {})}
 				{...(asHandle && !disabled ? listeners : {})}
 				ref={composedRef}
+				// oxlint-disable-next-line shadcn/no-inline-styles -- composed from dnd-kit's transform/transition plus a caller-forwarded `style` prop; not a raw style override
 				style={composedStyle}
 				className={cn(
 					"focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1",

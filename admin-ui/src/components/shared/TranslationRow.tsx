@@ -42,7 +42,7 @@ export function TranslationRow({
 			<TableCell className="align-top">
 				<div className="flex flex-col gap-1">
 					<code className="text-xs text-foreground">{meta.key}</code>
-					<Badge variant="outline" className="w-fit text-[10px]">
+					<Badge variant="outline" className="w-fit">
 						{inputHintBadge(meta.inputHint)}
 					</Badge>
 					{meta.vars && meta.vars.length > 0 && (
@@ -50,7 +50,7 @@ export function TranslationRow({
 							{meta.vars.map((v) => (
 								<code
 									key={v}
-									className="rounded bg-muted px-1 py-0.5 text-[10px] text-muted-foreground"
+									className="rounded bg-muted px-1 py-0.5 text-2xs text-muted-foreground"
 								>
 									{"{"}
 									{v}

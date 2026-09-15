@@ -7,7 +7,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
+import { cn, toCssProperties } from "@/lib/utils";
 
 interface DataTableSkeletonProps extends React.ComponentProps<"div"> {
 	columnCount: number;
@@ -63,10 +63,14 @@ export function DataTableSkeleton({
 									<TableHead
 										// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton count, never reordered
 										key={j}
-										style={{
-											width: cozyCellWidths[j],
-											minWidth: shrinkZero ? cozyCellWidths[j] : "auto",
-										}}
+										// oxlint-disable-next-line shadcn/no-inline-styles -- toCssProperties (src/lib/utils.ts) only ever sets `--*` custom properties
+										style={toCssProperties({
+											"--col-width": cozyCellWidths[j],
+											"--col-min-width": shrinkZero
+												? cozyCellWidths[j]
+												: "auto",
+										})}
+										className="w-(--col-width) min-w-(--col-min-width)"
 									>
 										<Skeleton className="h-6 w-full" />
 									</TableHead>
@@ -82,10 +86,14 @@ export function DataTableSkeleton({
 									<TableCell
 										// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton count, never reordered
 										key={j}
-										style={{
-											width: cozyCellWidths[j],
-											minWidth: shrinkZero ? cozyCellWidths[j] : "auto",
-										}}
+										// oxlint-disable-next-line shadcn/no-inline-styles -- toCssProperties (src/lib/utils.ts) only ever sets `--*` custom properties
+										style={toCssProperties({
+											"--col-width": cozyCellWidths[j],
+											"--col-min-width": shrinkZero
+												? cozyCellWidths[j]
+												: "auto",
+										})}
+										className="w-(--col-width) min-w-(--col-min-width)"
 									>
 										<Skeleton className="h-6 w-full" />
 									</TableCell>

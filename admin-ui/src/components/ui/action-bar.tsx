@@ -217,6 +217,7 @@ function ActionBar(props: ActionBarProps) {
 							: "flex flex-col items-start gap-2 px-1.5 py-2",
 						className,
 					)}
+					// oxlint-disable shadcn/no-inline-styles -- computed fixed-position offsets from side/align/offset props, not a raw style override
 					style={{
 						[side]: `${sideOffset}px`,
 						...(align === "center" && {
@@ -227,6 +228,7 @@ function ActionBar(props: ActionBarProps) {
 						...(align === "end" && { right: `${alignOffset}px` }),
 						...style,
 					}}
+					// oxlint-enable shadcn/no-inline-styles
 				/>,
 				portalContainer,
 			)}

@@ -143,8 +143,8 @@ function UserDetailDialog({
 									</div>
 									<Button
 										size="sm"
-										variant="ghost"
-										className="h-6 text-muted-foreground hover:text-destructive"
+										variant="ghost-destructive"
+										className="h-6"
 										onClick={() => removeGroup.mutate(g.id)}
 									>
 										<IconX className="size-3" />
@@ -296,11 +296,7 @@ function UsersPage() {
 							<div>
 								<p className="flex items-center gap-1.5 text-sm font-medium">
 									{user.name || user.email}
-									{isSelf && (
-										<Badge variant="outline" className="text-[10px]">
-											you
-										</Badge>
-									)}
+									{isSelf && <Badge variant="outline">you</Badge>}
 								</p>
 								{user.name && (
 									<p className="text-xs text-muted-foreground">{user.email}</p>

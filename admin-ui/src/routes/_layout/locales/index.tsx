@@ -333,8 +333,8 @@ function LocalesPage() {
 							)}
 							<Button
 								size="sm"
-								variant="outline"
-								className="h-7 text-destructive hover:bg-destructive/10"
+								variant="destructive"
+								className="h-7"
 								onClick={() => remove.mutate(locale.code)}
 								disabled={locale.isDefault || remove.isPending}
 							>

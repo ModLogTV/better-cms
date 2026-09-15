@@ -152,11 +152,11 @@ function buildColumns(
 			cell: ({ row }) => (
 				<Tooltip>
 					<TooltipTrigger asChild>
-						<Badge variant="outline" className="text-[10px]">
+						<Badge variant="outline">
 							{formatAuditAction(row.original.action)}
 						</Badge>
 					</TooltipTrigger>
-					<TooltipContent className="font-mono text-[10px]">
+					<TooltipContent className="font-mono text-2xs">
 						{row.original.action}
 					</TooltipContent>
 				</Tooltip>
@@ -198,12 +198,12 @@ function buildColumns(
 			cell: ({ row }) => (
 				<Tooltip>
 					<TooltipTrigger asChild>
-						<span className="block max-w-64 truncate font-mono text-[10px] text-muted-foreground">
+						<span className="block max-w-64 truncate font-mono text-2xs text-muted-foreground">
 							{JSON.stringify(row.original.detail)}
 						</span>
 					</TooltipTrigger>
 					<TooltipContent className="max-w-sm">
-						<pre className="whitespace-pre-wrap text-[10px]">
+						<pre className="whitespace-pre-wrap text-2xs">
 							{JSON.stringify(row.original.detail, null, 2)}
 						</pre>
 					</TooltipContent>

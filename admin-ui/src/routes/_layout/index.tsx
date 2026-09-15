@@ -16,7 +16,13 @@ import { toast } from "sonner";
 import { TranslationRow } from "@/components/shared/TranslationRow";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import {
@@ -25,7 +31,7 @@ import {
 	type NamespaceSummary,
 	type PageSummary,
 } from "@/lib/api";
-import { cn, formatBytes } from "@/lib/utils";
+import { cn, formatBytes, toCssProperties } from "@/lib/utils";
 
 export const Route = createFileRoute("/_layout/")({
 	component: DashboardPage,
@@ -46,11 +52,11 @@ function StatCard({
 }) {
 	return (
 		<Link to={to}>
-			<Card className="cursor-pointer transition-shadow hover:shadow-md">
+			<Card interactive>
 				<CardHeader className="flex flex-row items-center justify-between pb-2">
-					<CardTitle className="text-sm font-medium text-muted-foreground">
+					<CardDescription className="text-sm font-medium">
 						{title}
-					</CardTitle>
+					</CardDescription>
 					<Icon className="size-4 text-muted-foreground" />
 				</CardHeader>
 				<CardContent>
@@ -360,14 +366,15 @@ function CoverageOverviewCard({
 							<div className="h-1.5 overflow-hidden rounded-full bg-muted">
 								<div
 									className={cn(
-										"h-full rounded-full",
+										"h-full w-(--coverage) rounded-full",
 										avg >= 100
-											? "bg-emerald-500"
+											? "bg-success"
 											: avg >= 50
-												? "bg-amber-500"
+												? "bg-warning"
 												: "bg-destructive",
 									)}
-									style={{ width: `${avg}%` }}
+									// oxlint-disable-next-line shadcn/no-inline-styles -- toCssProperties (src/lib/utils.ts) only ever sets `--*` custom properties
+									style={toCssProperties({ "--coverage": `${avg}%` })}
 								/>
 							</div>
 						</div>

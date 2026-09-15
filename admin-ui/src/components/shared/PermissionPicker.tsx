@@ -151,7 +151,7 @@ export function PermissionPicker({
 												className="grid gap-0.5 font-normal leading-none"
 											>
 												<span className="text-sm">{entry.description}</span>
-												<code className="text-[10px] text-muted-foreground">
+												<code className="text-2xs text-muted-foreground">
 													{entry.value}
 												</code>
 											</Label>

@@ -92,7 +92,7 @@ import {
 } from "@/lib/api";
 import { getFiltersStateParser } from "@/lib/parsers";
 import { useTransientError } from "@/lib/use-transient-error";
-import { cn } from "@/lib/utils";
+import { cn, toCssProperties } from "@/lib/utils";
 import type { ExtendedColumnFilter } from "@/types/data-table";
 
 export const Route = createFileRoute("/_layout/pages/")({
@@ -373,7 +373,7 @@ function LocaleBadge({ node, locale }: { node: PageTreeNode; locale: Locale }) {
 							trigger={
 								<button
 									type="button"
-									className="cursor-pointer rounded-full border border-dashed px-1.5 py-0.5 text-[0.625rem] text-muted-foreground uppercase tracking-wide hover:border-foreground hover:text-foreground"
+									className="cursor-pointer rounded-full border border-dashed px-1.5 py-0.5 text-2xs text-muted-foreground uppercase tracking-wide hover:border-foreground hover:text-foreground"
 								>
 									+{locale.code}
 								</button>
@@ -564,8 +564,11 @@ function PageRow({
 							return (
 								<TableCell key={cell.id}>
 									<div
-										className="flex items-center gap-1.5"
-										style={{ paddingLeft: row.depth * 20 + 4 }}
+										className="flex items-center gap-1.5 pl-(--indent)"
+										// oxlint-disable-next-line shadcn/no-inline-styles -- toCssProperties (src/lib/utils.ts) only ever sets `--*` custom properties
+										style={toCssProperties({
+											"--indent": `${row.depth * 20 + 4}px`,
+										})}
 									>
 										<Tooltip open={isMoveError}>
 											<TooltipTrigger asChild>
@@ -615,7 +618,7 @@ function PageRow({
 											node.locales.some((l) => l.hasBlocks) ? (
 												<span className="flex shrink-0 items-center">
 													<IconFolder className="size-4 text-muted-foreground" />
-													<IconFileText className="-ml-1 size-4 rounded-[2px] bg-background text-muted-foreground" />
+													<IconFileText className="-ml-1 size-4 rounded-xs bg-background text-muted-foreground" />
 												</span>
 											) : (
 												<IconFolder className="size-4 text-muted-foreground" />
@@ -646,7 +649,7 @@ function PageRow({
 								<span className="flex items-center justify-end gap-2">
 									<Tooltip>
 										<TooltipTrigger asChild>
-											<span>
+											<span className="opacity-0 group-hover:opacity-100">
 												<NewPageDialog
 													parentId={node.id}
 													parentPath={node.path}
@@ -655,7 +658,7 @@ function PageRow({
 														<Button
 															size="icon"
 															variant="ghost"
-															className="size-6 opacity-0 group-hover:opacity-100"
+															className="size-6"
 														>
 															<IconPlus className="size-3.5" />
 														</Button>

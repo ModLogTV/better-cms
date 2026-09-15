@@ -72,7 +72,7 @@ function TranslationsIndexPage() {
 							to="/translations/$namespace"
 							params={{ namespace: ns.name }}
 						>
-							<Card className="h-full cursor-pointer transition-shadow hover:shadow-md">
+							<Card interactive className="h-full">
 								<CardHeader>
 									<CardTitle className="flex items-center justify-between font-mono text-base">
 										{ns.name}
@@ -98,7 +98,7 @@ function TranslationsIndexPage() {
 												<Badge
 													key={locale}
 													variant={coverageVariant(pct)}
-													className="font-mono text-[10px]"
+													className="font-mono text-2xs"
 												>
 													{locale} {pct}%
 												</Badge>

@@ -68,7 +68,7 @@ import {
 } from "@/components/ui/tooltip";
 import { api, type MediaAsset, type Tag } from "@/lib/api";
 import { getFiltersStateParser } from "@/lib/parsers";
-import { formatBytes } from "@/lib/utils";
+import { formatBytes, toCssProperties } from "@/lib/utils";
 import type { ExtendedColumnFilter } from "@/types/data-table";
 
 export const Route = createFileRoute("/_layout/media/")({
@@ -315,8 +315,8 @@ function ManageTagsPopover({ tags }: { tags: Tag[] }) {
 								<TagAccessPanel tagId={tag.id} tagName={tag.name} />
 								<Button
 									size="icon"
-									variant="ghost"
-									className="size-6 text-muted-foreground hover:text-destructive"
+									variant="ghost-destructive"
+									className="size-6"
 									onClick={() => {
 										if (window.confirm(`Delete tag "${tag.name}"?`)) {
 											deleteTag.mutate(tag.id);
@@ -390,9 +390,7 @@ function MediaCard({
 					<TooltipContent>{asset.filename}</TooltipContent>
 				</Tooltip>
 				<div className="flex items-center gap-2">
-					<Badge variant="outline" className="text-[10px]">
-						{asset.mimeType}
-					</Badge>
+					<Badge variant="outline">{asset.mimeType}</Badge>
 					<span className="text-xs text-muted-foreground">
 						{formatBytes(asset.size)}
 					</span>
@@ -400,14 +398,14 @@ function MediaCard({
 				{asset.tagIds.length > 0 && (
 					<div className="flex flex-wrap gap-1">
 						{asset.tagIds.map((tagId) => (
-							<Badge key={tagId} variant="secondary" className="text-[10px]">
+							<Badge key={tagId} variant="secondary">
 								{tagsById.get(tagId) ?? tagId}
 							</Badge>
 						))}
 					</div>
 				)}
 				{!asset.confirmedAt ? (
-					<Badge variant="warning" className="w-fit text-[10px]">
+					<Badge variant="warning" className="w-fit">
 						pending
 					</Badge>
 				) : (
@@ -450,38 +448,36 @@ function MediaCard({
 					</>
 				)}
 			</div>
-			<Dialog>
-				<DialogTrigger asChild>
-					<Button
-						size="icon"
-						variant="destructive"
-						className="absolute right-2 top-2 size-7 opacity-0 transition-opacity group-hover:opacity-100"
-					>
-						<IconTrash className="size-3.5" />
-					</Button>
-				</DialogTrigger>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Delete asset?</DialogTitle>
-						<DialogDescription>
-							Permanently removes <strong>{asset.filename}</strong> from
-							storage. This cannot be undone.
-						</DialogDescription>
-					</DialogHeader>
-					<DialogFooter>
-						<DialogClose asChild>
-							<Button variant="outline">Cancel</Button>
-						</DialogClose>
-						<Button
-							variant="destructive"
-							onClick={() => remove.mutate()}
-							disabled={remove.isPending}
-						>
-							Delete
+			<div className="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100">
+				<Dialog>
+					<DialogTrigger asChild>
+						<Button size="icon" variant="destructive" className="size-7">
+							<IconTrash className="size-3.5" />
 						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+					</DialogTrigger>
+					<DialogContent>
+						<DialogHeader>
+							<DialogTitle>Delete asset?</DialogTitle>
+							<DialogDescription>
+								Permanently removes <strong>{asset.filename}</strong> from
+								storage. This cannot be undone.
+							</DialogDescription>
+						</DialogHeader>
+						<DialogFooter>
+							<DialogClose asChild>
+								<Button variant="outline">Cancel</Button>
+							</DialogClose>
+							<Button
+								variant="destructive"
+								onClick={() => remove.mutate()}
+								disabled={remove.isPending}
+							>
+								Delete
+							</Button>
+						</DialogFooter>
+					</DialogContent>
+				</Dialog>
+			</div>
 		</div>
 	);
 }
@@ -528,8 +524,11 @@ function UploadingCard({
 				) : (
 					<div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
 						<div
-							className="h-full rounded-full bg-primary transition-all"
-							style={{ width: `${item.progress}%` }}
+							className="h-full w-(--upload-progress) rounded-full bg-primary transition-all"
+							// oxlint-disable-next-line shadcn/no-inline-styles -- toCssProperties (src/lib/utils.ts) only ever sets `--*` custom properties
+							style={toCssProperties({
+								"--upload-progress": `${item.progress}%`,
+							})}
 						/>
 					</div>
 				)}
@@ -541,8 +540,8 @@ function UploadingCard({
 							<TooltipTrigger asChild>
 								<Button
 									size="icon"
-									variant="outline"
-									className="size-7 bg-background"
+									variant="secondary"
+									className="size-7"
 									onClick={onRetry}
 								>
 									<IconRefresh className="size-3.5" />
@@ -554,8 +553,8 @@ function UploadingCard({
 							<TooltipTrigger asChild>
 								<Button
 									size="icon"
-									variant="outline"
-									className="size-7 bg-background"
+									variant="secondary"
+									className="size-7"
 									onClick={onDismiss}
 								>
 									<IconX className="size-3.5" />
@@ -565,9 +564,7 @@ function UploadingCard({
 						</Tooltip>
 					</>
 				) : (
-					<Badge variant="outline" className="bg-background">
-						{item.progress}%
-					</Badge>
+					<Badge variant="secondary">{item.progress}%</Badge>
 				)}
 			</div>
 		</div>
@@ -612,9 +609,7 @@ function MediaListRow({
 				</div>
 			</TableCell>
 			<TableCell>
-				<Badge variant="outline" className="text-[10px]">
-					{asset.mimeType}
-				</Badge>
+				<Badge variant="outline">{asset.mimeType}</Badge>
 			</TableCell>
 			<TableCell className="text-muted-foreground text-xs">
 				{formatBytes(asset.size)}
@@ -623,7 +618,7 @@ function MediaListRow({
 				{asset.tagIds.length > 0 ? (
 					<div className="flex flex-wrap gap-1">
 						{asset.tagIds.map((tagId) => (
-							<Badge key={tagId} variant="secondary" className="text-[10px]">
+							<Badge key={tagId} variant="secondary">
 								{tagsById.get(tagId) ?? tagId}
 							</Badge>
 						))}
@@ -634,9 +629,7 @@ function MediaListRow({
 			</TableCell>
 			<TableCell>
 				{!asset.confirmedAt ? (
-					<Badge variant="warning" className="text-[10px]">
-						pending
-					</Badge>
+					<Badge variant="warning">pending</Badge>
 				) : (
 					<MediaStatusBadge status={asset.status} />
 				)}
@@ -671,11 +664,7 @@ function MediaListRow({
 						)}
 						<Dialog>
 							<DialogTrigger asChild>
-								<Button
-									size="icon"
-									variant="destructive"
-									className="size-7 border-destructive"
-								>
+								<Button size="icon" variant="destructive" className="size-7">
 									<IconTrash className="size-3.5" />
 								</Button>
 							</DialogTrigger>
@@ -747,8 +736,11 @@ function UploadingRow({
 						) : (
 							<div className="mt-1 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-muted">
 								<div
-									className="h-full rounded-full bg-primary transition-all"
-									style={{ width: `${item.progress}%` }}
+									className="h-full w-(--upload-progress) rounded-full bg-primary transition-all"
+									// oxlint-disable-next-line shadcn/no-inline-styles -- toCssProperties (src/lib/utils.ts) only ever sets `--*` custom properties
+									style={toCssProperties({
+										"--upload-progress": `${item.progress}%`,
+									})}
 								/>
 							</div>
 						)}

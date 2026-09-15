@@ -205,11 +205,7 @@ function GroupsPage() {
 					return (
 						<div className="flex flex-wrap gap-1">
 							{perms.slice(0, 4).map((p) => (
-								<Badge
-									key={p}
-									variant="outline"
-									className="font-mono text-[10px]"
-								>
+								<Badge key={p} variant="outline" className="font-mono text-2xs">
 									{p}
 								</Badge>
 							))}
@@ -234,14 +230,10 @@ function GroupsPage() {
 					return (
 						<div className="flex flex-wrap gap-1">
 							{parents > 0 && (
-								<Badge variant="secondary" className="text-[10px]">
-									belongs to {parents}
-								</Badge>
+								<Badge variant="secondary">belongs to {parents}</Badge>
 							)}
 							{children > 0 && (
-								<Badge variant="secondary" className="text-[10px]">
-									contains {children}
-								</Badge>
+								<Badge variant="secondary">contains {children}</Badge>
 							)}
 						</div>
 					);
@@ -258,8 +250,8 @@ function GroupsPage() {
 								trigger={
 									<Button
 										size="sm"
-										variant="outline"
-										className="h-7 text-destructive hover:bg-destructive/10"
+										variant="destructive"
+										className="h-7"
 										disabled={remove.isPending}
 										onClick={(e) => e.stopPropagation()}
 									>

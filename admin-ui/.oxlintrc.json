@@ -1,12 +1,44 @@
 {
 	"jsPlugins": ["@shadcn/lint"],
 	"rules": {
-		"shadcn/no-restyle": ["warn", { "allow": ["layout"] }],
-		"shadcn/no-raw-colors": "warn",
-		"shadcn/no-arbitrary-values": ["warn", { "allow": ["layout"] }],
-		"shadcn/no-inline-styles": "warn",
+		"shadcn/no-restyle": [
+			"error",
+			{
+				"allow": ["layout", "typography", "spacing"],
+				"contracts": [
+					{
+						"pattern": "^Skeleton$",
+						"allow": ["layout", "typography", "spacing", "shape"],
+						"message": "Skeleton has no variants - it stands in for arbitrary content shapes, so its shape always needs to match whatever it's replacing."
+					},
+					{
+						"pattern": "^TableRow$",
+						"allow": [
+							"layout",
+							"typography",
+							"spacing",
+							"color",
+							"shape",
+							"effects"
+						],
+						"message": "TableRow is a structural primitive with no variants - selection/drag/drop-target feedback has no other way to express itself."
+					},
+					{
+						"pattern": "^TableCell$",
+						"allow": ["layout", "typography", "spacing", "color"],
+						"message": "TableCell is a structural primitive with no variants - per-column text color (e.g. muted secondary data) has no other way to express itself."
+					}
+				]
+			}
+		],
+		"shadcn/no-raw-colors": "error",
+		"shadcn/no-arbitrary-values": ["error", { "allow": ["layout"] }],
+		"shadcn/no-inline-styles": [
+			"error",
+			{ "allow": ["transform", "transition"] }
+		],
 		"shadcn/no-unknown-classes": "error",
-		"shadcn/require-static-classes": "warn"
+		"shadcn/require-static-classes": "error"
 	},
 	"overrides": [
 		{

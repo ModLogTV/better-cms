@@ -368,10 +368,7 @@ function GroupDetailPage() {
 				<div className="flex-1" />
 				<ConfirmPopover
 					trigger={
-						<Button
-							variant="outline"
-							className="text-destructive hover:bg-destructive/10"
-						>
+						<Button variant="destructive">
 							<IconTrash className="size-4" />
 							Delete group
 						</Button>
@@ -407,7 +404,7 @@ function GroupDetailPage() {
 							<Badge
 								key={p.permission}
 								variant={p.source === "Direct" ? "default" : "secondary"}
-								className="gap-1 font-mono text-[10px]"
+								className="gap-1 font-mono text-2xs"
 							>
 								{p.permission}
 								<span className="font-sans opacity-70">via {p.source}</span>

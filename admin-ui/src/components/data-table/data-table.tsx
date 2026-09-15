@@ -42,9 +42,11 @@ export function DataTable<TData>({
 									<TableHead
 										key={header.id}
 										colSpan={header.colSpan}
+										// oxlint-disable shadcn/no-inline-styles -- computed column-pinning offsets from a shared helper, not a raw style override
 										style={{
 											...getColumnPinningStyle({ column: header.column }),
 										}}
+										// oxlint-enable shadcn/no-inline-styles
 									>
 										{header.isPlaceholder
 											? null
@@ -71,9 +73,11 @@ export function DataTable<TData>({
 									{row.getVisibleCells().map((cell) => (
 										<TableCell
 											key={cell.id}
+											// oxlint-disable shadcn/no-inline-styles -- computed column-pinning offsets from a shared helper, not a raw style override
 											style={{
 												...getColumnPinningStyle({ column: cell.column }),
 											}}
+											// oxlint-enable shadcn/no-inline-styles
 										>
 											{flexRender(
 												cell.column.columnDef.cell,

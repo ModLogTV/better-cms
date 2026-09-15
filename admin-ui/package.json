@@ -8,7 +8,7 @@
 		"build": "vite build && tsc -b",
 		"preview": "vite preview",
 		"shadcn": "bunx shadcn@latest",
-		"lint": "oxlint --max-warnings 334"
+		"lint": "oxlint --max-warnings 0"
 	},
 	"dependencies": {
 		"@dnd-kit/core": "^6.3.1",

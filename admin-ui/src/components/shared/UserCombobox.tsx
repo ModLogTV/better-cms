@@ -93,7 +93,7 @@ export function UserCombobox({
 											}}
 										>
 											<Avatar className="size-5">
-												<AvatarFallback className="text-[10px]">
+												<AvatarFallback className="text-2xs">
 													{(u.name || u.email)[0]?.toUpperCase()}
 												</AvatarFallback>
 											</Avatar>
@@ -102,7 +102,7 @@ export function UserCombobox({
 													{u.name || u.email}
 												</span>
 												{u.name && (
-													<span className="truncate text-[10px] text-muted-foreground">
+													<span className="truncate text-2xs text-muted-foreground">
 														{u.email}
 													</span>
 												)}

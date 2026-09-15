@@ -16,6 +16,7 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { api, type PageTreeNode } from "@/lib/api";
+import { toCssProperties } from "@/lib/utils";
 
 interface FlatPageNode {
 	id: string;
@@ -95,8 +96,11 @@ export function PageTreePicker({
 											}}
 										>
 											<span
-												style={{ paddingLeft: n.depth * 12 }}
-												className="flex min-w-0 items-center gap-1.5"
+												// oxlint-disable-next-line shadcn/no-inline-styles -- toCssProperties (src/lib/utils.ts) only ever sets `--*` custom properties
+												style={toCssProperties({
+													"--indent": `${n.depth * 12}px`,
+												})}
+												className="flex min-w-0 items-center gap-1.5 pl-(--indent)"
 											>
 												{n.hasChildren ? (
 													<IconFolder className="size-3.5 shrink-0 text-muted-foreground" />

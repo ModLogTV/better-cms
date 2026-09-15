@@ -41,10 +41,8 @@ function DiffView({ a, b }: { a: unknown; b: unknown }) {
 					key={i}
 					className={cn(
 						"whitespace-pre-wrap px-1",
-						line.type === "add" &&
-							"bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
-						line.type === "del" &&
-							"bg-red-500/15 text-red-700 dark:text-red-400",
+						line.type === "add" && "bg-success/15 text-success",
+						line.type === "del" && "bg-destructive/15 text-destructive",
 					)}
 				>
 					{line.type === "add" ? "+ " : line.type === "del" ? "- " : "  "}

@@ -278,7 +278,6 @@ function BlockCard({
 	const style = {
 		transform: CSS.Transform.toString(transform),
 		transition,
-		opacity: isDragging ? 0.5 : 1,
 	};
 
 	const useRawEditor = !info || info.fields.length === 0;
@@ -295,7 +294,11 @@ function BlockCard({
 	}
 
 	return (
-		<div ref={setNodeRef} style={style} className="rounded-lg border bg-card">
+		<div
+			ref={setNodeRef}
+			style={style}
+			className={cn("rounded-lg border bg-card", isDragging && "opacity-50")}
+		>
 			<div className="flex items-center gap-2 border-b px-3 py-2">
 				<button
 					type="button"
@@ -314,8 +317,8 @@ function BlockCard({
 				)}
 				<Button
 					size="sm"
-					variant="ghost"
-					className="ml-auto h-7 text-muted-foreground hover:text-destructive"
+					variant="ghost-destructive"
+					className="ml-auto h-7"
 					onClick={onRemove}
 				>
 					<IconTrash className="size-3.5" />
