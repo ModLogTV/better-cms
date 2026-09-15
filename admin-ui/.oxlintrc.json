@@ -10,7 +10,7 @@
 	},
 	"overrides": [
 		{
-			"files": ["src/components/ui/**"],
+			"files": ["src/components/**"],
 			"rules": {
 				"shadcn/no-restyle": "off",
 				"shadcn/no-arbitrary-values": "off",
