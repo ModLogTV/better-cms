@@ -19,8 +19,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - run: bun run lint
-      - run: bun run lint:biome-ignore
+      - run: bun run lint:ignore-reasons
       - run: bun run format:check
-      - run: cd admin-ui && bun run lint
       - run: bun run test
       - run: bun run build

@@ -1,4 +1,5 @@
 import { Elysia } from "elysia";
+
 import type { CMSAuthAdapter } from "../auth/adapter";
 import type { CMSPermission } from "../auth/permissions";
 import { hasPermission } from "../auth/permissions";

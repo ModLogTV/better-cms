@@ -13,6 +13,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { TranslationRow } from "@/components/shared/TranslationRow";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -103,7 +104,7 @@ function RecentPagesCard({
 			<CardContent className="space-y-1">
 				{isLoading ? (
 					Array.from({ length: 3 }).map((_, i) => (
-						// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton row count, never reordered
+						// static skeleton row count, never reordered
 						<Skeleton key={i} className="h-10 w-full" />
 					))
 				) : recent.length === 0 ? (
@@ -248,7 +249,7 @@ function RecentNamespacesCard({
 			<CardContent className="space-y-1">
 				{isLoading ? (
 					Array.from({ length: 3 }).map((_, i) => (
-						// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton row count, never reordered
+						// static skeleton row count, never reordered
 						<Skeleton key={i} className="h-10 w-full" />
 					))
 				) : recent.length === 0 ? (
@@ -349,7 +350,7 @@ function CoverageOverviewCard({
 			<CardContent className="space-y-3">
 				{isLoading ? (
 					Array.from({ length: 2 }).map((_, i) => (
-						// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton row count, never reordered
+						// static skeleton row count, never reordered
 						<Skeleton key={i} className="h-6 w-full" />
 					))
 				) : coverage.length === 0 ? (

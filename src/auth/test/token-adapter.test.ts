@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+
 import { CMS_PERMISSIONS, CMS_WILDCARD_PERMISSION } from "../permissions";
 import { tokenAuthAdapter } from "../token-adapter";
 

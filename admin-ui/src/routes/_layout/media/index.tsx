@@ -28,6 +28,7 @@ import {
 import { useQueryState } from "nuqs";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+
 import { DataTableFilterMenu } from "@/components/data-table/data-table-filter-menu";
 import { DataTableSortList } from "@/components/data-table/data-table-sort-list";
 import { MediaEditForm } from "@/components/shared/MediaEditForm";
@@ -968,14 +969,14 @@ function MediaPage() {
 				view === "list" ? (
 					<div className="space-y-2">
 						{Array.from({ length: 6 }).map((_, i) => (
-							// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton row count, never reordered
+							// static skeleton row count, never reordered
 							<Skeleton key={i} className="h-12 rounded-md" />
 						))}
 					</div>
 				) : (
 					<div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
 						{Array.from({ length: 8 }).map((_, i) => (
-							// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton card count, never reordered
+							// static skeleton card count, never reordered
 							<Skeleton key={i} className="h-52 rounded-lg" />
 						))}
 					</div>

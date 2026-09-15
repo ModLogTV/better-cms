@@ -1,6 +1,7 @@
 import { IconSelector } from "@tabler/icons-react";
 import * as Flags from "country-flag-icons/react/3x2";
-import { useState } from "react";
+import { useId, useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import {
 	Command,
@@ -34,21 +35,27 @@ export function LocaleCombobox({
 	onSelect: (locale: { code: string; name: string }) => void;
 }) {
 	const [open, setOpen] = useState(false);
+	const listId = useId();
 
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>
 				<Button
 					variant="outline"
+					// oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- searchable popover-driven picker, not a native select; matches the ARIA combobox pattern
 					role="combobox"
 					aria-expanded={open}
+					aria-controls={listId}
 					className="w-full justify-between font-normal"
 				>
 					<span className="text-muted-foreground">Search common locales…</span>
 					<IconSelector className="size-4 shrink-0 opacity-50" />
 				</Button>
 			</PopoverTrigger>
-			<PopoverContent className="w-(--radix-popover-trigger-width) p-0">
+			<PopoverContent
+				id={listId}
+				className="w-(--radix-popover-trigger-width) p-0"
+			>
 				<Command>
 					<CommandInput placeholder="Search language or country…" />
 					<CommandList>

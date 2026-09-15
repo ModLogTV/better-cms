@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
+
 import type { ReactNode } from "react";
+
 import { key, plural, rich, vars } from "../markers";
 import { defineNamespace } from "../namespace";
 import { createRichTranslator, createTranslator } from "../translator";

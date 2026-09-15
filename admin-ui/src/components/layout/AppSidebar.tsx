@@ -10,6 +10,7 @@ import {
 	IconWorld,
 } from "@tabler/icons-react";
 import { Link, useRouterState } from "@tanstack/react-router";
+
 import {
 	Sidebar,
 	SidebarContent,
@@ -21,6 +22,7 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 } from "@/components/ui/sidebar";
+
 import { AccountMenu } from "./AccountMenu";
 
 export const NAV_ITEMS = [

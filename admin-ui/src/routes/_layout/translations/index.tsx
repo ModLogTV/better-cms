@@ -2,6 +2,7 @@ import { IconClock, IconKey, IconLanguage } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -50,7 +51,7 @@ function TranslationsIndexPage() {
 			{isLoading ? (
 				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 					{Array.from({ length: 3 }).map((_, i) => (
-						// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton card count, never reordered
+						// static skeleton card count, never reordered
 						<Skeleton key={i} className="h-40 rounded-lg" />
 					))}
 				</div>

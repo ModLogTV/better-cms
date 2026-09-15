@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+
 import { makeAdapter, makeApp, req, TOKEN } from "./helpers";
 
 describe("translations routes", () => {

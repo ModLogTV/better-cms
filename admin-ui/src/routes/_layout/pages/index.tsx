@@ -47,6 +47,7 @@ import {
 import { useQueryState } from "nuqs";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+
 import { DataTableAdvancedToolbar } from "@/components/data-table/data-table-advanced-toolbar";
 import { DataTableFilterMenu } from "@/components/data-table/data-table-filter-menu";
 import { DataTableSortList } from "@/components/data-table/data-table-sort-list";
@@ -886,7 +887,7 @@ function PagesPage() {
 			{isLoading ? (
 				<div className="space-y-2">
 					{Array.from({ length: 4 }).map((_, i) => (
-						// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton rows
+						// static skeleton rows
 						<div key={i} className="h-9 animate-pulse rounded-md bg-muted" />
 					))}
 				</div>

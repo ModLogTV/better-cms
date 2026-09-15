@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+
 import { key, plural, rich, vars } from "../../i18n/markers";
 import { defineNamespace } from "../../i18n/namespace";
 import { describeNamespace } from "../describe";

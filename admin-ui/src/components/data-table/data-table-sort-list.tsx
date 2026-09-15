@@ -45,8 +45,9 @@ import { cn } from "@/lib/utils";
 const SORT_SHORTCUT_KEY = "s";
 const REMOVE_SORT_SHORTCUTS = ["backspace", "delete"];
 
-interface DataTableSortListProps<TData>
-	extends React.ComponentProps<typeof PopoverContent> {
+interface DataTableSortListProps<TData> extends React.ComponentProps<
+	typeof PopoverContent
+> {
 	table: Table<TData>;
 	disabled?: boolean;
 }
@@ -223,8 +224,8 @@ export function DataTableSortList<TData>({
 					</div>
 					{sorting.length > 0 && (
 						<SortableContent asChild>
-							{/* biome-ignore lint/a11y/useSemanticElements: Sortable drag-and-drop needs a plain div, not <ul> */}
 							<div
+								// oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- sortable drag-and-drop needs a plain div, not <ul> - a native list can't host dnd-kit's drag handles
 								role="list"
 								className="flex max-h-[300px] flex-col gap-2 overflow-y-auto p-1"
 							>
@@ -322,8 +323,9 @@ function DataTableSortItem({
 
 	return (
 		<SortableItem value={sort.id} asChild>
-			{/* biome-ignore lint/a11y/useSemanticElements: Sortable drag-and-drop needs a plain div, not <li> */}
+			{/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- dnd-kit's documented accessible pattern: keyboard reordering needs a key handler on the sortable item itself */}
 			<div
+				// oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- sortable drag-and-drop needs a plain div, not <li> - a native list item can't host dnd-kit's drag handles
 				role="listitem"
 				id={sortItemId}
 				tabIndex={-1}

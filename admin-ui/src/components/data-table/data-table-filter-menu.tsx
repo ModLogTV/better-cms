@@ -49,8 +49,9 @@ const THROTTLE_MS = 50;
 const FILTER_SHORTCUT_KEY = "f";
 const REMOVE_FILTER_SHORTCUTS = ["backspace", "delete"];
 
-interface DataTableFilterMenuProps<TData>
-	extends React.ComponentProps<typeof PopoverContent> {
+interface DataTableFilterMenuProps<TData> extends React.ComponentProps<
+	typeof PopoverContent
+> {
 	table: Table<TData>;
 	debounceMs?: number;
 	throttleMs?: number;
@@ -223,8 +224,11 @@ export function DataTableFilterMenu<TData>({
 	);
 
 	return (
-		// biome-ignore lint/a11y/useSemanticElements: children include interactive controls a <ul> can't host directly
-		<div role="list" className="flex flex-wrap items-center gap-2">
+		<div
+			// oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- children include interactive controls a <ul> can't host directly
+			role="list"
+			className="flex flex-wrap items-center gap-2"
+		>
 			{filters.map((filter) => (
 				<DataTableFilterItem
 					key={filter.filterId}
@@ -389,9 +393,10 @@ function DataTableFilterItem<TData>({
 		if (!column) return null;
 
 		return (
-			// biome-ignore lint/a11y/useSemanticElements: matches the role="list" container above
+			// oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Backspace/Delete removes this filter chip; the interactive controls inside it already carry their own semantics/focus
 			<div
 				key={filter.filterId}
+				// oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- matches the role="list" container above
 				role="listitem"
 				id={filterItemId}
 				className="flex h-8 items-center rounded-md bg-background"
@@ -554,6 +559,7 @@ function FilterValueSelector<TData>({
 		case "dateRange":
 			return (
 				<Calendar
+					// oxlint-disable-next-line jsx-a11y/no-autofocus -- focuses the calendar the instant this popover opens, matching command-palette/popover UX conventions
 					autoFocus
 					captionLayout="dropdown"
 					mode="single"
@@ -610,9 +616,8 @@ function onFilterInputRender<TData>({
 }) {
 	if (filter.operator === "isEmpty" || filter.operator === "isNotEmpty") {
 		return (
-			<div
+			<output
 				id={inputId}
-				role="status"
 				aria-label={`${column.columnDef.meta?.label} filter is ${
 					filter.operator === "isEmpty" ? "empty" : "not empty"
 				}`}
@@ -828,6 +833,7 @@ function onFilterInputRender<TData>({
 					>
 						{filter.operator === "isBetween" ? (
 							<Calendar
+								// oxlint-disable-next-line jsx-a11y/no-autofocus -- focuses the calendar the instant this popover opens, matching command-palette/popover UX conventions
 								autoFocus
 								captionLayout="dropdown"
 								mode="range"
@@ -855,6 +861,7 @@ function onFilterInputRender<TData>({
 							/>
 						) : (
 							<Calendar
+								// oxlint-disable-next-line jsx-a11y/no-autofocus -- focuses the calendar the instant this popover opens, matching command-palette/popover UX conventions
 								autoFocus
 								captionLayout="dropdown"
 								mode="single"

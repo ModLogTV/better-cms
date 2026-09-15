@@ -6,6 +6,7 @@ import {
 } from "radix-ui";
 import * as React from "react";
 import * as ReactDOM from "react-dom";
+
 import { Button } from "@/components/ui/button";
 import { useAsRef } from "@/hooks/use-as-ref";
 import { useIsomorphicLayoutEffect } from "@/hooks/use-isomorphic-layout-effect";
@@ -397,6 +398,7 @@ function ActionBarGroup(props: DivProps) {
 	return (
 		<FocusContext.Provider value={focusContextValue}>
 			<GroupPrimitive
+				// oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- generic composable primitive; consumers who want a semantic tag can render one via `asChild`
 				role="group"
 				data-slot="action-bar-group"
 				data-orientation={orientation}
@@ -419,8 +421,10 @@ function ActionBarGroup(props: DivProps) {
 	);
 }
 
-interface ActionBarItemProps
-	extends Omit<React.ComponentProps<typeof Button>, "onSelect"> {
+interface ActionBarItemProps extends Omit<
+	React.ComponentProps<typeof Button>,
+	"onSelect"
+> {
 	onSelect?: (event: Event) => void;
 }
 
@@ -646,6 +650,7 @@ function ActionBarSeparator(props: ActionBarSeparatorProps) {
 
 	return (
 		<SeparatorPrimitive
+			// oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- generic composable primitive; consumers who want a semantic tag can render one via `asChild`
 			role="separator"
 			aria-orientation={orientation}
 			aria-hidden="true"

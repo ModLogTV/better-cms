@@ -1,5 +1,7 @@
 import { mock } from "bun:test";
+
 import { Elysia } from "elysia";
+
 import { tokenAuthAdapter } from "../../auth/token-adapter";
 import type {
 	CMSAdapter,

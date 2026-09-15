@@ -1,4 +1,5 @@
 import { Elysia, t } from "elysia";
+
 import { CMS_PERMISSIONS } from "../../auth/permissions";
 import type { CMSInstance } from "../../core/index";
 import { requirePermission } from "../auth";

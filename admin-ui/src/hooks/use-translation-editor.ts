@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { api } from "@/lib/api";
 
 /** Inline-edit-on-blur state/mutation for a single translation key, shared by TranslationRow and the namespace editor table's value cell. */

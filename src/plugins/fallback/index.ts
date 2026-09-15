@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+
 import type { CMSPlugin } from "../../core/plugin";
 
 /**

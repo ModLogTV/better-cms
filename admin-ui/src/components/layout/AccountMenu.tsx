@@ -10,6 +10,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { cn } from "cn";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +30,7 @@ import {
 } from "@/components/ui/sidebar";
 import { signOut } from "@/lib/auth";
 import { getStoredTheme, setTheme, type Theme } from "@/lib/theme";
+
 import { ChangePasswordDialog } from "./ChangePasswordDialog";
 
 const THEME_OPTIONS: {

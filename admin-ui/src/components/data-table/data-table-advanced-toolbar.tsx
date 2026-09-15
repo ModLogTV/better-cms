@@ -6,8 +6,9 @@ import type * as React from "react";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
 import { cn } from "@/lib/utils";
 
-interface DataTableAdvancedToolbarProps<TData>
-	extends React.ComponentProps<"div"> {
+interface DataTableAdvancedToolbarProps<
+	TData,
+> extends React.ComponentProps<"div"> {
 	table: Table<TData>;
 	/** Rendered on the right side, just before the "View" column-visibility popover. */
 	endActions?: React.ReactNode;

@@ -1,4 +1,5 @@
 import { Elysia, t } from "elysia";
+
 import { CMS_PERMISSIONS, hasPermission } from "../../auth/permissions";
 import type { CMSAdapter, MediaTagAction } from "../../core/adapter";
 import type { CMSContext } from "../../core/plugin";

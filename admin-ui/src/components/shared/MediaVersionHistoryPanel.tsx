@@ -2,6 +2,7 @@ import { IconGitCompare, IconHistory, IconRestore } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,7 +38,7 @@ function DiffView({ a, b }: { a: unknown; b: unknown }) {
 		<pre className="max-h-64 overflow-auto rounded-md border bg-muted/30 p-2 font-mono text-xs">
 			{lines.map((line, i) => (
 				<div
-					// biome-ignore lint/suspicious/noArrayIndexKey: diff lines have no stable identity
+					// diff lines have no stable identity
 					key={i}
 					className={cn(
 						"whitespace-pre-wrap px-1",

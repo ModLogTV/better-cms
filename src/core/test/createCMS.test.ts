@@ -1,4 +1,5 @@
 import { describe, expect, mock, test } from "bun:test";
+
 import { tokenAuthAdapter } from "../../auth/token-adapter";
 import { key, vars } from "../../i18n/markers";
 import { defineNamespace } from "../../i18n/namespace";

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import { cmsEvents } from "../client/events";
 import { loadPageContent } from "../client/pages";
 import { loadTranslations } from "../client/translations";
@@ -63,7 +64,6 @@ export function useTranslations<T extends NamespaceDefinition>(
 	const [isLoading, setIsLoading] = useState(!existing);
 	const [error, setError] = useState<Error | null>(null);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: `existing` is intentionally excluded below - see comment before the dependency array
 	useEffect(() => {
 		let cancelled = false;
 		if (!existing) setIsLoading(true);
@@ -81,12 +81,13 @@ export function useTranslations<T extends NamespaceDefinition>(
 				setLocalTranslations(data);
 				setError(null);
 				options?.onSuccess?.(data);
+				return;
 			})
 			.catch((err) => {
 				if (cancelled) return;
-				const error = err instanceof Error ? err : new Error(String(err));
-				setError(error);
-				options?.onError?.(error);
+				const parsedError = err instanceof Error ? err : new Error(String(err));
+				setError(parsedError);
+				options?.onError?.(parsedError);
 			})
 			.finally(() => {
 				if (!cancelled) setIsLoading(false);
@@ -97,6 +98,7 @@ export function useTranslations<T extends NamespaceDefinition>(
 		};
 		// existing is intentionally excluded - it changes every time ctx.setTranslations
 		// fires above, and depending on it here would re-trigger this effect in a loop.
+		// oxlint-disable-next-line react-hooks/exhaustive-deps, react/exhaustive-effect-dependencies -- existing is intentionally excluded, see comment above
 	}, [
 		ns.name,
 		ctx.locale,
@@ -132,7 +134,6 @@ export function usePageContent(opts: {
 	const [isLoading, setIsLoading] = useState(!existing);
 	const [error, setError] = useState<Error | null>(null);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: `existing` is intentionally excluded below - see comment before the dependency array
 	useEffect(() => {
 		let cancelled = false;
 		if (!existing) setIsLoading(true);
@@ -146,12 +147,13 @@ export function usePageContent(opts: {
 				setBlocks(data);
 				setError(null);
 				onSuccess?.(data);
+				return;
 			})
 			.catch((err) => {
 				if (cancelled) return;
-				const error = err instanceof Error ? err : new Error(String(err));
-				setError(error);
-				onError?.(error);
+				const parsedError = err instanceof Error ? err : new Error(String(err));
+				setError(parsedError);
+				onError?.(parsedError);
 			})
 			.finally(() => {
 				if (!cancelled) setIsLoading(false);
@@ -161,6 +163,7 @@ export function usePageContent(opts: {
 			cancelled = true;
 		};
 		// existing intentionally excluded - see useTranslations above.
+		// oxlint-disable-next-line react-hooks/exhaustive-deps, react/exhaustive-effect-dependencies -- existing is intentionally excluded, see comment above
 	}, [slug, ctx.locale, ctx.setContent, onSuccess, onError]);
 
 	return { data: blocks, isLoading, error };
@@ -183,7 +186,7 @@ export function useLocale(): {
 			"max-age=31536000",
 			"SameSite=Lax",
 		].join("; ");
-		// biome-ignore lint/suspicious/noDocumentCookie: no cookie API alternative for cross-browser compatibility
+		// no cookie API alternative for cross-browser compatibility
 		document.cookie = cookie;
 		ctx.setLocale(locale);
 	};

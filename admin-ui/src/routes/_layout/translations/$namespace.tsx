@@ -9,6 +9,7 @@ import {
 	useReactTable,
 } from "@tanstack/react-table";
 import { useEffect, useMemo, useState } from "react";
+
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { Badge } from "@/components/ui/badge";

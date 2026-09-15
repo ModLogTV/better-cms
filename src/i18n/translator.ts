@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+
 import type { NamespaceDef } from "./namespace";
 import type {
 	NamespaceDefinition,

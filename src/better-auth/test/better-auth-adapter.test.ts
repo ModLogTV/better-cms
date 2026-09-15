@@ -1,4 +1,5 @@
 import { describe, expect, mock, test } from "bun:test";
+
 import { CMS_WILDCARD_PERMISSION } from "../../auth/permissions";
 import { betterAuthCMSAdapter } from "../index";
 

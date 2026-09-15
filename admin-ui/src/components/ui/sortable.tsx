@@ -39,6 +39,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Slot as SlotPrimitive } from "radix-ui";
 import * as React from "react";
 import * as ReactDOM from "react-dom";
+
 import { useComposedRefs } from "@/lib/compose-refs";
 import { cn } from "@/lib/utils";
 
@@ -526,8 +527,10 @@ const dropAnimation: DropAnimation = {
 	}),
 };
 
-interface SortableOverlayProps
-	extends Omit<React.ComponentProps<typeof DragOverlay>, "children"> {
+interface SortableOverlayProps extends Omit<
+	React.ComponentProps<typeof DragOverlay>,
+	"children"
+> {
 	container?: Element | DocumentFragment | null;
 	children?:
 		| ((params: { value: UniqueIdentifier }) => React.ReactNode)

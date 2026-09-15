@@ -21,6 +21,7 @@ import {
 } from "@tanstack/react-table";
 import { useQueryState } from "nuqs";
 import { useCallback, useEffect, useMemo, useState } from "react";
+
 import { DataTableAdvancedToolbar } from "@/components/data-table/data-table-advanced-toolbar";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { DataTableFilterMenu } from "@/components/data-table/data-table-filter-menu";
@@ -260,7 +261,7 @@ function AuditLogPage() {
 			: targetTypeFilter.value
 		: undefined;
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: resetting to page 1 whenever the server-side filter changes, not on every filters change
+	// resetting to page 1 whenever the server-side filter changes, not on every filters change
 	useEffect(() => {
 		setPage(1);
 	}, [targetType]);
@@ -307,7 +308,7 @@ function AuditLogPage() {
 			{isLoading ? (
 				<div className="space-y-2">
 					{Array.from({ length: 6 }).map((_, i) => (
-						// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton row count, never reordered
+						// static skeleton row count, never reordered
 						<Skeleton key={i} className="h-10 rounded-md" />
 					))}
 				</div>

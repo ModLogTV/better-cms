@@ -51,7 +51,7 @@ Each admin page's controls should match the actual shape of what it manages, not
 
 - **Build:** `tsup` (outputs to `dist/`, split by platform: `neutral`, `node`, `browser`).
 - **Tests:** `bun test` (runtime assertions) + `tsc --noEmit` (type assertions). Run both via `bun run test`.
-- **Formatting/Linting:** Biome (`bun run format` runs `biome check --write .`).
+- **Formatting/Linting:** Oxc (`bun run format` runs `oxfmt`, `bun run lint` runs `oxlint --max-warnings 0`). Config: root `.oxfmtrc.json` / `.oxlintrc.json` cover the whole repo; `admin-ui/.oxlintrc.json` layers the `@shadcn/lint` plugin and JSX/a11y/react-perf plugins on top for `admin-ui/**` (only when oxlint is invoked from the repo root - nested configs aren't picked up when run from inside `admin-ui/` directly). `oxlint-disable` comments require a real `-- reason` (enforced by `bun run lint:ignore-reasons`), not a placeholder.
 
 ## Marketing Copy and UI texts
 

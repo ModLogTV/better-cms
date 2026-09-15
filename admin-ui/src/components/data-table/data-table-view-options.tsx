@@ -3,6 +3,7 @@
 import { IconAdjustmentsHorizontal } from "@tabler/icons-react";
 import type { Table } from "@tanstack/react-table";
 import * as React from "react";
+
 import { Button } from "@/components/ui/button";
 import {
 	Command,
@@ -19,8 +20,9 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
-interface DataTableViewOptionsProps<TData>
-	extends React.ComponentProps<typeof PopoverContent> {
+interface DataTableViewOptionsProps<TData> extends React.ComponentProps<
+	typeof PopoverContent
+> {
 	table: Table<TData>;
 	disabled?: boolean;
 }
@@ -47,6 +49,7 @@ export function DataTableViewOptions<TData>({
 			<PopoverTrigger asChild>
 				<Button
 					aria-label="Toggle columns"
+					// oxlint-disable-next-line jsx-a11y/prefer-tag-over-role, jsx-a11y/role-has-required-aria-props -- searchable popover-driven picker (ARIA combobox pattern, not a native select); Radix's PopoverTrigger already sets aria-expanded/aria-controls at runtime
 					role="combobox"
 					variant="outline"
 					className="ml-auto hidden h-8 font-normal lg:flex"

@@ -6,6 +6,7 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import { createElement, type ReactNode } from "react";
+
 import type {
 	AdminClient,
 	CMSGroup,
@@ -94,7 +95,7 @@ export function createAdminHooks(admin: AdminClient) {
 					}
 				},
 				onSettled: (
-					// biome-ignore lint/suspicious/noConfusingVoidType: matches TanStack Query onSettled signature
+					// matches TanStack Query onSettled signature
 					_: void | undefined,
 					__: Error | null,
 					{ namespace, locale }: UpdateTranslationArgs,

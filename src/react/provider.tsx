@@ -2,13 +2,18 @@ import {
 	type ReactNode,
 	useCallback,
 	useEffect,
+	useMemo,
 	useRef,
 	useState,
 } from "react";
+
 import { loadPageContent } from "../client/pages";
 import { loadTranslations } from "../client/translations";
 import type { RawBlock } from "../core/adapter";
 import { CMSContext, type CMSContextValue } from "./context";
+
+const EMPTY_TRANSLATIONS: Record<string, Record<string, string>> = {};
+const EMPTY_CONTENT: Record<string, RawBlock[]> = {};
 
 interface CMSProviderProps {
 	initialLocale: string;
@@ -28,8 +33,8 @@ interface CMSProviderProps {
  */
 export function CMSProvider({
 	initialLocale,
-	initialTranslations = {},
-	initialContent = {},
+	initialTranslations = EMPTY_TRANSLATIONS,
+	initialContent = EMPTY_CONTENT,
 	refetchInterval,
 	children,
 }: CMSProviderProps) {
@@ -40,10 +45,14 @@ export function CMSProvider({
 	const [currentLocale, setCurrentLocale] = useState(initialLocale);
 	const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-	// Sync state with prop when it changes (e.g. URL navigation)
-	useEffect(() => {
+	// Sync state with the prop when it changes (e.g. URL navigation) - adjusted
+	// during render (not an effect) so the new locale is visible on the same
+	// commit instead of flashing the old one for a frame.
+	const [prevInitialLocale, setPrevInitialLocale] = useState(initialLocale);
+	if (initialLocale !== prevInitialLocale) {
+		setPrevInitialLocale(initialLocale);
 		setCurrentLocale(initialLocale);
-	}, [initialLocale]);
+	}
 
 	const setTranslations = useCallback(
 		({
@@ -74,8 +83,10 @@ export function CMSProvider({
 
 	const translationsRef = useRef(translations);
 	const contentRef = useRef(content);
-	translationsRef.current = translations;
-	contentRef.current = content;
+	useEffect(() => {
+		translationsRef.current = translations;
+		contentRef.current = content;
+	});
 
 	useEffect(() => {
 		if (!refetchInterval) return;
@@ -101,14 +112,17 @@ export function CMSProvider({
 		};
 	}, [refetchInterval, currentLocale, setTranslations, setContent]);
 
-	const value: CMSContextValue = {
-		locale: currentLocale,
-		translations,
-		content,
-		setTranslations,
-		setContent,
-		setLocale: setCurrentLocale,
-	};
+	const value: CMSContextValue = useMemo(
+		() => ({
+			locale: currentLocale,
+			translations,
+			content,
+			setTranslations,
+			setContent,
+			setLocale: setCurrentLocale,
+		}),
+		[currentLocale, translations, content, setTranslations, setContent],
+	);
 
 	return <CMSContext.Provider value={value}>{children}</CMSContext.Provider>;
 }

@@ -1,4 +1,5 @@
 import { Elysia } from "elysia";
+
 import type { CMSInstance } from "../core/index";
 import { adminRoutes } from "./routes/admin";
 import { translationRoutes } from "./routes/translations";

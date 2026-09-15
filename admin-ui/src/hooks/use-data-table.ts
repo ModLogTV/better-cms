@@ -41,7 +41,8 @@ const DEBOUNCE_MS = 300;
 const THROTTLE_MS = 50;
 
 interface UseDataTableProps<TData>
-	extends Omit<
+	extends
+		Omit<
 			TableOptions<TData>,
 			| "state"
 			| "pageCount"
@@ -159,7 +160,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
 	// inline) made nuqs treat each render as a new subscription, so the
 	// popover's own view of `sorting` never picked up updates written by the
 	// column headers or the sort list itself.
-	// biome-ignore lint/correctness/useExhaustiveDependencies: intentionally an init-only value, see above
+	// intentionally an init-only value, see above
 	const defaultSorting = React.useMemo(() => initialState?.sorting ?? [], []);
 
 	const [sorting, setSorting] = useQueryState(

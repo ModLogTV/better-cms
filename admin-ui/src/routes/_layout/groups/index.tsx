@@ -15,6 +15,7 @@ import {
 import { useQueryState } from "nuqs";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableAdvancedToolbar } from "@/components/data-table/data-table-advanced-toolbar";
 import { DataTableFilterMenu } from "@/components/data-table/data-table-filter-menu";
@@ -93,6 +94,7 @@ function NewGroupDialog() {
 							value={name}
 							onChange={(e) => setName(e.target.value)}
 							placeholder="Editors"
+							// oxlint-disable-next-line jsx-a11y/no-autofocus -- focuses the name field the instant this dialog opens, the standard pattern for a just-opened create dialog
 							autoFocus
 						/>
 						<p className="text-muted-foreground text-xs">

@@ -247,15 +247,13 @@ function buildManagement(prisma: BetterAuthPrismaLike): CMSAuthManagement {
 			]);
 
 			return {
-				items: users.map(
-					(u): CMSUserSummary => ({
-						id: u.id,
-						email: u.email,
-						name: u.name,
-						permissions: u.cmsPermissions,
-						groupIds: u.cmsGroups.map((ug) => ug.groupId),
-					}),
-				),
+				items: users.map((u): CMSUserSummary => ({
+					id: u.id,
+					email: u.email,
+					name: u.name,
+					permissions: u.cmsPermissions,
+					groupIds: u.cmsGroups.map((ug) => ug.groupId),
+				})),
 				total,
 			};
 		},
@@ -277,13 +275,11 @@ function buildManagement(prisma: BetterAuthPrismaLike): CMSAuthManagement {
 				include: { cmsGroups: { include: { group: true } } },
 			});
 			if (!user) return [];
-			return user.cmsGroups.map(
-				(ug): CMSGroup => ({
-					id: ug.group.id,
-					name: ug.group.name,
-					permissions: ug.group.permissions,
-				}),
-			);
+			return user.cmsGroups.map((ug): CMSGroup => ({
+				id: ug.group.id,
+				name: ug.group.name,
+				permissions: ug.group.permissions,
+			}));
 		},
 
 		async addUserToGroup({ userId, groupId }) {
@@ -298,13 +294,11 @@ function buildManagement(prisma: BetterAuthPrismaLike): CMSAuthManagement {
 
 		async listGroups() {
 			const groups = await prisma.cmsGroup.findMany();
-			return groups.map(
-				(g): CMSGroup => ({
-					id: g.id,
-					name: g.name,
-					permissions: g.permissions,
-				}),
-			);
+			return groups.map((g): CMSGroup => ({
+				id: g.id,
+				name: g.name,
+				permissions: g.permissions,
+			}));
 		},
 
 		async createGroup({ name, permissions }) {

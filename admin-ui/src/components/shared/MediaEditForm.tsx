@@ -8,6 +8,7 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -261,7 +262,7 @@ export function MediaEditForm({
 							<div className="space-y-1.5">
 								<Label>Custom fields</Label>
 								{field.state.value.map((_, i) => (
-									// biome-ignore lint/suspicious/noArrayIndexKey: rows are reordered by index only on add/remove, not by identity
+									// rows are reordered by index only on add/remove, not by identity
 									<div key={i} className="flex items-center gap-1.5">
 										<Input
 											value={field.state.value[i].key}

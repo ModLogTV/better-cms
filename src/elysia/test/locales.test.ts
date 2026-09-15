@@ -1,4 +1,5 @@
 import { describe, expect, mock, test } from "bun:test";
+
 import { tokenAuthAdapter } from "../../auth/token-adapter";
 import { createCMS } from "../../core/index";
 import { toElysiaPlugin } from "../index";

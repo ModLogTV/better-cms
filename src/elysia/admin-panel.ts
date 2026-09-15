@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { extname, join } from "node:path";
+
 import { Elysia } from "elysia";
 
 const MIME: Record<string, string> = {

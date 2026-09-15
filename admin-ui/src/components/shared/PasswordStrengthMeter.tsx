@@ -39,7 +39,7 @@ export function PasswordStrengthMeter({ password }: { password: string }) {
 			<div className="flex gap-1">
 				{Array.from({ length: 4 }).map((_, i) => (
 					<div
-						// biome-ignore lint/suspicious/noArrayIndexKey: static 4-segment meter, never reordered
+						// static 4-segment meter, never reordered
 						key={i}
 						className={cn(
 							"h-1 flex-1 rounded-full bg-muted transition-colors",

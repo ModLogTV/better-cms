@@ -1,5 +1,6 @@
 {
 	"jsPlugins": ["@shadcn/lint"],
+	"plugins": ["jsx-a11y", "react-perf"],
 	"rules": {
 		"shadcn/no-restyle": [
 			"error",

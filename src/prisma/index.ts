@@ -564,9 +564,9 @@ async function pruneVersions(
 			if (!keep.has(v.id) && v.createdAt.getTime() < cutoff) toDelete.add(v.id);
 		}
 	}
-	for (const id of toDelete) {
-		await prisma.pageVersion.delete({ where: { id } });
-	}
+	await Promise.all(
+		Array.from(toDelete, (id) => prisma.pageVersion.delete({ where: { id } })),
+	);
 }
 
 function toAuditLogEntry(row: PrismaAuditLogEntryRow): AuditLogEntry {
@@ -644,6 +644,9 @@ async function getAncestorChain(
 	const chain = [nodeId];
 	let cursor: string | null = nodeId;
 	while (cursor) {
+		// Each lookup depends on the previous one's result (the parent id) - it
+		// can't be parallelized.
+		// oxlint-disable-next-line no-await-in-loop -- depends on the previous iteration's result, cannot be parallelized
 		const node: PrismaPageNodeRow | null = await prisma.pageNode.findUnique({
 			where: { id: cursor },
 		});
@@ -674,11 +677,13 @@ async function reparentDescendantPaths(
 	const children = await prisma.pageNode.findMany({
 		where: { parentId: opts.id },
 	});
-	for (const child of children) {
-		const path = `${opts.path}/${child.slug}`;
-		await prisma.pageNode.update({ where: { id: child.id }, data: { path } });
-		await reparentDescendantPaths(prisma, { id: child.id, path });
-	}
+	await Promise.all(
+		children.map(async (child) => {
+			const path = `${opts.path}/${child.slug}`;
+			await prisma.pageNode.update({ where: { id: child.id }, data: { path } });
+			await reparentDescendantPaths(prisma, { id: child.id, path });
+		}),
+	);
 }
 
 const PAGE_SORT_FIELDS = ["slug", "locale", "status", "updatedAt"] as const;
@@ -754,14 +759,12 @@ export function prismaAdapter(
 			const rows = await prisma.translationNamespace.findMany({
 				where: { name: namespace },
 			});
-			return rows.map(
-				(r): NamespaceLocaleMeta => ({
-					locale: r.locale,
-					updatedAt: r.updatedAt,
-					keyCount: Object.keys((r.values as Record<string, string>) ?? {})
-						.length,
-				}),
-			);
+			return rows.map((r): NamespaceLocaleMeta => ({
+				locale: r.locale,
+				updatedAt: r.updatedAt,
+				keyCount: Object.keys((r.values as Record<string, string>) ?? {})
+					.length,
+			}));
 		},
 
 		async getPage({ slug, locale, draft }) {
@@ -1048,18 +1051,16 @@ export function prismaAdapter(
 				);
 				return candidates
 					.filter((n) => !readableIds || readableIds.has(n.id))
-					.map(
-						(n): PageTreeNode => ({
-							id: n.id,
-							parentId: n.parentId,
-							slug: n.slug,
-							path: n.path,
-							locales: (localesByNode.get(n.id) ?? []).sort((a, b) =>
-								a.locale.localeCompare(b.locale),
-							),
-							children: build(n.id),
-						}),
-					)
+					.map((n): PageTreeNode => ({
+						id: n.id,
+						parentId: n.parentId,
+						slug: n.slug,
+						path: n.path,
+						locales: (localesByNode.get(n.id) ?? []).sort((a, b) =>
+							a.locale.localeCompare(b.locale),
+						),
+						children: build(n.id),
+					}))
 					.sort((a, b) => a.slug.localeCompare(b.slug));
 			};
 			return build(null);
@@ -1080,6 +1081,9 @@ export function prismaAdapter(
 						"Cannot move a page into one of its own descendants.",
 					);
 				}
+				// Each lookup depends on the previous one's result (the parent id) -
+				// it can't be parallelized.
+				// oxlint-disable-next-line no-await-in-loop -- depends on the previous iteration's result, cannot be parallelized
 				const ancestor = await prisma.pageNode.findUnique({
 					where: { id: cursor },
 				});
@@ -1165,14 +1169,12 @@ export function prismaAdapter(
 
 		async listLocales() {
 			const rows = await prisma.locale.findMany();
-			return rows.map(
-				(r): Locale => ({
-					code: r.code,
-					name: r.name,
-					isDefault: r.isDefault,
-					updatedAt: r.updatedAt,
-				}),
-			);
+			return rows.map((r): Locale => ({
+				code: r.code,
+				name: r.name,
+				isDefault: r.isDefault,
+				updatedAt: r.updatedAt,
+			}));
 		},
 
 		async upsertLocale({ code, name, isDefault = false }) {
@@ -1246,7 +1248,7 @@ export function prismaAdapter(
 			}
 		},
 
-		async listMediaAssets(opts) {
+		async listMediaAssets(filter) {
 			const rows = await prisma.mediaAsset.findMany({
 				include: {
 					versions: { orderBy: [{ seq: "desc" }], take: 1 },
@@ -1261,18 +1263,18 @@ export function prismaAdapter(
 					}),
 				);
 
-			if (opts?.tagIds && opts.tagIds.length > 0) {
-				const wanted = new Set(opts.tagIds);
+			if (filter?.tagIds && filter.tagIds.length > 0) {
+				const wanted = new Set(filter.tagIds);
 				assets =
-					opts.tagOperator === "OR"
+					filter.tagOperator === "OR"
 						? assets.filter((a) => a.tagIds.some((t) => wanted.has(t)))
 						: assets.filter((a) =>
-								opts.tagIds?.every((t) => a.tagIds.includes(t)),
+								filter.tagIds?.every((t) => a.tagIds.includes(t)),
 							);
 			}
 
-			if (opts?.subject) {
-				const subject = opts.subject;
+			if (filter?.subject) {
+				const subject = filter.subject;
 				const OR = subjectGrantFilter(subject);
 				const grants =
 					OR.length > 0

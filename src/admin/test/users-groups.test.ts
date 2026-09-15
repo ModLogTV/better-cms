@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
+
 import { createAdminClient } from "../index";
 
 const CMS_URL = "http://cms.test";

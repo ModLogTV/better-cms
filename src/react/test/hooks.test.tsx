@@ -1,13 +1,15 @@
 import { describe, expect, spyOn, test } from "bun:test";
+
 import { renderHook, waitFor } from "@testing-library/react";
 import type React from "react";
+
 import { configureCMSClient } from "../../client/config";
 import { cmsEvents } from "../../client/events";
 import { defineNamespace, key } from "../../i18n";
 import { useCMSClientEvents, usePageContent, useTranslations } from "../hooks";
 import { CMSProvider } from "../provider";
-
 // Load JSDOM
+// oxlint-disable-next-line import/no-unassigned-import -- setup module runs for its side effects only, nothing to assign
 import "./setup";
 
 const CMS_URL = "http://cms.test";

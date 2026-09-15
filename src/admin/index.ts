@@ -107,17 +107,16 @@ export function createAdminClient(opts: AdminClientOptions): AdminClient {
 			 * Returns metadata for all keys in a namespace, including their types (rich, vars, etc.)
 			 * and suggested UI input hints.
 			 */
-			describe: (opts) =>
-				get<KeyMetadata[]>(`/cms/admin/namespaces/${opts.namespace}/describe`),
+			describe: ({ namespace }) =>
+				get<KeyMetadata[]>(`/cms/admin/namespaces/${namespace}/describe`),
 			/** Fetches all raw translation key-value pairs for a specific namespace and locale. */
-			getTranslations: (opts) =>
-				get(`/cms/translations/${opts.namespace}/${opts.locale}`),
+			getTranslations: ({ namespace, locale }) =>
+				get(`/cms/translations/${namespace}/${locale}`),
 			/**
 			 * Updates a single translation key. Fetches the current state, merges the change,
 			 * and persists it back to the adapter.
 			 */
-			updateTranslation: async (opts) => {
-				const { namespace, locale, key, value } = opts;
+			updateTranslation: async ({ namespace, locale, key, value }) => {
 				const current = await get<Record<string, string>>(
 					`/cms/translations/${namespace}/${locale}`,
 				);
@@ -134,16 +133,14 @@ export function createAdminClient(opts: AdminClientOptions): AdminClient {
 			 * Fetches a single page by its slug.
 			 * @param draft If true, fetches the latest saved draft instead of the published version.
 			 */
-			get: (opts) => {
-				const { slug, locale, draft = false } = opts;
-				return get(
+			get: ({ slug, locale, draft = false }) =>
+				get(
 					`/cms/pages/${encodeURIComponent(slug)}?locale=${locale}&draft=${draft}`,
-				);
-			},
+				),
 			/** Updates the blocks of a page. Validates blocks against the registered schema. */
-			update: (opts) => put(`/cms/pages/${opts.id}`, opts.blocks),
+			update: ({ id, blocks }) => put(`/cms/pages/${id}`, blocks),
 			/** Promotes the current draft of a page to the published status. */
-			publish: (opts) => post(`/cms/pages/${opts.id}/publish`),
+			publish: ({ id }) => post(`/cms/pages/${id}/publish`),
 			/** Lists registered block types with their admin-editable field metadata. */
 			describeBlocks: () => get<BlockInfo[]>("/cms/pages/blocks"),
 		},
@@ -192,9 +189,9 @@ export function createAdminClient(opts: AdminClientOptions): AdminClient {
 			/** Lists all active locales in the CMS. */
 			list: () => get("/cms/admin/locales"),
 			/** Adds or updates a locale definition. */
-			upsert: (opts) => put("/cms/admin/locales", opts),
+			upsert: (locale) => put("/cms/admin/locales", locale),
 			/** Permanently removes a locale. */
-			delete: (opts) => del(`/cms/admin/locales/${opts.code}`),
+			delete: ({ code }) => del(`/cms/admin/locales/${code}`),
 		},
 		users: {
 			/** Lists CMS users with their direct permissions and group memberships, paginated server-side. */

@@ -1,5 +1,6 @@
 import { parseAsInteger, useQueryState } from "nuqs";
 import { useMemo } from "react";
+
 import { getFiltersStateParser, getSortingStateParser } from "@/lib/parsers";
 
 /**
@@ -30,7 +31,7 @@ export function useTableQueryState<TData>(opts: {
 	);
 	const [sorting] = useQueryState("sort", sortingParser);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: filterableColumnIds is expected to be a stable module-level constant per table
+	// filterableColumnIds is expected to be a stable module-level constant per table
 	const filtersParser = useMemo(
 		() => getFiltersStateParser<TData>(filterableColumnIds).withDefault([]),
 		[],
