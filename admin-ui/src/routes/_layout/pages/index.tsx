@@ -9,8 +9,11 @@ import {
 } from "@dnd-kit/core";
 import {
 	IconAlertTriangle,
+	IconChevronLeft,
 	IconChevronRight,
 	IconChevronsDown,
+	IconChevronsLeft,
+	IconChevronsRight,
 	IconChevronsUp,
 	IconExternalLink,
 	IconFileText,
@@ -33,7 +36,9 @@ import {
 	getCoreRowModel,
 	getExpandedRowModel,
 	getFilteredRowModel,
+	getPaginationRowModel,
 	getSortedRowModel,
+	type PaginationState,
 	type Row,
 	type SortingState,
 	useReactTable,
@@ -526,6 +531,10 @@ function PageRow({
 	const isMoveError = moveError?.id === node.id;
 	const dropDisabled = disabledDropIds.has(node.id);
 	const siteUrl = getConfig().siteUrl;
+	// A pure wrapper page - a folder for organizing children with no page
+	// content of its own - renders as a bare folder icon (see the icon
+	// selection below) and has nothing to open on the live site.
+	const isWrapperOnly = hasChildren && !node.locales.some((l) => l.hasBlocks);
 
 	const {
 		attributes,
@@ -656,13 +665,13 @@ function PageRow({
 										</TooltipTrigger>
 										<TooltipContent>Add child page</TooltipContent>
 									</Tooltip>
-									{siteUrl && (
+									{siteUrl && !isWrapperOnly && (
 										<Tooltip>
 											<TooltipTrigger asChild>
 												<Button
 													size="icon"
-													variant="ghost"
-													className="size-6 opacity-0 group-hover:opacity-100"
+													variant="secondary"
+													className="size-6"
 													asChild
 												>
 													<a
@@ -747,9 +756,13 @@ function PagesPage() {
 		queryFn: () => api.pages.tree(),
 	});
 
-	const [expanded, setExpanded] = useState<ExpandedState>({});
+	const [expanded, setExpanded] = useState<ExpandedState>(true);
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+	const [pagination, setPagination] = useState<PaginationState>({
+		pageIndex: 0,
+		pageSize: 20,
+	});
 
 	const filtersParser = useMemo(
 		() =>
@@ -825,11 +838,17 @@ function PagesPage() {
 			sorting,
 			columnVisibility,
 			columnFilters,
+			pagination,
 		},
 		onExpandedChange: setExpanded,
 		onSortingChange: setSorting,
 		onColumnVisibilityChange: setColumnVisibility,
 		onColumnFiltersChange: () => {},
+		onPaginationChange: setPagination,
+		// Only top-level pages count towards a page of results - an expanded
+		// page's children stay visible under it no matter which page it lands
+		// on, so nesting never gets split across pages.
+		paginateExpandedRows: false,
 		filterFromLeafRows: true,
 		getRowId: (node) => node.id,
 		getSubRows: (node) => node.children,
@@ -837,6 +856,7 @@ function PagesPage() {
 		getFilteredRowModel: getFilteredRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		getExpandedRowModel: getExpandedRowModel(),
+		getPaginationRowModel: getPaginationRowModel(),
 	});
 
 	return (
@@ -952,6 +972,78 @@ function PagesPage() {
 							</div>
 						</RootDropZone>
 					</DndContext>
+					<div className="flex flex-col-reverse items-center justify-between gap-4 p-1 sm:flex-row">
+						<div className="flex items-center gap-2">
+							<p className="whitespace-nowrap font-medium text-sm">
+								Rows per page
+							</p>
+							<Select
+								value={`${table.getState().pagination.pageSize}`}
+								onValueChange={(value) => table.setPageSize(Number(value))}
+							>
+								<SelectTrigger className="h-8! w-18">
+									<SelectValue
+										placeholder={table.getState().pagination.pageSize}
+									/>
+								</SelectTrigger>
+								<SelectContent side="top">
+									{[10, 20, 50, 100].map((pageSize) => (
+										<SelectItem key={pageSize} value={`${pageSize}`}>
+											{pageSize}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+						<div className="flex items-center gap-4">
+							<div className="font-medium text-sm">
+								Page {table.getState().pagination.pageIndex + 1} of{" "}
+								{Math.max(1, table.getPageCount())}
+							</div>
+							<div className="flex items-center gap-2">
+								<Button
+									aria-label="Go to first page"
+									variant="outline"
+									size="icon"
+									className="hidden size-8 lg:flex"
+									onClick={() => table.setPageIndex(0)}
+									disabled={!table.getCanPreviousPage()}
+								>
+									<IconChevronsLeft />
+								</Button>
+								<Button
+									aria-label="Go to previous page"
+									variant="outline"
+									size="icon"
+									className="size-8"
+									onClick={() => table.previousPage()}
+									disabled={!table.getCanPreviousPage()}
+								>
+									<IconChevronLeft />
+								</Button>
+								<Button
+									aria-label="Go to next page"
+									variant="outline"
+									size="icon"
+									className="size-8"
+									onClick={() => table.nextPage()}
+									disabled={!table.getCanNextPage()}
+								>
+									<IconChevronRight />
+								</Button>
+								<Button
+									aria-label="Go to last page"
+									variant="outline"
+									size="icon"
+									className="hidden size-8 lg:flex"
+									onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+									disabled={!table.getCanNextPage()}
+								>
+									<IconChevronsRight />
+								</Button>
+							</div>
+						</div>
+					</div>
 				</div>
 			)}
 		</div>

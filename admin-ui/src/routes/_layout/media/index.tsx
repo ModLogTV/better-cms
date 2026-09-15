@@ -276,7 +276,7 @@ function ManageTagsPopover({ tags }: { tags: Tag[] }) {
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>
-				<Button variant="outline" size="sm">
+				<Button variant="outline" size="lg">
 					<IconTag className="size-4" />
 					Manage tags
 				</Button>
@@ -673,8 +673,8 @@ function MediaListRow({
 							<DialogTrigger asChild>
 								<Button
 									size="icon"
-									variant="ghost"
-									className="size-7 text-muted-foreground hover:text-destructive"
+									variant="destructive"
+									className="size-7 border-destructive"
 								>
 									<IconTrash className="size-3.5" />
 								</Button>

@@ -1,16 +1,25 @@
-import { IconPlus, IconShield } from "@tabler/icons-react";
+import { IconLetterCase, IconPlus, IconShield } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
 	type ColumnDef,
+	type ColumnFiltersState,
 	getCoreRowModel,
+	getFilteredRowModel,
 	getPaginationRowModel,
+	getSortedRowModel,
+	type Row,
+	type SortingState,
 	useReactTable,
 } from "@tanstack/react-table";
+import { useQueryState } from "nuqs";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DataTable } from "@/components/data-table/data-table";
+import { DataTableAdvancedToolbar } from "@/components/data-table/data-table-advanced-toolbar";
+import { DataTableFilterMenu } from "@/components/data-table/data-table-filter-menu";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
+import { DataTableSortList } from "@/components/data-table/data-table-sort-list";
 import { ConfirmPopover } from "@/components/shared/ConfirmPopover";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,7 +34,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, type CMSGroup } from "@/lib/api";
+import { getFiltersStateParser } from "@/lib/parsers";
 import { expandImpliedPermissions } from "@/lib/permissions";
+import type { ExtendedColumnFilter } from "@/types/data-table";
 
 export const Route = createFileRoute("/_layout/groups/")({
 	component: GroupsPage,
@@ -100,6 +111,33 @@ function NewGroupDialog() {
 	);
 }
 
+const FILTERABLE_COLUMN_IDS = ["name"];
+
+/** Client-side evaluation of an `ExtendedColumnFilter` for the "Name" text column - mirrors `dataTableConfig.textOperators`. */
+function nameFilterFn(
+	row: Row<CMSGroup>,
+	columnId: string,
+	filterValue: ExtendedColumnFilter<CMSGroup>,
+) {
+	const haystack = String(row.getValue(columnId) ?? "").toLowerCase();
+	const needle = String(filterValue.value ?? "").toLowerCase();
+
+	switch (filterValue.operator) {
+		case "eq":
+			return haystack === needle;
+		case "ne":
+			return haystack !== needle;
+		case "notILike":
+			return !haystack.includes(needle);
+		case "isEmpty":
+			return haystack.length === 0;
+		case "isNotEmpty":
+			return haystack.length > 0;
+		default:
+			return haystack.includes(needle);
+	}
+}
+
 function GroupsPage() {
 	const qc = useQueryClient();
 	const navigate = useNavigate();
@@ -147,6 +185,14 @@ function GroupsPage() {
 				cell: ({ row }) => (
 					<span className="font-medium">{row.original.name}</span>
 				),
+				enableColumnFilter: true,
+				filterFn: nameFilterFn,
+				meta: {
+					label: "Name",
+					placeholder: "Search groups…",
+					variant: "text",
+					icon: IconLetterCase,
+				},
 			},
 			{
 				id: "permissions",
@@ -235,10 +281,28 @@ function GroupsPage() {
 		[remove, parentCounts, childCounts],
 	);
 
+	const [sorting, setSorting] = useState<SortingState>([]);
+
+	const filtersParser = useMemo(
+		() =>
+			getFiltersStateParser<CMSGroup>(FILTERABLE_COLUMN_IDS).withDefault([]),
+		[],
+	);
+	const [filters] = useQueryState("filters", filtersParser);
+	const columnFilters: ColumnFiltersState = useMemo(
+		() => filters.map((f) => ({ id: f.id, value: f })),
+		[filters],
+	);
+
 	const table = useReactTable({
 		data: data ?? [],
 		columns,
+		state: { sorting, columnFilters },
+		onSortingChange: setSorting,
+		onColumnFiltersChange: () => {},
 		getCoreRowModel: getCoreRowModel(),
+		getFilteredRowModel: getFilteredRowModel(),
+		getSortedRowModel: getSortedRowModel(),
 		getPaginationRowModel: getPaginationRowModel(),
 	});
 
@@ -274,7 +338,12 @@ function GroupsPage() {
 							params: { groupId: group.id },
 						})
 					}
-				/>
+				>
+					<DataTableAdvancedToolbar table={table}>
+						<DataTableFilterMenu table={table} />
+						<DataTableSortList table={table} />
+					</DataTableAdvancedToolbar>
+				</DataTable>
 			)}
 		</div>
 	);

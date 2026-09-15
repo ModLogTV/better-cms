@@ -282,9 +282,7 @@ function UsersPage() {
 			{
 				id: "name",
 				accessorKey: "name",
-				header: ({ column }) => (
-					<DataTableColumnHeader column={column} label="User" />
-				),
+				header: "User",
 				cell: ({ row }) => {
 					const user = row.original;
 					const isSelf = session?.user.id === user.id;
@@ -313,7 +311,7 @@ function UsersPage() {
 				},
 				enableColumnFilter: true,
 				meta: {
-					label: "Search",
+					label: "User",
 					placeholder: "Search name, email or user ID",
 					variant: "text",
 					icon: IconLetterCase,
