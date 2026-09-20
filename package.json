@@ -306,10 +306,10 @@
 	},
 	"scripts": {
 		"prebuild": "rm -rf dist",
-		"build": "tsup && bun run build:admin",
-		"build:lib": "tsup",
+		"build": "tsdown && bun run build:admin",
+		"build:lib": "tsdown",
 		"build:admin": "cd admin-ui && bun install && bun run build",
-		"build:watch": "tsup --watch",
+		"build:watch": "tsdown --watch",
 		"typecheck": "tsc --noEmit",
 		"test": "tsc --noEmit && bun test",
 		"lint": "oxlint --max-warnings 0",
@@ -334,8 +334,9 @@
 		"oxfmt": "^0.68.0",
 		"oxlint": "^1.83.0",
 		"publint": "^0.3.21",
-		"tsup": "^8.5.1",
+		"tsdown": "^0.23.0",
 		"typescript": "^5.8.3",
+		"unrun": "^0.3.1",
 		"zod": "^3.25.67"
 	},
 	"peerDependencies": {

@@ -11,10 +11,19 @@ import {
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+	type ColumnDef,
+	getCoreRowModel,
+	useReactTable,
+} from "@tanstack/react-table";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { TranslationRow } from "@/components/shared/TranslationRow";
+import { DataTable } from "@/components/data-table/data-table";
+import {
+	TranslationKeyCell,
+	TranslationValueCell,
+} from "@/components/shared/TranslationCells";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,9 +34,9 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import {
 	api,
+	type KeyMetadata,
 	type MediaAsset,
 	type NamespaceSummary,
 	type PageSummary,
@@ -172,6 +181,34 @@ function NamespaceQuickEditRow({
 		enabled: expanded,
 	});
 
+	const preview = metadata.data?.slice(0, 5) ?? [];
+	const columns: ColumnDef<KeyMetadata>[] = [
+		{
+			id: "key",
+			accessorKey: "key",
+			header: "Key",
+			cell: ({ row }) => <TranslationKeyCell meta={row.original} />,
+		},
+		{
+			id: "value",
+			header: `Value (${defaultLocale})`,
+			cell: ({ row }) => (
+				<TranslationValueCell
+					meta={row.original}
+					value={translations.data?.[row.original.key] ?? ""}
+					namespace={ns.name}
+					locale={defaultLocale}
+				/>
+			),
+		},
+	];
+	const table = useReactTable({
+		data: preview,
+		columns,
+		getRowId: (row) => row.key,
+		getCoreRowModel: getCoreRowModel(),
+	});
+
 	return (
 		<div className="rounded-md">
 			<button
@@ -194,30 +231,12 @@ function NamespaceQuickEditRow({
 				</span>
 			</button>
 			{expanded && (
-				<div className="rounded-lg border ml-6 mb-2">
-					<Table>
-						<TableBody>
-							{metadata.isLoading || translations.isLoading ? (
-								<TableRow>
-									<TableCell colSpan={2}>
-										<Skeleton className="h-16 w-full" />
-									</TableCell>
-								</TableRow>
-							) : (
-								metadata.data
-									?.slice(0, 5)
-									.map((meta) => (
-										<TranslationRow
-											key={meta.key}
-											meta={meta}
-											value={translations.data?.[meta.key] ?? ""}
-											namespace={ns.name}
-											locale={defaultLocale}
-										/>
-									))
-							)}
-						</TableBody>
-					</Table>
+				<div className="ml-6 mb-2">
+					{metadata.isLoading || translations.isLoading ? (
+						<Skeleton className="h-16 w-full" />
+					) : (
+						<DataTable table={table} pagination={false} />
+					)}
 				</div>
 			)}
 		</div>

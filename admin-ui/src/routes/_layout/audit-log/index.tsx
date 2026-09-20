@@ -10,7 +10,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
 	type ColumnDef,
 	type ColumnFiltersState,
-	flexRender,
 	getCoreRowModel,
 	getFilteredRowModel,
 	getSortedRowModel,
@@ -22,6 +21,7 @@ import {
 import { useQueryState } from "nuqs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { DataTable } from "@/components/data-table/data-table";
 import { DataTableAdvancedToolbar } from "@/components/data-table/data-table-advanced-toolbar";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { DataTableFilterMenu } from "@/components/data-table/data-table-filter-menu";
@@ -29,14 +29,6 @@ import { DataTableSortList } from "@/components/data-table/data-table-sort-list"
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
 import {
 	Tooltip,
 	TooltipContent,
@@ -327,71 +319,36 @@ function AuditLogPage() {
 					</p>
 				</div>
 			) : (
-				<>
-					<div className="overflow-hidden rounded-md border">
-						<Table>
-							<TableHeader>
-								{table.getHeaderGroups().map((headerGroup) => (
-									<TableRow
-										key={headerGroup.id}
-										className="hover:bg-transparent"
-									>
-										{headerGroup.headers.map((header) => (
-											<TableHead key={header.id}>
-												{header.isPlaceholder
-													? null
-													: flexRender(
-															header.column.columnDef.header,
-															header.getContext(),
-														)}
-											</TableHead>
-										))}
-									</TableRow>
-								))}
-							</TableHeader>
-							<TableBody>
-								{rows.map((row) => (
-									<TableRow key={row.id}>
-										{row.getVisibleCells().map((cell) => (
-											<TableCell key={cell.id}>
-												{flexRender(
-													cell.column.columnDef.cell,
-													cell.getContext(),
-												)}
-											</TableCell>
-										))}
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
-					</div>
-
-					<div className="flex items-center justify-between">
-						<p className="text-muted-foreground text-xs">
-							Page {page} of {totalPages} · {data.total} entries
-						</p>
-						<div className="flex gap-1">
-							<Button
-								size="icon"
-								variant="outline"
-								className="size-7"
-								disabled={page <= 1}
-								onClick={() => setPage((p) => Math.max(1, p - 1))}
-							>
-								<IconChevronLeft className="size-3.5" />
-							</Button>
-							<Button
-								size="icon"
-								variant="outline"
-								className="size-7"
-								disabled={page >= totalPages}
-								onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-							>
-								<IconChevronRight className="size-3.5" />
-							</Button>
+				<DataTable
+					table={table}
+					pagination={
+						<div className="flex items-center justify-between p-1">
+							<p className="text-muted-foreground text-xs">
+								Page {page} of {totalPages} · {data.total} entries
+							</p>
+							<div className="flex gap-1">
+								<Button
+									size="icon"
+									variant="outline"
+									className="size-7"
+									disabled={page <= 1}
+									onClick={() => setPage((p) => Math.max(1, p - 1))}
+								>
+									<IconChevronLeft className="size-3.5" />
+								</Button>
+								<Button
+									size="icon"
+									variant="outline"
+									className="size-7"
+									disabled={page >= totalPages}
+									onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+								>
+									<IconChevronRight className="size-3.5" />
+								</Button>
+							</div>
 						</div>
-					</div>
-				</>
+					}
+				/>
 			)}
 		</div>
 	);

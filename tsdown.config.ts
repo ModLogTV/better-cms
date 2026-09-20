@@ -1,10 +1,10 @@
-import { defineConfig } from "tsup";
+import { defineConfig } from "tsdown";
 
 // NOTE: production usage right now intentionally pins Prisma + Elysia + React/Next
 // as the supported adapter/framework set. Drizzle, TanStack Start, and the storage
 // adapters build alongside them but are not the active target - see the roadmap
 // audit's build-isolation finding (all "node platform" entries below share one
-// tsup build config; a broken/missing entry currently fails the whole group).
+// tsdown build config; a broken/missing entry currently fails the whole group).
 
 const ALL_PEER_DEPS = [
 	"elysia",
@@ -22,16 +22,21 @@ const ALL_PEER_DEPS = [
 const shared = {
 	format: ["esm", "cjs"] as ("esm" | "cjs")[],
 	dts: true,
-	splitting: false,
 	sourcemap: true,
 	treeshake: true,
+	// tsdown defaults to fixed .cjs/.mjs extensions for platform: "node", but
+	// package.json's exports map (and typesVersions) hard-codes .js/.d.ts for
+	// every node-platform entry (elysia, prisma, drizzle, next, tanstack,
+	// storage/*, plugins/*, better-auth) - keep the tsup-era naming so those
+	// exports keep resolving.
+	fixedExtension: false,
 };
 
 export default defineConfig([
 	{
 		...shared,
 		platform: "neutral",
-		external: ALL_PEER_DEPS,
+		deps: { neverBundle: ALL_PEER_DEPS },
 		entry: {
 			"auth/index": "src/auth/index.ts",
 			"core/index": "src/core/index.ts",
@@ -45,7 +50,7 @@ export default defineConfig([
 	{
 		...shared,
 		platform: "node",
-		external: ALL_PEER_DEPS,
+		deps: { neverBundle: ALL_PEER_DEPS },
 		entry: {
 			"better-auth/index": "src/better-auth/index.ts",
 			"elysia/index": "src/elysia/index.ts",
@@ -68,7 +73,7 @@ export default defineConfig([
 	{
 		...shared,
 		platform: "neutral",
-		external: ["react", "@tanstack/react-query", "zod"],
+		deps: { neverBundle: ["react", "@tanstack/react-query", "zod"] },
 		entry: {
 			"react/index": "src/react/index.ts",
 			"admin-react/index": "src/admin-react/index.ts",
@@ -81,16 +86,16 @@ export default defineConfig([
 		...shared,
 		format: ["esm"],
 		platform: "browser",
-		external: ["react", "@tanstack/react-query"],
-		// NOT using tsup's `banner` option here - verified it silently produces no
-		// output at all for this entry (esbuild logs "use client" was ignored" for
-		// the source file's own directive when bundling, and tsup's banner never
+		deps: { neverBundle: ["react", "@tanstack/react-query"] },
+		// NOT using tsdown/rolldown's banner option here - verified it silently produces no
+		// output at all for this entry (bundler logs the "use client" directive was ignored
+		// for the source file's own directive when bundling, and the config banner never
 		// gets injected either; confirmed via `grep -n "use client" dist/next-client/index.mjs`
 		// finding nothing after a build with `banner` set). Without it Next.js's RSC
 		// compiler rejects this entire module the moment anything imports it, which
 		// breaks Next.js - the flagship, documented integration - for every consumer.
 		// Patching the built file directly after the fact is the only thing that
-		// reliably survives esbuild's bundling here.
+		// reliably survives bundling here.
 		async onSuccess() {
 			const { readFile, writeFile } = await import("node:fs/promises");
 			const path = "dist/next-client/index.mjs";

@@ -16,6 +16,8 @@ declare module "@tanstack/react-table" {
 		range?: [number, number];
 		unit?: string;
 		icon?: React.ComponentType<React.ComponentProps<"svg">>;
+		/** Extra class names for this column's <TableHead>, e.g. to right-align an actions header. */
+		headerClassName?: string;
 	}
 }
 

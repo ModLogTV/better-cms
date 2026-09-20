@@ -29,6 +29,8 @@ import { useQueryState } from "nuqs";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { DataTable } from "@/components/data-table/data-table";
+import { DataTableAdvancedToolbar } from "@/components/data-table/data-table-advanced-toolbar";
 import { DataTableFilterMenu } from "@/components/data-table/data-table-filter-menu";
 import { DataTableSortList } from "@/components/data-table/data-table-sort-list";
 import { MediaEditForm } from "@/components/shared/MediaEditForm";
@@ -54,14 +56,7 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
+import { TableCell, TableRow } from "@/components/ui/table";
 import {
 	Tooltip,
 	TooltipContent,
@@ -158,7 +153,72 @@ function inSetFilterFn(
 }
 
 function buildColumns(tags: Tag[]): ColumnDef<MediaAsset>[] {
+	const tagsById = new Map(tags.map((t) => [t.id, t.name]));
+
 	return [
+		{
+			id: "filename",
+			accessorFn: (asset) => asset.filename,
+			header: "Name",
+			enableHiding: false,
+			enableColumnFilter: false,
+			meta: { label: "Name" },
+			cell: ({ row }) => {
+				const asset = row.original;
+				const isImage = asset.mimeType.startsWith("image/");
+				return (
+					<div className="flex min-w-0 items-center gap-3">
+						<div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
+							{isImage ? (
+								<img
+									src={asset.publicUrl}
+									alt={asset.filename}
+									className="size-full object-cover"
+								/>
+							) : (
+								<IconFile className="size-5 text-muted-foreground" />
+							)}
+						</div>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<span className="truncate text-sm font-medium">
+									{asset.filename}
+								</span>
+							</TooltipTrigger>
+							<TooltipContent>{asset.filename}</TooltipContent>
+						</Tooltip>
+					</div>
+				);
+			},
+		},
+		{
+			id: "type",
+			accessorFn: (asset) => kindOf(asset.mimeType),
+			header: "Type",
+			enableColumnFilter: true,
+			filterFn: inSetFilterFn,
+			meta: {
+				label: "Type",
+				variant: "multiSelect",
+				icon: IconFile,
+				options: MEDIA_TYPE_OPTIONS,
+			},
+			cell: ({ row }) => (
+				<Badge variant="outline">{row.original.mimeType}</Badge>
+			),
+		},
+		{
+			id: "size",
+			accessorFn: (asset) => asset.size,
+			header: "Size",
+			enableColumnFilter: false,
+			meta: { label: "Size" },
+			cell: ({ row }) => (
+				<span className="text-muted-foreground text-xs">
+					{formatBytes(row.original.size)}
+				</span>
+			),
+		},
 		{
 			id: "tags",
 			accessorFn: (asset) => asset.tagIds,
@@ -171,6 +231,20 @@ function buildColumns(tags: Tag[]): ColumnDef<MediaAsset>[] {
 				variant: "multiSelect",
 				icon: IconTag,
 				options: tags.map((t) => ({ label: t.name, value: t.id })),
+			},
+			cell: ({ row }) => {
+				const tagIds = row.original.tagIds;
+				return tagIds.length > 0 ? (
+					<div className="flex flex-wrap gap-1">
+						{tagIds.map((tagId) => (
+							<Badge key={tagId} variant="secondary">
+								{tagsById.get(tagId) ?? tagId}
+							</Badge>
+						))}
+					</div>
+				) : (
+					<span className="text-muted-foreground text-xs">—</span>
+				);
 			},
 		},
 		{
@@ -186,34 +260,14 @@ function buildColumns(tags: Tag[]): ColumnDef<MediaAsset>[] {
 				icon: IconRocket,
 				options: MEDIA_STATUS_OPTIONS,
 			},
-		},
-		{
-			id: "type",
-			accessorFn: (asset) => kindOf(asset.mimeType),
-			header: "Type",
-			enableSorting: false,
-			enableColumnFilter: true,
-			filterFn: inSetFilterFn,
-			meta: {
-				label: "Type",
-				variant: "multiSelect",
-				icon: IconFile,
-				options: MEDIA_TYPE_OPTIONS,
+			cell: ({ row }) => {
+				const asset = row.original;
+				return !asset.confirmedAt ? (
+					<Badge variant="warning">pending</Badge>
+				) : (
+					<MediaStatusBadge status={asset.status} />
+				);
 			},
-		},
-		{
-			id: "filename",
-			accessorFn: (asset) => asset.filename,
-			header: "Filename",
-			enableColumnFilter: false,
-			meta: { label: "Filename" },
-		},
-		{
-			id: "size",
-			accessorFn: (asset) => asset.size,
-			header: "Size",
-			enableColumnFilter: false,
-			meta: { label: "Size" },
 		},
 		{
 			id: "createdAt",
@@ -221,6 +275,19 @@ function buildColumns(tags: Tag[]): ColumnDef<MediaAsset>[] {
 			header: "Uploaded",
 			enableColumnFilter: false,
 			meta: { label: "Uploaded" },
+			cell: ({ row }) => (
+				<span className="text-muted-foreground text-xs">
+					{new Date(row.original.createdAt).toLocaleDateString()}
+				</span>
+			),
+		},
+		{
+			id: "actions",
+			header: "Actions",
+			enableHiding: false,
+			enableSorting: false,
+			meta: { headerClassName: "text-right" },
+			cell: ({ row }) => <MediaActionsCell asset={row.original} />,
 		},
 	];
 }
@@ -572,129 +639,67 @@ function UploadingCard({
 	);
 }
 
-const LIST_COLUMN_COUNT = 6;
+const LIST_COLUMN_COUNT = 7;
 
-function MediaListRow({
-	asset,
-	tagsById,
-}: {
-	asset: MediaAsset;
-	tagsById: Map<string, string>;
-}) {
-	const isImage = asset.mimeType.startsWith("image/");
+function MediaActionsCell({ asset }: { asset: MediaAsset }) {
 	const { qc, remove, publish } = useMediaAssetMutations(asset);
 
+	if (!asset.confirmedAt) return null;
+
 	return (
-		<TableRow>
-			<TableCell>
-				<div className="flex min-w-0 items-center gap-3">
-					<div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
-						{isImage ? (
-							<img
-								src={asset.publicUrl}
-								alt={asset.filename}
-								className="size-full object-cover"
-							/>
-						) : (
-							<IconFile className="size-5 text-muted-foreground" />
-						)}
-					</div>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<span className="truncate text-sm font-medium">
-								{asset.filename}
-							</span>
-						</TooltipTrigger>
-						<TooltipContent>{asset.filename}</TooltipContent>
-					</Tooltip>
-				</div>
-			</TableCell>
-			<TableCell>
-				<Badge variant="outline">{asset.mimeType}</Badge>
-			</TableCell>
-			<TableCell className="text-muted-foreground text-xs">
-				{formatBytes(asset.size)}
-			</TableCell>
-			<TableCell>
-				{asset.tagIds.length > 0 ? (
-					<div className="flex flex-wrap gap-1">
-						{asset.tagIds.map((tagId) => (
-							<Badge key={tagId} variant="secondary">
-								{tagsById.get(tagId) ?? tagId}
-							</Badge>
-						))}
-					</div>
-				) : (
-					<span className="text-muted-foreground text-xs">—</span>
-				)}
-			</TableCell>
-			<TableCell>
-				{!asset.confirmedAt ? (
-					<Badge variant="warning">pending</Badge>
-				) : (
-					<MediaStatusBadge status={asset.status} />
-				)}
-			</TableCell>
-			<TableCell>
-				{asset.confirmedAt && (
-					<div className="flex items-center justify-end gap-1">
-						<MediaEditForm asset={asset} />
-						<MediaTagsPopover assetId={asset.id} tagIds={asset.tagIds} />
-						<MediaVersionHistoryPanel
-							assetId={asset.id}
-							compact
-							onRestored={() =>
-								qc.invalidateQueries({ queryKey: ["cms", "media"] })
-							}
-						/>
-						{asset.status !== "published" && (
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										size="icon"
-										variant="outline"
-										className="size-7"
-										onClick={() => publish.mutate()}
-										disabled={publish.isPending}
-									>
-										<IconRocket className="size-3.5" />
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent>Publish</TooltipContent>
-							</Tooltip>
-						)}
-						<Dialog>
-							<DialogTrigger asChild>
-								<Button size="icon" variant="destructive" className="size-7">
-									<IconTrash className="size-3.5" />
-								</Button>
-							</DialogTrigger>
-							<DialogContent>
-								<DialogHeader>
-									<DialogTitle>Delete asset?</DialogTitle>
-									<DialogDescription>
-										Permanently removes <strong>{asset.filename}</strong> from
-										storage. This cannot be undone.
-									</DialogDescription>
-								</DialogHeader>
-								<DialogFooter>
-									<DialogClose asChild>
-										<Button variant="outline">Cancel</Button>
-									</DialogClose>
-									<Button
-										variant="destructive"
-										onClick={() => remove.mutate()}
-										disabled={remove.isPending}
-									>
-										Delete
-									</Button>
-								</DialogFooter>
-							</DialogContent>
-						</Dialog>
-					</div>
-				)}
-			</TableCell>
-		</TableRow>
+		<div className="flex items-center justify-end gap-1">
+			<MediaEditForm asset={asset} />
+			<MediaTagsPopover assetId={asset.id} tagIds={asset.tagIds} />
+			<MediaVersionHistoryPanel
+				assetId={asset.id}
+				compact
+				onRestored={() => qc.invalidateQueries({ queryKey: ["cms", "media"] })}
+			/>
+			{asset.status !== "published" && (
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							size="icon"
+							variant="outline"
+							className="size-7"
+							onClick={() => publish.mutate()}
+							disabled={publish.isPending}
+						>
+							<IconRocket className="size-3.5" />
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Publish</TooltipContent>
+				</Tooltip>
+			)}
+			<Dialog>
+				<DialogTrigger asChild>
+					<Button size="icon" variant="destructive" className="size-7">
+						<IconTrash className="size-3.5" />
+					</Button>
+				</DialogTrigger>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Delete asset?</DialogTitle>
+						<DialogDescription>
+							Permanently removes <strong>{asset.filename}</strong> from
+							storage. This cannot be undone.
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<DialogClose asChild>
+							<Button variant="outline">Cancel</Button>
+						</DialogClose>
+						<Button
+							variant="destructive"
+							onClick={() => remove.mutate()}
+							disabled={remove.isPending}
+						>
+							Delete
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+		</div>
 	);
 }
 
@@ -827,7 +832,9 @@ function MediaPage() {
 	const [sorting, setSorting] = useState<SortingState>([
 		{ id: "createdAt", desc: true },
 	]);
-	const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+	const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
+		createdAt: false,
+	});
 
 	const filtersParser = useMemo(
 		() =>
@@ -932,38 +939,42 @@ function MediaPage() {
 				</div>
 			</div>
 
-			<div className="flex flex-wrap items-center gap-2">
+			<DataTableAdvancedToolbar
+				table={table}
+				endActions={
+					<div className="flex items-center gap-0.5 rounded-md border p-0.5">
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="icon"
+									variant={view === "card" ? "secondary" : "ghost"}
+									className="size-7"
+									onClick={() => setViewPersisted("card")}
+								>
+									<IconLayoutGrid className="size-3.5" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Card view</TooltipContent>
+						</Tooltip>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="icon"
+									variant={view === "list" ? "secondary" : "ghost"}
+									className="size-7"
+									onClick={() => setViewPersisted("list")}
+								>
+									<IconLayoutList className="size-3.5" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>List view</TooltipContent>
+						</Tooltip>
+					</div>
+				}
+			>
 				<DataTableFilterMenu table={table} />
 				<DataTableSortList table={table} />
-				<div className="ml-auto flex items-center gap-0.5 rounded-md border p-0.5">
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								size="icon"
-								variant={view === "card" ? "secondary" : "ghost"}
-								className="size-7"
-								onClick={() => setViewPersisted("card")}
-							>
-								<IconLayoutGrid className="size-3.5" />
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Card view</TooltipContent>
-					</Tooltip>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								size="icon"
-								variant={view === "list" ? "secondary" : "ghost"}
-								className="size-7"
-								onClick={() => setViewPersisted("list")}
-							>
-								<IconLayoutList className="size-3.5" />
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>List view</TooltipContent>
-					</Tooltip>
-				</div>
-			</div>
+			</DataTableAdvancedToolbar>
 
 			{isLoading ? (
 				view === "list" ? (
@@ -991,37 +1002,18 @@ function MediaPage() {
 					</p>
 				</div>
 			) : view === "list" ? (
-				<div className="overflow-hidden rounded-md border">
-					<Table>
-						<TableHeader>
-							<TableRow className="hover:bg-transparent">
-								<TableHead>Name</TableHead>
-								<TableHead>Type</TableHead>
-								<TableHead>Size</TableHead>
-								<TableHead>Tags</TableHead>
-								<TableHead>Status</TableHead>
-								<TableHead className="text-right">Actions</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{uploads.map((item) => (
-								<UploadingRow
-									key={item.id}
-									item={item}
-									onRetry={() => runUpload(item)}
-									onDismiss={() => removeUpload(item.id)}
-								/>
-							))}
-							{assets.map((asset) => (
-								<MediaListRow
-									key={asset.id}
-									asset={asset}
-									tagsById={tagsById}
-								/>
-							))}
-						</TableBody>
-					</Table>
-				</div>
+				<DataTable
+					table={table}
+					pagination={false}
+					beforeRows={uploads.map((item) => (
+						<UploadingRow
+							key={item.id}
+							item={item}
+							onRetry={() => runUpload(item)}
+							onDismiss={() => removeUpload(item.id)}
+						/>
+					))}
+				/>
 			) : (
 				<div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
 					{uploads.map((item) => (

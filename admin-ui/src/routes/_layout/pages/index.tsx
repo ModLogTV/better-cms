@@ -32,7 +32,6 @@ import {
 	type ColumnDef,
 	type ColumnFiltersState,
 	type ExpandedState,
-	flexRender,
 	getCoreRowModel,
 	getExpandedRowModel,
 	getFilteredRowModel,
@@ -48,6 +47,7 @@ import { useQueryState } from "nuqs";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { DataTable } from "@/components/data-table/data-table";
 import { DataTableAdvancedToolbar } from "@/components/data-table/data-table-advanced-toolbar";
 import { DataTableFilterMenu } from "@/components/data-table/data-table-filter-menu";
 import { DataTableSortList } from "@/components/data-table/data-table-sort-list";
@@ -70,14 +70,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
+import { TableCell, TableRow } from "@/components/ui/table";
 import {
 	Tooltip,
 	TooltipContent,
@@ -513,6 +506,7 @@ function buildColumns(locales: Locale[]): ColumnDef<PageTreeNode>[] {
 			header: "Actions",
 			enableHiding: false,
 			enableSorting: false,
+			meta: { headerClassName: "text-right" },
 		},
 	];
 }
@@ -929,125 +923,102 @@ function PagesPage() {
 						onDragCancel={() => setDraggingId(null)}
 					>
 						<RootDropZone>
-							<div className="overflow-hidden rounded-md border">
-								<Table>
-									<TableHeader>
-										{table.getHeaderGroups().map((headerGroup) => (
-											<TableRow
-												key={headerGroup.id}
-												className="hover:bg-transparent"
-											>
-												{headerGroup.headers.map((header) => (
-													<TableHead
-														key={header.id}
-														className={
-															header.column.id === "actions"
-																? "text-right"
-																: undefined
-														}
-													>
-														{header.isPlaceholder
-															? null
-															: flexRender(
-																	header.column.columnDef.header,
-																	header.getContext(),
-																)}
-													</TableHead>
-												))}
-											</TableRow>
-										))}
-									</TableHeader>
-									<TableBody>
-										{table.getRowModel().rows.map((row) => (
-											<PageRow
-												key={row.id}
-												row={row}
-												onPublish={(id) => publish.mutate(id)}
-												publishingId={
-													publish.isPending ? publish.variables : undefined
+							<DataTable
+								table={table}
+								renderRow={(row) => (
+									<PageRow
+										key={row.id}
+										row={row}
+										onPublish={(id) => publish.mutate(id)}
+										publishingId={
+											publish.isPending ? publish.variables : undefined
+										}
+										locales={locales}
+										moveError={moveError}
+										disabledDropIds={disabledDropIds}
+									/>
+								)}
+								pagination={
+									<div className="flex flex-col-reverse items-center justify-between gap-4 p-1 sm:flex-row">
+										<div className="flex items-center gap-2">
+											<p className="whitespace-nowrap font-medium text-sm">
+												Rows per page
+											</p>
+											<Select
+												value={`${table.getState().pagination.pageSize}`}
+												onValueChange={(value) =>
+													table.setPageSize(Number(value))
 												}
-												locales={locales}
-												moveError={moveError}
-												disabledDropIds={disabledDropIds}
-											/>
-										))}
-									</TableBody>
-								</Table>
-							</div>
+											>
+												<SelectTrigger className="h-8! w-18">
+													<SelectValue
+														placeholder={table.getState().pagination.pageSize}
+													/>
+												</SelectTrigger>
+												<SelectContent side="top">
+													{[10, 20, 50, 100].map((pageSize) => (
+														<SelectItem key={pageSize} value={`${pageSize}`}>
+															{pageSize}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+										</div>
+										<div className="flex items-center gap-4">
+											<div className="font-medium text-sm">
+												Page {table.getState().pagination.pageIndex + 1} of{" "}
+												{Math.max(1, table.getPageCount())}
+											</div>
+											<div className="flex items-center gap-2">
+												<Button
+													aria-label="Go to first page"
+													variant="outline"
+													size="icon"
+													className="hidden size-8 lg:flex"
+													onClick={() => table.setPageIndex(0)}
+													disabled={!table.getCanPreviousPage()}
+												>
+													<IconChevronsLeft />
+												</Button>
+												<Button
+													aria-label="Go to previous page"
+													variant="outline"
+													size="icon"
+													className="size-8"
+													onClick={() => table.previousPage()}
+													disabled={!table.getCanPreviousPage()}
+												>
+													<IconChevronLeft />
+												</Button>
+												<Button
+													aria-label="Go to next page"
+													variant="outline"
+													size="icon"
+													className="size-8"
+													onClick={() => table.nextPage()}
+													disabled={!table.getCanNextPage()}
+												>
+													<IconChevronRight />
+												</Button>
+												<Button
+													aria-label="Go to last page"
+													variant="outline"
+													size="icon"
+													className="hidden size-8 lg:flex"
+													onClick={() =>
+														table.setPageIndex(table.getPageCount() - 1)
+													}
+													disabled={!table.getCanNextPage()}
+												>
+													<IconChevronsRight />
+												</Button>
+											</div>
+										</div>
+									</div>
+								}
+							/>
 						</RootDropZone>
 					</DndContext>
-					<div className="flex flex-col-reverse items-center justify-between gap-4 p-1 sm:flex-row">
-						<div className="flex items-center gap-2">
-							<p className="whitespace-nowrap font-medium text-sm">
-								Rows per page
-							</p>
-							<Select
-								value={`${table.getState().pagination.pageSize}`}
-								onValueChange={(value) => table.setPageSize(Number(value))}
-							>
-								<SelectTrigger className="h-8! w-18">
-									<SelectValue
-										placeholder={table.getState().pagination.pageSize}
-									/>
-								</SelectTrigger>
-								<SelectContent side="top">
-									{[10, 20, 50, 100].map((pageSize) => (
-										<SelectItem key={pageSize} value={`${pageSize}`}>
-											{pageSize}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-						<div className="flex items-center gap-4">
-							<div className="font-medium text-sm">
-								Page {table.getState().pagination.pageIndex + 1} of{" "}
-								{Math.max(1, table.getPageCount())}
-							</div>
-							<div className="flex items-center gap-2">
-								<Button
-									aria-label="Go to first page"
-									variant="outline"
-									size="icon"
-									className="hidden size-8 lg:flex"
-									onClick={() => table.setPageIndex(0)}
-									disabled={!table.getCanPreviousPage()}
-								>
-									<IconChevronsLeft />
-								</Button>
-								<Button
-									aria-label="Go to previous page"
-									variant="outline"
-									size="icon"
-									className="size-8"
-									onClick={() => table.previousPage()}
-									disabled={!table.getCanPreviousPage()}
-								>
-									<IconChevronLeft />
-								</Button>
-								<Button
-									aria-label="Go to next page"
-									variant="outline"
-									size="icon"
-									className="size-8"
-									onClick={() => table.nextPage()}
-									disabled={!table.getCanNextPage()}
-								>
-									<IconChevronRight />
-								</Button>
-								<Button
-									aria-label="Go to last page"
-									variant="outline"
-									size="icon"
-									className="hidden size-8 lg:flex"
-									onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-									disabled={!table.getCanNextPage()}
-								>
-									<IconChevronsRight />
-								</Button>
-							</div>
-						</div>
-					</div>
 				</div>
 			)}
 		</div>
